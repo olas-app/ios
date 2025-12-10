@@ -12,14 +12,14 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../Packages/Olas"),
-        .package(url: "https://github.com/nostr-sdk/ndk-swift", branch: "spark")
+        .package(url: "https://github.com/pablof7z/NDKSwift", branch: "spark")
     ],
     targets: [
         .target(
             name: "OlasAppFeature",
             dependencies: [
                 .product(name: "Olas", package: "Olas"),
-                .product(name: "NDKSwift", package: "ndk-swift")
+                .product(name: "NDKSwift", package: "NDKSwift")
             ]
         ),
         .testTarget(
