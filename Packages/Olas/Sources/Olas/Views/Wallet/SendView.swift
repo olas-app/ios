@@ -2,6 +2,7 @@
 import SwiftUI
 import NDKSwift
 import NDKSwiftUI
+import BreezSdkSpark
 
 struct SendView: View {
     let ndk: NDK
@@ -59,7 +60,7 @@ struct SendView: View {
             )) {
                 Button("OK") { error = nil }
             } message: {
-                Text(error?.localizedDescription ?? "Unknown error")
+                Text(userFriendlyError)
             }
         }
     }
@@ -412,6 +413,20 @@ struct SendView: View {
         let prefix = String(token.prefix(25))
         let suffix = String(token.suffix(25))
         return "\(prefix)...\(suffix)"
+    }
+
+    private var userFriendlyError: String {
+        guard let error = error else { return "Unknown error" }
+
+        if let sdkError = error as? SdkError {
+            return sdkError.userFriendlyMessage
+        }
+
+        if let sendError = error as? SendError {
+            return sendError.errorDescription ?? "Unknown error"
+        }
+
+        return error.localizedDescription
     }
 }
 

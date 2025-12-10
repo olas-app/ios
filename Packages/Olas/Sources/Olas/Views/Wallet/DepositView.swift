@@ -2,6 +2,7 @@
 import SwiftUI
 import NDKSwift
 import NDKSwiftUI
+import BreezSdkSpark
 
 struct DepositView: View {
     let ndk: NDK
@@ -43,7 +44,7 @@ struct DepositView: View {
             )) {
                 Button("OK") { error = nil }
             } message: {
-                Text(error?.localizedDescription ?? "Unknown error")
+                Text(userFriendlyError)
             }
         }
     }
@@ -303,5 +304,15 @@ struct DepositView: View {
         let prefix = String(invoice.prefix(20))
         let suffix = String(invoice.suffix(20))
         return "\(prefix)...\(suffix)"
+    }
+
+    private var userFriendlyError: String {
+        guard let error = error else { return "Unknown error" }
+
+        if let sdkError = error as? SdkError {
+            return sdkError.userFriendlyMessage
+        }
+
+        return error.localizedDescription
     }
 }

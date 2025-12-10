@@ -533,21 +533,22 @@ struct LightningAddressSetupView: View {
                 Text("Setup Lightning Address")
                     .font(.title2.bold())
 
-                Text("Choose a username for your Lightning address. You'll be able to receive payments at username@spark.money")
+                Text("Choose a username for your Lightning address. After registration, you'll receive a full Lightning address for receiving payments.")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
 
-                HStack {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Username")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
                     TextField("username", text: $username)
                         .textFieldStyle(.roundedBorder)
                         .autocorrectionDisabled()
                         #if os(iOS)
                         .textInputAutocapitalization(.never)
                         #endif
-
-                    Text("@spark.money")
-                        .foregroundStyle(.secondary)
                 }
                 .padding(.horizontal)
 

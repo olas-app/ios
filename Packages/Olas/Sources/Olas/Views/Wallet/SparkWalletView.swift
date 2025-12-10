@@ -59,17 +59,36 @@ public struct SparkWalletView: View {
     // MARK: - Connected View
 
     private var connectedView: some View {
-        ScrollView {
-            VStack(spacing: 32) {
-                balanceCard
-                actionButtons
-                recentTransactions
+        VStack(spacing: 0) {
+            if walletManager.networkStatus.isOffline {
+                offlineBanner
             }
-            .padding()
+
+            ScrollView {
+                VStack(spacing: 32) {
+                    balanceCard
+                    actionButtons
+                    recentTransactions
+                }
+                .padding()
+            }
+            .refreshable {
+                await walletManager.sync()
+            }
         }
-        .refreshable {
-            await walletManager.sync()
+    }
+
+    private var offlineBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "wifi.slash")
+                .font(.caption)
+            Text("No Internet Connection")
+                .font(.caption.weight(.medium))
         }
+        .foregroundStyle(.white)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(Color.orange)
     }
 
     private var balanceCard: some View {
@@ -135,10 +154,11 @@ public struct SparkWalletView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(OlasTheme.Colors.zapGold.opacity(0.1))
-                .foregroundStyle(OlasTheme.Colors.zapGold)
+                .background(walletManager.networkStatus.isOffline ? Color(.systemGray4).opacity(0.1) : OlasTheme.Colors.zapGold.opacity(0.1))
+                .foregroundStyle(walletManager.networkStatus.isOffline ? .secondary : OlasTheme.Colors.zapGold)
                 .cornerRadius(16)
             }
+            .disabled(walletManager.networkStatus.isOffline)
         }
     }
 
@@ -318,11 +338,7 @@ struct PaymentRow: View {
     }
 
     private func formatSats(_ amount: U128) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        // U128 is BigNumber - extract as UInt64 for display
-        let sats = amount.description
-        return "\(sats) sats"
+        return amount.formattedSats
     }
 }
 
@@ -381,10 +397,10 @@ struct PaymentDetailView: View {
                             .font(.system(size: 48))
                             .foregroundStyle(payment.paymentType == .receive ? .green : OlasTheme.Colors.zapGold)
 
-                        Text("\(payment.paymentType == .receive ? "+" : "-")\(payment.amount.description) sats")
+                        Text("\(payment.paymentType == .receive ? "+" : "-")\(payment.amount.formattedString) sats")
                             .font(.system(size: 32, weight: .bold, design: .rounded))
 
-                        let fees = payment.fees.description
+                        let fees = payment.fees.formattedString
                         if fees != "0" {
                             Text("Fee: \(fees) sats")
                                 .font(.caption)
@@ -1077,7 +1093,7 @@ struct SendView: View {
                     HStack {
                         Text("Amount")
                         Spacer()
-                        Text("\(prepared.amount.description) sats")
+                        Text("\(prepared.amount.formattedString) sats")
                             .fontWeight(.medium)
                     }
 
@@ -1097,7 +1113,7 @@ struct SendView: View {
                         Text("Total")
                             .fontWeight(.semibold)
                         Spacer()
-                        Text("\(prepared.amount.description) sats")
+                        Text("\(prepared.amount.formattedString) sats")
                             .font(.title3.bold())
                             .foregroundStyle(OlasTheme.Colors.zapGold)
                     }
@@ -1305,45 +1321,6 @@ extension InputType {
             return details.amountSats
         default:
             return nil
-        }
-    }
-}
-
-// MARK: - QR Scanner View
-
-struct QRScannerView: View {
-    let onScan: (String) -> Void
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            VStack {
-                // Placeholder for actual camera scanner
-                // In a real implementation, use AVFoundation or a library like CodeScanner
-                VStack(spacing: 20) {
-                    Image(systemName: "qrcode.viewfinder")
-                        .font(.system(size: 100))
-                        .foregroundStyle(.secondary)
-
-                    Text("Point camera at QR code")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-
-                    Text("Camera access required")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.black.opacity(0.9))
-            }
-            .navigationTitle("Scan QR Code")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundStyle(.white)
-                }
-            }
         }
     }
 }

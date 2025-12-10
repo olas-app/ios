@@ -2,6 +2,154 @@ import Foundation
 import SwiftUI
 import BreezSdkSpark
 import Security
+import Network
+import MnemonicSwift
+
+// MARK: - SDK Error Extension
+
+extension SdkError {
+    var userFriendlyMessage: String {
+        switch self {
+        case .SparkError(let message):
+            return parseSparkError(message)
+
+        case .InvalidUuid(let message):
+            return "Invalid identifier: \(message)"
+
+        case .InvalidInput(let message):
+            return parseInvalidInputError(message)
+
+        case .NetworkError(let message):
+            return parseNetworkError(message)
+
+        case .StorageError(let message):
+            return "Storage error: Unable to save wallet data. Please check available storage space."
+
+        case .ChainServiceError(let message):
+            return "Blockchain service error: \(message)"
+
+        case .MaxDepositClaimFeeExceeded(_, _, _, let requiredFeeSats, _):
+            return "The deposit claim fee (\(requiredFeeSats) sats) is too high. Please try again later when network fees are lower."
+
+        case .MissingUtxo(let tx, let vout):
+            return "Unable to find transaction output. Transaction may not be confirmed yet."
+
+        case .LnurlError(let message):
+            return parseLnurlError(message)
+
+        case .Generic(let message):
+            return parseGenericError(message)
+        }
+    }
+
+    private func parseSparkError(_ message: String) -> String {
+        let lowercased = message.lowercased()
+
+        if lowercased.contains("mnemonic") || lowercased.contains("seed") {
+            return "Invalid recovery phrase. Please check your words and try again."
+        }
+
+        if lowercased.contains("insufficient") && lowercased.contains("balance") {
+            return "Insufficient balance to complete this transaction."
+        }
+
+        if lowercased.contains("timeout") {
+            return "Connection timed out. Please check your internet connection and try again."
+        }
+
+        return "Wallet error: \(message)"
+    }
+
+    private func parseInvalidInputError(_ message: String) -> String {
+        let lowercased = message.lowercased()
+
+        if lowercased.contains("invoice") {
+            return "Invalid Lightning invoice. Please check the invoice and try again."
+        }
+
+        if lowercased.contains("address") {
+            return "Invalid Lightning address. Please check the address format."
+        }
+
+        if lowercased.contains("amount") {
+            return "Invalid amount. Please enter a valid amount in satoshis."
+        }
+
+        if lowercased.contains("mnemonic") {
+            return "Invalid recovery phrase. Please check that all words are correct and in the right order."
+        }
+
+        return "Invalid input: \(message)"
+    }
+
+    private func parseNetworkError(_ message: String) -> String {
+        let lowercased = message.lowercased()
+
+        if lowercased.contains("no internet") || lowercased.contains("not connected") {
+            return "No internet connection. Please check your network settings and try again."
+        }
+
+        if lowercased.contains("timeout") {
+            return "Connection timed out. Please check your internet connection and try again."
+        }
+
+        if lowercased.contains("dns") {
+            return "Unable to reach the Lightning service. Please check your internet connection."
+        }
+
+        if lowercased.contains("refused") {
+            return "Connection refused. The Lightning service may be temporarily unavailable."
+        }
+
+        return "Network error: Unable to connect to Lightning service. Please try again."
+    }
+
+    private func parseLnurlError(_ message: String) -> String {
+        let lowercased = message.lowercased()
+
+        if lowercased.contains("invalid") {
+            return "Invalid Lightning URL. Please check the URL and try again."
+        }
+
+        if lowercased.contains("expired") {
+            return "This Lightning URL has expired. Please request a new one."
+        }
+
+        if lowercased.contains("amount") {
+            return "The amount is outside the allowed range for this Lightning URL."
+        }
+
+        return "Lightning URL error: \(message)"
+    }
+
+    private func parseGenericError(_ message: String) -> String {
+        let lowercased = message.lowercased()
+
+        if lowercased.contains("payment") && lowercased.contains("failed") {
+            return "Payment failed. Please check your balance and try again."
+        }
+
+        if lowercased.contains("insufficient") && lowercased.contains("funds") {
+            return "Insufficient funds. Please add more sats to your wallet."
+        }
+
+        if lowercased.contains("route") || lowercased.contains("routing") {
+            return "Unable to find payment route. The recipient may be offline or unreachable."
+        }
+
+        if lowercased.contains("expired") {
+            return "This invoice has expired. Please request a new one."
+        }
+
+        if lowercased.contains("already paid") {
+            return "This invoice has already been paid."
+        }
+
+        return message.isEmpty ? "An unexpected error occurred. Please try again." : message
+    }
+}
+
+// MARK: - Wallet Manager
 
 @MainActor
 public final class SparkWalletManager: ObservableObject {
@@ -11,19 +159,42 @@ public final class SparkWalletManager: ObservableObject {
     @Published public private(set) var isLoading = false
     @Published public private(set) var payments: [Payment] = []
     @Published public var error: String?
+    @Published public private(set) var networkStatus: NetworkStatus = .unknown
 
     private var sdk: BreezSdk?
     private var eventListenerId: String?
+    private let pathMonitor = NWPathMonitor()
+    private let monitorQueue = DispatchQueue(label: "com.olas.spark.network")
 
     private let keychainService = "com.olas.spark"
     private let mnemonicAccount = "spark_mnemonic"
 
-    public init() {}
+    public init() {
+        setupNetworkMonitoring()
+    }
 
     deinit {
+        pathMonitor.cancel()
         Task { [weak self] in
             await self?.removeEventListener()
         }
+    }
+
+    // MARK: - Network Monitoring
+
+    private func setupNetworkMonitoring() {
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            Task { @MainActor [weak self] in
+                guard let self = self else { return }
+
+                if path.status == .satisfied {
+                    self.networkStatus = .connected
+                } else {
+                    self.networkStatus = .offline
+                }
+            }
+        }
+        pathMonitor.start(queue: monitorQueue)
     }
 
     // MARK: - Public Methods
@@ -37,7 +208,7 @@ public final class SparkWalletManager: ObservableObject {
         } catch {
             // Mnemonic was invalid or connection failed - clear it
             deleteMnemonicFromKeychain()
-            self.error = error.localizedDescription
+            self.error = handleError(error)
         }
     }
 
@@ -139,7 +310,7 @@ public final class SparkWalletManager: ObservableObject {
             _ = try await sdk.syncWallet(request: SyncWalletRequest())
             await refreshInfo()
         } catch {
-            self.error = error.localizedDescription
+            self.error = handleError(error)
         }
     }
 
@@ -159,7 +330,7 @@ public final class SparkWalletManager: ObservableObject {
             let response = try await sdk.listPayments(request: ListPaymentsRequest())
             payments = response.payments
         } catch {
-            self.error = error.localizedDescription
+            self.error = handleError(error)
         }
     }
 
@@ -263,6 +434,16 @@ public final class SparkWalletManager: ObservableObject {
 
     // MARK: - Private Helpers
 
+    private func handleError(_ error: Error) -> String {
+        if let sdkError = error as? SdkError {
+            return sdkError.userFriendlyMessage
+        }
+        if let walletError = error as? SparkWalletError {
+            return walletError.errorDescription ?? "An unexpected error occurred."
+        }
+        return error.localizedDescription
+    }
+
     private func setupSdk(_ sdk: BreezSdk) async {
         connectionStatus = .connected
 
@@ -292,7 +473,7 @@ public final class SparkWalletManager: ObservableObject {
             await refreshInfo()
             print("[Spark] Payment succeeded: \(payment.amount) sats")
         case .paymentFailed(let payment):
-            error = "Payment failed"
+            error = "Payment failed. Please check your balance and try again."
             print("[Spark] Payment failed: \(payment.id)")
         case .paymentPending(let payment):
             print("[Spark] Payment pending: \(payment.amount) sats")
@@ -317,19 +498,11 @@ public final class SparkWalletManager: ObservableObject {
     }
 
     private func generateMnemonic() -> String {
-        // Generate 16 bytes of entropy for a 12-word mnemonic
-        var entropy = [UInt8](repeating: 0, count: 16)
-        _ = SecRandomCopyBytes(kSecRandomDefault, entropy.count, &entropy)
-
-        // BIP39 word list (first few for demonstration - in production, use full list)
-        // The Breez SDK will validate the mnemonic internally
-        // For now, we'll create entropy and let the SDK generate proper mnemonic
-        // Actually, we need to use a proper BIP39 implementation
-        // Let's use a placeholder that the user will replace with their own
-
-        // Since we don't have a BIP39 library, we'll throw an error asking user to import
-        // In a real implementation, you'd use a BIP39 Swift library
-        fatalError("Mnemonic generation requires BIP39 library - use importWallet with existing mnemonic")
+        do {
+            return try Mnemonic.generateMnemonic(strength: 128)
+        } catch {
+            fatalError("Failed to generate mnemonic: \(error)")
+        }
     }
 
     // MARK: - Keychain
@@ -456,5 +629,17 @@ public enum SparkWalletError: LocalizedError {
         case .connectionFailed(let reason):
             return "Connection failed: \(reason)"
         }
+    }
+}
+
+// MARK: - Network Status
+
+public enum NetworkStatus: Equatable {
+    case unknown
+    case connected
+    case offline
+
+    public var isOffline: Bool {
+        self == .offline
     }
 }
