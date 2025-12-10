@@ -11,7 +11,7 @@ let package = Package(
         .library(name: "Olas", targets: ["Olas"])
     ],
     dependencies: [
-        .package(url: "https://github.com/pablof7z/NDKSwift", branch: "spark"),
+        .package(url: "https://github.com/pablof7z/NDKSwift", branch: "master"),
         .package(url: "https://github.com/iankoex/UnifiedBlurHash", from: "1.0.0")
     ],
     targets: [

@@ -12,7 +12,7 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../Packages/Olas"),
-        .package(url: "https://github.com/pablof7z/NDKSwift", branch: "spark")
+        .package(url: "https://github.com/pablof7z/NDKSwift", branch: "master")
     ],
     targets: [
         .target(
