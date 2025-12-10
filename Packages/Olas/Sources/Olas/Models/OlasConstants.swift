@@ -15,12 +15,12 @@ public enum OlasConstants {
     ]
 
     public enum EventKinds {
-        public static let image: Kind = 20
-        public static let shortVideo: Kind = 22  // NIP-71 short-form video
-        public static let reaction: Kind = 7
-        public static let comment: Kind = 1111
-        public static let report: Kind = 1984
-        public static let muteList: Kind = 10000
+        public static let image: NDKSwift.Kind = 20
+        public static let shortVideo: NDKSwift.Kind = 22  // NIP-71 short-form video
+        public static let reaction: NDKSwift.Kind = 7
+        public static let comment: NDKSwift.Kind = 1111
+        public static let report: NDKSwift.Kind = 1984
+        public static let muteList: NDKSwift.Kind = 10000
     }
 
     public enum ReportType: String, CaseIterable, Identifiable {

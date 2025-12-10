@@ -1,5 +1,4 @@
 import SwiftUI
-import NDKSwift
 
 public struct SparkWalletSettingsView: View {
     @ObservedObject var walletManager: SparkWalletManager
@@ -169,7 +168,7 @@ public struct SparkWalletSettingsView: View {
 
     // MARK: - Helpers
 
-    private func formatSats(_ amount: Int64) -> String {
+    private func formatSats(_ amount: UInt64) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         let formatted = formatter.string(from: NSNumber(value: amount)) ?? "\(amount)"

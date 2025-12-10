@@ -1,5 +1,5 @@
 import SwiftUI
-import NDKSwift
+import BreezSdkSpark
 import CoreImage.CIFilterBuiltins
 
 public struct SparkWalletView: View {
@@ -160,7 +160,7 @@ public struct SparkWalletView: View {
                 .cornerRadius(12)
             } else {
                 LazyVStack(spacing: 0) {
-                    ForEach(walletManager.payments) { payment in
+                    ForEach(walletManager.payments, id: \.id) { payment in
                         PaymentRow(payment: payment)
                         if payment.id != walletManager.payments.last?.id {
                             Divider()
@@ -243,7 +243,7 @@ public struct SparkWalletView: View {
         .padding()
     }
 
-    private func formatSats(_ amount: Int64) -> String {
+    private func formatSats(_ amount: UInt64) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         let formatted = formatter.string(from: NSNumber(value: amount)) ?? "\(amount)"
@@ -254,7 +254,7 @@ public struct SparkWalletView: View {
 // MARK: - Payment Row
 
 struct PaymentRow: View {
-    let payment: SparkPayment
+    let payment: Payment
 
     @State private var showDetails = false
 
@@ -265,23 +265,23 @@ struct PaymentRow: View {
             HStack(spacing: 12) {
                 // Icon
                 Circle()
-                    .fill(payment.type == .receive ? Color.green.opacity(0.15) : Color.orange.opacity(0.15))
+                    .fill(payment.paymentType == .receive ? Color.green.opacity(0.15) : Color.orange.opacity(0.15))
                     .frame(width: 40, height: 40)
                     .overlay {
-                        Image(systemName: payment.type == .receive ? "arrow.down" : "arrow.up")
+                        Image(systemName: payment.paymentType == .receive ? "arrow.down" : "arrow.up")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(payment.type == .receive ? .green : .orange)
+                            .foregroundStyle(payment.paymentType == .receive ? .green : .orange)
                     }
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(payment.description ?? (payment.type == .receive ? "Received" : "Sent"))
+                    Text(paymentDescription)
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
 
                     HStack(spacing: 6) {
                         PaymentStatusBadge(status: payment.status)
-                        Text(payment.timestamp.formatted(.relative(presentation: .named)))
+                        Text(Date(timeIntervalSince1970: TimeInterval(payment.timestamp)).formatted(.relative(presentation: .named)))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -289,9 +289,9 @@ struct PaymentRow: View {
 
                 Spacer()
 
-                Text("\(payment.type == .receive ? "+" : "-")\(formatSats(payment.amountSats))")
+                Text("\(payment.paymentType == .receive ? "+" : "-")\(formatSats(payment.amount))")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(payment.type == .receive ? .green : .primary)
+                    .foregroundStyle(payment.paymentType == .receive ? .green : .primary)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -303,17 +303,33 @@ struct PaymentRow: View {
         }
     }
 
-    private func formatSats(_ amount: Int64) -> String {
+    private var paymentDescription: String {
+        if let details = payment.details {
+            switch details {
+            case .bolt11Invoice(let invoice):
+                return invoice.description ?? (payment.paymentType == .receive ? "Received" : "Sent")
+            case .sparkInvoice(let spark):
+                return spark.description ?? (payment.paymentType == .receive ? "Received" : "Sent")
+            default:
+                return payment.paymentType == .receive ? "Received" : "Sent"
+            }
+        }
+        return payment.paymentType == .receive ? "Received" : "Sent"
+    }
+
+    private func formatSats(_ amount: U128) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
-        return "\(formatter.string(from: NSNumber(value: amount)) ?? "\(amount)") sats"
+        // U128 is BigNumber - extract as UInt64 for display
+        let sats = amount.description
+        return "\(sats) sats"
     }
 }
 
 // MARK: - Payment Status Badge
 
 struct PaymentStatusBadge: View {
-    let status: SparkPaymentStatus
+    let status: PaymentStatus
 
     var body: some View {
         HStack(spacing: 4) {
@@ -350,7 +366,7 @@ struct PaymentStatusBadge: View {
 // MARK: - Payment Detail View
 
 struct PaymentDetailView: View {
-    let payment: SparkPayment
+    let payment: Payment
     @Environment(\.dismiss) private var dismiss
 
     @State private var showFullDetails = false
@@ -361,15 +377,16 @@ struct PaymentDetailView: View {
                 VStack(spacing: 24) {
                     // Amount header
                     VStack(spacing: 8) {
-                        Image(systemName: payment.type == .receive ? "arrow.down.circle.fill" : "arrow.up.circle.fill")
+                        Image(systemName: payment.paymentType == .receive ? "arrow.down.circle.fill" : "arrow.up.circle.fill")
                             .font(.system(size: 48))
-                            .foregroundStyle(payment.type == .receive ? .green : OlasTheme.Colors.zapGold)
+                            .foregroundStyle(payment.paymentType == .receive ? .green : OlasTheme.Colors.zapGold)
 
-                        Text("\(payment.type == .receive ? "+" : "-")\(formatSats(payment.amountSats))")
+                        Text("\(payment.paymentType == .receive ? "+" : "-")\(payment.amount.description) sats")
                             .font(.system(size: 32, weight: .bold, design: .rounded))
 
-                        if payment.feeSats > 0 {
-                            Text("Fee: \(formatSats(payment.feeSats))")
+                        let fees = payment.fees.description
+                        if fees != "0" {
+                            Text("Fee: \(fees) sats")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -380,15 +397,9 @@ struct PaymentDetailView: View {
 
                     // Details section
                     VStack(alignment: .leading, spacing: 16) {
-                        if let description = payment.description {
-                            DetailRow(label: "Description", value: description)
-                        }
+                        DetailRow(label: "Date", value: Date(timeIntervalSince1970: TimeInterval(payment.timestamp)).formatted(date: .abbreviated, time: .shortened))
 
-                        DetailRow(label: "Date", value: payment.timestamp.formatted(date: .abbreviated, time: .shortened))
-
-                        if let destination = payment.destination {
-                            DetailRow(label: payment.type == .send ? "To" : "From", value: destination, isMonospace: true)
-                        }
+                        DetailRow(label: "Method", value: payment.method.displayName)
                     }
                     .padding()
                     .background(Color(.systemGray6))
@@ -398,10 +409,6 @@ struct PaymentDetailView: View {
                     DisclosureGroup("Technical Details", isExpanded: $showFullDetails) {
                         VStack(alignment: .leading, spacing: 12) {
                             DetailRow(label: "Payment ID", value: payment.id, isMonospace: true, isCopyable: true)
-
-                            if let preimage = payment.preimage {
-                                DetailRow(label: "Preimage", value: preimage, isMonospace: true, isCopyable: true)
-                            }
                         }
                         .padding(.top, 12)
                     }
@@ -413,7 +420,7 @@ struct PaymentDetailView: View {
                 }
                 .padding()
             }
-            .navigationTitle(payment.type == .receive ? "Received Payment" : "Sent Payment")
+            .navigationTitle(payment.paymentType == .receive ? "Received Payment" : "Sent Payment")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -422,11 +429,19 @@ struct PaymentDetailView: View {
             }
         }
     }
+}
 
-    private func formatSats(_ amount: Int64) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        return "\(formatter.string(from: NSNumber(value: amount)) ?? "\(amount)") sats"
+extension PaymentMethod {
+    var displayName: String {
+        switch self {
+        case .bolt11Invoice: return "Lightning Invoice"
+        case .bolt12Offer: return "BOLT12 Offer"
+        case .bitcoinAddress: return "Bitcoin Address"
+        case .sparkAddress: return "Spark Address"
+        case .sparkInvoice: return "Spark Invoice"
+        case .lnurlPay: return "LNURL-pay"
+        case .lnurlWithdraw: return "LNURL-withdraw"
+        }
     }
 }
 
@@ -768,7 +783,7 @@ struct ReceiveView: View {
         isGenerating = true
         defer { isGenerating = false }
 
-        let amountSats: Int64? = Int64(amount)
+        let amountSats: UInt64? = UInt64(amount)
 
         do {
             let newInvoice = try await walletManager.createInvoice(amountSats: amountSats, description: nil)
@@ -787,8 +802,8 @@ struct SendView: View {
 
     enum SendState {
         case input
-        case parsed(SparkParsedInput)
-        case confirm(SparkPreparedPayment)
+        case parsed(InputType)
+        case confirm(PrepareSendPaymentResponse)
         case sending
         case success
     }
@@ -909,7 +924,7 @@ struct SendView: View {
 
     // MARK: - Parsed View (amount entry if needed)
 
-    private func parsedView(_ parsed: SparkParsedInput) -> some View {
+    private func parsedView(_ parsed: InputType) -> some View {
         VStack(spacing: 20) {
             // Type indicator
             HStack {
@@ -924,18 +939,7 @@ struct SendView: View {
             .cornerRadius(8)
 
             // Details based on type
-            switch parsed {
-            case .bolt11Invoice(let details):
-                invoiceDetails(details)
-            case .lnurlPay(let details):
-                lnurlPayDetails(details)
-            case .bitcoinAddress(let details):
-                bitcoinDetails(details)
-            case .sparkAddress(let details):
-                sparkAddressDetails(details)
-            default:
-                Text("Ready to send")
-            }
+            parsedDetailsView(parsed)
 
             // Amount input if needed
             if parsed.requiresAmount {
@@ -999,62 +1003,66 @@ struct SendView: View {
         }
     }
 
-    private func invoiceDetails(_ details: SparkBolt11Details) -> some View {
-        VStack(spacing: 12) {
-            if let amount = details.amountSats {
-                Text("\(formatSats(amount))")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-            }
-
-            if let description = details.description, !description.isEmpty {
-                Text(description)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-        }
-    }
-
-    private func lnurlPayDetails(_ details: SparkLnurlPayDetails) -> some View {
-        VStack(spacing: 12) {
-            if let address = details.lightningAddress {
-                HStack {
-                    Image(systemName: "bolt.fill")
-                        .foregroundStyle(OlasTheme.Colors.zapGold)
-                    Text(address)
-                        .font(.body.monospaced())
+    @ViewBuilder
+    private func parsedDetailsView(_ parsed: InputType) -> some View {
+        switch parsed {
+        case .bolt11Invoice(let details):
+            VStack(spacing: 12) {
+                if let amount = details.amountSats {
+                    Text("\(amount) sats")
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                }
+                if let description = details.description, !description.isEmpty {
+                    Text(description)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                 }
             }
-
-            Text("Min: \(formatSats(details.minSendableSats)) • Max: \(formatSats(details.maxSendableSats))")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private func bitcoinDetails(_ details: SparkBitcoinAddressDetails) -> some View {
-        VStack(spacing: 8) {
+        case .lnurlPay(let details):
+            VStack(spacing: 12) {
+                if let address = details.lnAddress {
+                    HStack {
+                        Image(systemName: "bolt.fill")
+                            .foregroundStyle(OlasTheme.Colors.zapGold)
+                        Text(address)
+                            .font(.body.monospaced())
+                    }
+                }
+                Text("Min: \(details.minSendableSats) • Max: \(details.maxSendableSats) sats")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        case .bitcoinAddress(let details):
+            VStack(spacing: 8) {
+                Text(details.address)
+                    .font(.caption.monospaced())
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                if let amount = details.amountSats {
+                    Text("\(amount) sats")
+                        .font(.title2.bold())
+                }
+            }
+        case .sparkAddress(let details):
             Text(details.address)
                 .font(.caption.monospaced())
                 .lineLimit(2)
-                .multilineTextAlignment(.center)
-
-            if let amount = details.amountSats {
-                Text("\(formatSats(amount))")
-                    .font(.title2.bold())
+        case .lightningAddress(let details):
+            HStack {
+                Image(systemName: "bolt.fill")
+                    .foregroundStyle(OlasTheme.Colors.zapGold)
+                Text(details.address)
+                    .font(.body.monospaced())
             }
+        default:
+            Text("Ready to send")
         }
-    }
-
-    private func sparkAddressDetails(_ details: SparkAddressDetails) -> some View {
-        Text(details.address)
-            .font(.caption.monospaced())
-            .lineLimit(2)
     }
 
     // MARK: - Confirm View (shows fees)
 
-    private func confirmView(_ prepared: SparkPreparedPayment) -> some View {
+    private func confirmView(_ prepared: PrepareSendPaymentResponse) -> some View {
         VStack(spacing: 24) {
             Image(systemName: "arrow.up.circle.fill")
                 .font(.system(size: 60))
@@ -1069,15 +1077,18 @@ struct SendView: View {
                     HStack {
                         Text("Amount")
                         Spacer()
-                        Text(formatSats(prepared.amountSats))
+                        Text("\(prepared.amount.description) sats")
                             .fontWeight(.medium)
                     }
 
-                    HStack {
-                        Text("Network Fee")
-                        Spacer()
-                        Text(formatSats(prepared.feeSats))
-                            .fontWeight(.medium)
+                    // Fee display based on payment method
+                    if let fees = extractFees(from: prepared.paymentMethod) {
+                        HStack {
+                            Text("Network Fee")
+                            Spacer()
+                            Text("\(fees) sats")
+                                .fontWeight(.medium)
+                        }
                     }
 
                     Divider()
@@ -1086,7 +1097,7 @@ struct SendView: View {
                         Text("Total")
                             .fontWeight(.semibold)
                         Spacer()
-                        Text(formatSats(prepared.totalSats))
+                        Text("\(prepared.amount.description) sats")
                             .font(.title3.bold())
                             .foregroundStyle(OlasTheme.Colors.zapGold)
                     }
@@ -1094,16 +1105,6 @@ struct SendView: View {
                 .padding()
                 .background(Color(.systemGray6))
                 .cornerRadius(12)
-
-                // Balance after
-                HStack {
-                    Text("Balance after")
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Text(formatSats(walletManager.balance - prepared.totalSats))
-                        .foregroundStyle(.secondary)
-                }
-                .font(.caption)
             }
 
             if let error = error {
@@ -1138,6 +1139,20 @@ struct SendView: View {
             }
 
             Spacer()
+        }
+    }
+
+    private func extractFees(from method: SendPaymentMethod) -> String? {
+        switch method {
+        case .bolt11Invoice(_, let sparkFee, let lightningFee):
+            let total = (sparkFee ?? 0) + lightningFee
+            return "\(total)"
+        case .sparkAddress(let fee), .sparkInvoice(let fee):
+            return "\(fee)"
+        case .bitcoinAddress(_, let fee):
+            return "\(fee)"
+        default:
+            return nil
         }
     }
 
@@ -1204,12 +1219,12 @@ struct SendView: View {
         }
     }
 
-    private func preparePayment(_ parsed: SparkParsedInput) async {
+    private func preparePayment(_ parsed: InputType) async {
         error = nil
 
-        let amount: Int64?
+        let amount: UInt64?
         if parsed.requiresAmount {
-            guard let parsedAmount = Int64(customAmount), parsedAmount > 0 else {
+            guard let parsedAmount = UInt64(customAmount), parsedAmount > 0 else {
                 error = "Please enter a valid amount"
                 return
             }
@@ -1226,7 +1241,7 @@ struct SendView: View {
         }
     }
 
-    private func sendPayment(_ prepared: SparkPreparedPayment) async {
+    private func sendPayment(_ prepared: PrepareSendPaymentResponse) async {
         state = .sending
         error = nil
 
@@ -1239,17 +1254,58 @@ struct SendView: View {
         }
     }
 
-    private func canProceed(_ parsed: SparkParsedInput) -> Bool {
+    private func canProceed(_ parsed: InputType) -> Bool {
         if parsed.requiresAmount {
-            return Int64(customAmount) ?? 0 > 0
+            return UInt64(customAmount) ?? 0 > 0
         }
         return true
     }
+}
 
-    private func formatSats(_ amount: Int64) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        return "\(formatter.string(from: NSNumber(value: amount)) ?? "\(amount)") sats"
+// MARK: - InputType Extensions
+
+extension InputType {
+    var typeDescription: String {
+        switch self {
+        case .bolt11Invoice: return "Lightning Invoice"
+        case .bolt12Invoice: return "BOLT12 Invoice"
+        case .bolt12Offer: return "BOLT12 Offer"
+        case .lnurlPay: return "LNURL Pay"
+        case .lnurlWithdraw: return "LNURL Withdraw"
+        case .lnurlAuth: return "LNURL Auth"
+        case .bitcoinAddress: return "Bitcoin Address"
+        case .lightningAddress: return "Lightning Address"
+        case .sparkAddress: return "Spark Address"
+        case .sparkInvoice: return "Spark Invoice"
+        case .bip21: return "BIP21 URI"
+        case .bolt12InvoiceRequest: return "BOLT12 Request"
+        case .silentPaymentAddress: return "Silent Payment"
+        case .url: return "URL"
+        }
+    }
+
+    var requiresAmount: Bool {
+        switch self {
+        case .bolt11Invoice(let details):
+            return details.amountSats == nil
+        case .lnurlPay, .lightningAddress, .sparkAddress:
+            return true
+        case .bitcoinAddress(let details):
+            return details.amountSats == nil
+        default:
+            return false
+        }
+    }
+
+    var embeddedAmountSats: UInt64? {
+        switch self {
+        case .bolt11Invoice(let details):
+            return details.amountSats
+        case .bitcoinAddress(let details):
+            return details.amountSats
+        default:
+            return nil
+        }
     }
 }
 
