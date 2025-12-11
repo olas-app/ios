@@ -23,7 +23,7 @@ extension SdkError {
         case .NetworkError(let message):
             return parseNetworkError(message)
 
-        case .StorageError(let message):
+        case .StorageError:
             return "Storage error: Unable to save wallet data. Please check available storage space."
 
         case .ChainServiceError(let message):
@@ -32,7 +32,7 @@ extension SdkError {
         case .MaxDepositClaimFeeExceeded(_, _, _, let requiredFeeSats, _):
             return "The deposit claim fee (\(requiredFeeSats) sats) is too high. Please try again later when network fees are lower."
 
-        case .MissingUtxo(let tx, let vout):
+        case .MissingUtxo:
             return "Unable to find transaction output. Transaction may not be confirmed yet."
 
         case .LnurlError(let message):
