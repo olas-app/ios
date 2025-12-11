@@ -95,6 +95,10 @@ public struct FeedView: View {
             // Stop subscription when view disappears
             viewModel.stopSubscription()
         }
+        .onChange(of: muteListManager.mutedPubkeys) { _, newMutedPubkeys in
+            // Remove muted users' posts from feed
+            viewModel.updateForMuteList(newMutedPubkeys)
+        }
         .overlay {
             if viewModel.isLoading && viewModel.posts.isEmpty {
                 ProgressView()
