@@ -11,6 +11,7 @@ public struct SparkWalletView: View {
     @State private var showSend = false
     @State private var showSettings = false
     @State private var showLightningAddressQR = false
+    @State private var isBackupReminderDismissed = false
 
     public init(walletManager: SparkWalletManager) {
         self.walletManager = walletManager
@@ -70,6 +71,10 @@ public struct SparkWalletView: View {
                 offlineBanner
             }
 
+            if !hasBackedUpWallet && !isBackupReminderDismissed {
+                backupReminderBanner
+            }
+
             ScrollView {
                 VStack(spacing: 32) {
                     modernBalanceSection
@@ -82,6 +87,47 @@ public struct SparkWalletView: View {
                 await walletManager.sync()
             }
         }
+    }
+
+    private var hasBackedUpWallet: Bool {
+        UserDefaults.standard.bool(forKey: "hasBackedUpSparkWallet")
+    }
+
+    private var backupReminderBanner: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.body)
+                .foregroundStyle(.orange)
+
+            Text("Remember to backup your wallet")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.primary)
+
+            Spacer()
+
+            Button {
+                showSettings = true
+            } label: {
+                Text("Backup")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(OlasTheme.Colors.accent)
+                    .cornerRadius(8)
+            }
+
+            Button {
+                isBackupReminderDismissed = true
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color.orange.opacity(0.15))
     }
 
     private var offlineBanner: some View {

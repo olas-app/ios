@@ -1,8 +1,8 @@
 appId: com.olas.app
-name: Olas Wallet Creation Full Flow Test
+name: Olas Wallet Creation Silent Flow Test
 
 ---
-# Test: Full wallet creation flow including mnemonic display
+# Test: Silent wallet creation flow (no mnemonic display during creation)
 # WARNING: This test will create a real wallet on mainnet
 # Only run in test environments or when you intend to create a wallet
 
@@ -36,42 +36,22 @@ name: Olas Wallet Creation Full Flow Test
 
 - takeScreenshot: "03_create_wallet_prompt"
 
-# Tap Generate Wallet button
-- tapOn:
-    text: "Generate Wallet"
-
-# Wait for mnemonic generation (may take a moment to connect to Spark network)
-- extendedWaitUntil:
-    visible:
-      text: "Your Recovery Phrase"
-    timeout: 60000
-
-- takeScreenshot: "04_mnemonic_displayed"
-
-# Verify mnemonic screen elements
+# Verify the new messaging
 - assertVisible:
-    text: "Write these words down in order"
+    text: "Your wallet will be created and ready to use immediately"
 
-- assertVisible:
-    text: "I have written down my recovery phrase"
-
-# Check the confirmation toggle
+# Tap Create Wallet button
 - tapOn:
-    text: "I have written down my recovery phrase"
+    text: "Create Wallet"
 
-- takeScreenshot: "05_mnemonic_confirmed"
-
-# Continue button should now be enabled
-- tapOn:
-    text: "Continue"
-
+# Wait for wallet creation (may take a moment to connect to Spark network)
 # Should return to wallet view with connected state
 - extendedWaitUntil:
     visible:
       text: "Balance"
-    timeout: 10000
+    timeout: 60000
 
-- takeScreenshot: "06_wallet_connected"
+- takeScreenshot: "04_wallet_connected"
 
 # Verify wallet is now connected
 - assertVisible:
@@ -83,4 +63,57 @@ name: Olas Wallet Creation Full Flow Test
 - assertVisible:
     text: "Send"
 
-- takeScreenshot: "07_creation_complete"
+# Verify backup reminder banner is shown
+- assertVisible:
+    text: "Remember to backup your wallet"
+
+- assertVisible:
+    text: "Backup"
+
+- takeScreenshot: "05_backup_reminder_visible"
+
+# Test backup access from settings
+- tapOn:
+    id: "gearshape"  # Settings icon
+
+- extendedWaitUntil:
+    visible:
+      text: "Spark Wallet"
+    timeout: 5000
+
+- takeScreenshot: "06_settings_opened"
+
+- tapOn:
+    text: "Show Recovery Phrase"
+
+- extendedWaitUntil:
+    visible:
+      text: "Show Recovery Phrase"
+    timeout: 5000
+
+- takeScreenshot: "07_backup_prompt"
+
+# Tap Reveal Phrase
+- tapOn:
+    text: "Reveal Phrase"
+
+- extendedWaitUntil:
+    visible:
+      text: "Your Recovery Phrase"
+    timeout: 5000
+
+- takeScreenshot: "08_mnemonic_revealed"
+
+# Close backup view
+- tapOn:
+    text: "Done"
+
+# Close settings
+- tapOn:
+    text: "Cancel"
+
+# Verify backup reminder is now gone (hasBackedUpSparkWallet flag set)
+- assertNotVisible:
+    text: "Remember to backup your wallet"
+
+- takeScreenshot: "09_backup_complete"
