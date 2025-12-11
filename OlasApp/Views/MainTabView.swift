@@ -11,7 +11,7 @@ public struct MainTabView: View {
     @State private var showCreatePost = false
 
     private let ndk: NDK
-    @ObservedObject private var sparkWalletManager: SparkWalletManager
+    private var sparkWalletManager: SparkWalletManager
 
     public init(ndk: NDK, sparkWalletManager: SparkWalletManager) {
         self.ndk = ndk
@@ -84,6 +84,6 @@ public struct MainTabView: View {
         }
         .environmentObject(walletViewModel)
         .environmentObject(muteListManager)
-        .environmentObject(sparkWalletManager)
+        .environment(sparkWalletManager)
     }
 }

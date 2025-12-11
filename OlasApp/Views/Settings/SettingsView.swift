@@ -5,7 +5,7 @@ public struct SettingsView: View {
     let ndk: NDK
     @EnvironmentObject private var authViewModel: AuthViewModel
     @State private var blossomManager: NDKBlossomServerManager
-    @ObservedObject var sparkWalletManager: SparkWalletManager
+    var sparkWalletManager: SparkWalletManager
     @ObservedObject private var settings = SettingsManager.shared
 
     public init(ndk: NDK, sparkWalletManager: SparkWalletManager) {

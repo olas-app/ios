@@ -4,6 +4,7 @@ import BreezSdkSpark
 import Security
 import Network
 import MnemonicSwift
+import Observation
 
 // MARK: - SDK Error Extension
 
@@ -151,18 +152,19 @@ extension SdkError {
 
 // MARK: - Wallet Manager
 
+@Observable
 @MainActor
-public final class SparkWalletManager: ObservableObject {
-    @Published public private(set) var connectionStatus: SparkConnectionStatus = .disconnected
-    @Published public private(set) var balance: UInt64 = 0
-    @Published public private(set) var lightningAddress: String?
-    @Published public private(set) var isLoading = false
-    @Published public private(set) var payments: [Payment] = []
-    @Published public var error: String?
-    @Published public private(set) var networkStatus: NetworkStatus = .unknown
+public final class SparkWalletManager {
+    public private(set) var connectionStatus: SparkConnectionStatus = .disconnected
+    public private(set) var balance: UInt64 = 0
+    public private(set) var lightningAddress: String?
+    public private(set) var isLoading = false
+    public private(set) var payments: [Payment] = []
+    public var error: String?
+    public private(set) var networkStatus: NetworkStatus = .unknown
 
     private var sdk: BreezSdk?
-    private var eventListenerId: String?
+    @ObservationIgnored private var eventListenerId: String?
     private let pathMonitor = NWPathMonitor()
     private let monitorQueue = DispatchQueue(label: "com.olas.spark.network")
 
