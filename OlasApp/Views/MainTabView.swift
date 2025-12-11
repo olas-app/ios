@@ -6,7 +6,7 @@ public struct MainTabView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @StateObject private var walletViewModel: WalletViewModel
     @StateObject private var muteListManager: MuteListManager
-    @ObservedObject private var settings = SettingsManager.shared
+    @Environment(SettingsManager.self) private var settings
     @State private var selectedTab = 0
     @State private var showCreatePost = false
 
@@ -22,7 +22,7 @@ public struct MainTabView: View {
 
     public var body: some View {
         TabView(selection: $selectedTab) {
-            FeedView(ndk: ndk)
+            FeedView(ndk: ndk, settings: settings)
                 .tabItem {
                     Label("Home", systemImage: selectedTab == 0 ? "wave.3.up.circle.fill" : "wave.3.up.circle")
                 }

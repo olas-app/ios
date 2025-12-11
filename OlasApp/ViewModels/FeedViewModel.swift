@@ -10,7 +10,7 @@ public final class FeedViewModel: ObservableObject {
     @Published public var feedMode: FeedMode = .following
 
     private let ndk: NDK
-    private let settings = SettingsManager.shared
+    private let settings: SettingsManager
     private var subscription: NDKSubscription<NDKEvent>?
     private var subscriptionTask: Task<Void, Never>?
     private var allPosts: [NDKEvent] = []
@@ -25,8 +25,9 @@ public final class FeedViewModel: ObservableObject {
         return kinds
     }
 
-    public init(ndk: NDK) {
+    public init(ndk: NDK, settings: SettingsManager) {
         self.ndk = ndk
+        self.settings = settings
     }
 
     public func startSubscription(muteListManager: MuteListManager) {

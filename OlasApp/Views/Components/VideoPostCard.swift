@@ -8,7 +8,7 @@ public struct VideoPostCard: View {
     let ndk: NDK
     let onProfileTap: ((String) -> Void)?
 
-    @StateObject private var settings = SettingsManager.shared
+    @Environment(SettingsManager.self) private var settings
     @State private var player: AVPlayer?
     @State private var isMuted = true
     @State private var isLiked = false

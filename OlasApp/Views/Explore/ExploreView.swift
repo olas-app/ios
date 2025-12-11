@@ -7,6 +7,7 @@ public struct ExploreView: View {
 
     @EnvironmentObject private var authViewModel: AuthViewModel
     @EnvironmentObject private var muteListManager: MuteListManager
+    @Environment(SettingsManager.self) private var settings
     @State private var searchText = ""
     @State private var searchResults: [NDKEvent] = []
     @State private var userResults: [SearchUserResult] = []
@@ -293,7 +294,7 @@ public struct ExploreView: View {
 
     private var feedKinds: [Kind] {
         var kinds: [Kind] = [OlasConstants.EventKinds.image]
-        if SettingsManager.shared.showVideos {
+        if settings.showVideos {
             kinds.append(OlasConstants.EventKinds.shortVideo)
         }
         return kinds
