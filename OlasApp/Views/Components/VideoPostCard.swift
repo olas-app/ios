@@ -11,12 +11,8 @@ public struct VideoPostCard: View {
     @Environment(SettingsManager.self) private var settings
     @State private var player: AVPlayer?
     @State private var isMuted = true
-    @State private var isLiked = false
     @State private var showLikeAnimation = false
-    @State private var showComments = false
     @State private var showReportSheet = false
-    @State private var likeCount = 0
-    @State private var commentCount = 0
 
     @EnvironmentObject private var muteListManager: MuteListManager
 
@@ -40,13 +36,9 @@ public struct VideoPostCard: View {
         .accessibilityIdentifier("video_post_card")
         .task {
             setupPlayer()
-            await loadReactions()
         }
         .onDisappear {
             player?.pause()
-        }
-        .sheet(isPresented: $showComments) {
-            CommentsSheet(event: event, ndk: ndk)
         }
         .sheet(isPresented: $showReportSheet) {
             ReportSheet(event: event, ndk: ndk)
@@ -209,13 +201,9 @@ public struct VideoPostCard: View {
 
     private var postActions: some View {
         HStack(spacing: 20) {
-            LikeButton(isLiked: $isLiked, likeCount: likeCount) {
-                Task { await toggleLike() }
-            }
+            LikeButton(event: event, ndk: ndk)
 
-            CommentButton(commentCount: commentCount) {
-                showComments = true
-            }
+            CommentButton(event: event, ndk: ndk)
 
             ZapButton(event: event, ndk: ndk)
 
@@ -232,21 +220,8 @@ public struct VideoPostCard: View {
     private var postCaption: some View {
         Group {
             if !event.content.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    VideoCaptionText(ndk: ndk, pubkey: event.pubkey, content: event.content)
-                        .lineLimit(3)
-
-                    if likeCount > 0 {
-                        Text("\(likeCount) like\(likeCount == 1 ? "" : "s")")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.primary)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
-            } else if likeCount > 0 {
-                Text("\(likeCount) like\(likeCount == 1 ? "" : "s")")
-                    .font(.subheadline.weight(.semibold))
+                VideoCaptionText(ndk: ndk, pubkey: event.pubkey, content: event.content)
+                    .lineLimit(3)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
             }
@@ -289,37 +264,14 @@ public struct VideoPostCard: View {
     }
 
     private func handleDoubleTap() {
-        guard !isLiked else { return }
-
         let impact = UIImpactFeedbackGenerator(style: .medium)
         impact.impactOccurred()
 
         showLikeAnimation = true
 
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-            isLiked = true
-            likeCount += 1
-        }
-
-        Task { await publishReaction() }
-    }
-
-    private func toggleLike() async {
-        if isLiked {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                likeCount = max(0, likeCount - 1)
-            }
-        } else {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                likeCount += 1
-            }
-            await publishReaction()
-        }
-    }
-
-    private func publishReaction() async {
-        do {
-            _ = try await ndk.publish { builder in
+        // Publish reaction - LikeButton will pick it up via subscription
+        Task {
+            try? await ndk.publish { builder in
                 builder
                     .kind(OlasConstants.EventKinds.reaction)
                     .content("+")
@@ -327,57 +279,9 @@ public struct VideoPostCard: View {
                     .tag(["p", event.pubkey])
                     .tag(["k", "\(event.kind)"])
             }
-        } catch {
-            withAnimation {
-                isLiked = false
-                likeCount = max(0, likeCount - 1)
-            }
         }
     }
 
-    private func loadReactions() async {
-        async let reactionTask: () = loadReactionCount()
-        async let commentTask: () = loadCommentCount()
-        _ = await (reactionTask, commentTask)
-    }
-
-    private func loadReactionCount() async {
-        let reactionFilter = NDKFilter(
-            kinds: [OlasConstants.EventKinds.reaction],
-            limit: 500
-        )
-
-        let subscription = ndk.subscribe(filter: reactionFilter)
-
-        for await reactionEvent in subscription.events {
-            let referencesOurEvent = reactionEvent.tags.contains { tag in
-                tag.first == "e" && tag.count > 1 && tag[1] == event.id
-            }
-
-            if referencesOurEvent && reactionEvent.content == "+" {
-                likeCount += 1
-            }
-        }
-    }
-
-    private func loadCommentCount() async {
-        let commentFilter = NDKFilter(
-            kinds: [OlasConstants.EventKinds.comment],
-            limit: 100
-        )
-
-        let commentSub = ndk.subscribe(filter: commentFilter)
-
-        for await commentEvent in commentSub.events {
-            let referencesOurEvent = commentEvent.tags.contains { tag in
-                tag.first == "e" && tag.count > 1 && tag[1] == event.id
-            }
-
-            if referencesOurEvent {
-                commentCount += 1
-            }
-        }
-    }
 
     private func muteAuthor() async {
         do {

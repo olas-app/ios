@@ -62,22 +62,16 @@ struct HeartButtonStyle: ButtonStyle {
 }
 
 struct LikeButton: View {
-    @Binding var isLiked: Bool
-    let likeCount: Int
-    let onLike: () -> Void
+    let event: NDKEvent
+    let ndk: NDK
 
+    @State private var isLiked = false
+    @State private var likeCount = 0
     @State private var animateHeart = false
 
     var body: some View {
         Button {
-            triggerHaptic()
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
-                isLiked.toggle()
-                if isLiked {
-                    animateHeart = true
-                }
-            }
-            onLike()
+            Task { await toggleLike() }
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: isLiked ? "heart.fill" : "heart")
@@ -102,6 +96,72 @@ struct LikeButton: View {
                 }
             }
         }
+        .task {
+            await loadReactionCount()
+        }
+    }
+
+    private func toggleLike() async {
+        triggerHaptic()
+
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+            isLiked.toggle()
+            if isLiked {
+                animateHeart = true
+                likeCount += 1
+            } else {
+                likeCount = max(0, likeCount - 1)
+            }
+        }
+
+        if isLiked {
+            await publishReaction()
+        }
+    }
+
+    private func publishReaction() async {
+        do {
+            _ = try await ndk.publish { builder in
+                builder
+                    .kind(OlasConstants.EventKinds.reaction)
+                    .content("+")
+                    .tag(["e", event.id])
+                    .tag(["p", event.pubkey])
+                    .tag(["k", "\(event.kind)"])
+            }
+        } catch {
+            withAnimation {
+                isLiked = false
+                likeCount = max(0, likeCount - 1)
+            }
+        }
+    }
+
+    private func loadReactionCount() async {
+        guard let currentUserPubkey = await ndk.activeUser?.pubkey else {
+            return
+        }
+
+        let reactionFilter = NDKFilter(
+            kinds: [OlasConstants.EventKinds.reaction],
+            events: [event.id],
+            limit: 500
+        )
+
+        let subscription = ndk.subscribe(filter: reactionFilter)
+
+        for await reactionEvent in subscription.events {
+            guard !Task.isCancelled else { break }
+
+            if reactionEvent.content == "+" {
+                likeCount += 1
+
+                // Check if this is the current user's reaction
+                if reactionEvent.pubkey == currentUserPubkey {
+                    isLiked = true
+                }
+            }
+        }
     }
 
     private func triggerHaptic() {
@@ -111,11 +171,16 @@ struct LikeButton: View {
 }
 
 struct CommentButton: View {
-    let commentCount: Int
-    let action: () -> Void
+    let event: NDKEvent
+    let ndk: NDK
+
+    @State private var commentCount = 0
+    @State private var showComments = false
 
     var body: some View {
-        Button(action: action) {
+        Button {
+            showComments = true
+        } label: {
             HStack(spacing: 6) {
                 Image(systemName: "bubble.right")
                     .font(.system(size: 20, weight: .medium))
@@ -128,6 +193,27 @@ struct CommentButton: View {
             }
         }
         .foregroundStyle(.primary)
+        .sheet(isPresented: $showComments) {
+            CommentsSheet(event: event, ndk: ndk)
+        }
+        .task {
+            await loadCommentCount()
+        }
+    }
+
+    private func loadCommentCount() async {
+        let commentFilter = NDKFilter(
+            kinds: [OlasConstants.EventKinds.comment],
+            events: [event.id],
+            limit: 100
+        )
+
+        let commentSub = ndk.subscribe(filter: commentFilter)
+
+        for await commentEvent in commentSub.events {
+            guard !Task.isCancelled else { break }
+            commentCount += 1
+        }
     }
 }
 

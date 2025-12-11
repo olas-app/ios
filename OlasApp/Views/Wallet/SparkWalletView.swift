@@ -10,6 +10,7 @@ public struct SparkWalletView: View {
     @State private var showReceive = false
     @State private var showSend = false
     @State private var showSettings = false
+    @State private var showLightningAddressQR = false
 
     public init(walletManager: SparkWalletManager) {
         self.walletManager = walletManager
@@ -43,7 +44,7 @@ public struct SparkWalletView: View {
                 ImportSparkWalletView(walletManager: walletManager)
             }
             .sheet(isPresented: $showReceive) {
-                ModernReceiveView(walletManager: walletManager)
+                DepositView(walletType: .spark(walletManager))
             }
             .sheet(isPresented: $showSend) {
                 SparkSendView(walletManager: walletManager)
@@ -51,6 +52,11 @@ public struct SparkWalletView: View {
             .sheet(isPresented: $showSettings) {
                 NavigationStack {
                     SparkWalletSettingsView(walletManager: walletManager)
+                }
+            }
+            .sheet(isPresented: $showLightningAddressQR) {
+                if let address = walletManager.lightningAddress {
+                    LightningAddressQRView(address: address)
                 }
             }
         }
@@ -289,14 +295,26 @@ public struct SparkWalletView: View {
                 .foregroundStyle(.secondary)
 
             if let address = walletManager.lightningAddress {
-                HStack(spacing: 6) {
-                    Image(systemName: "bolt.fill")
-                        .font(.caption)
-                        .foregroundStyle(OlasTheme.Colors.zapGold)
-                    Text(address)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                Button {
+                    showLightningAddressQR = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "bolt.fill")
+                            .font(.caption)
+                            .foregroundStyle(OlasTheme.Colors.zapGold)
+                        Text(address)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Image(systemName: "qrcode")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color(.systemGray6))
+                    .clipShape(Capsule())
                 }
+                .buttonStyle(.plain)
             }
 
             if walletManager.isLoading {
@@ -686,51 +704,6 @@ struct DetailRow: View {
     }
 }
 
-// MARK: - QR Code Generator
-
-struct QRCodeView: View {
-    let content: String
-    let size: CGFloat
-
-    var body: some View {
-        if let image = generateQRCode(from: content) {
-            Image(uiImage: image)
-                .interpolation(.none)
-                .resizable()
-                .scaledToFit()
-                .frame(width: size, height: size)
-                .cornerRadius(12)
-        } else {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemGray6))
-                .frame(width: size, height: size)
-                .overlay {
-                    Image(systemName: "qrcode")
-                        .font(.system(size: size * 0.4))
-                        .foregroundStyle(.secondary)
-                }
-        }
-    }
-
-    private func generateQRCode(from string: String) -> UIImage? {
-        let context = CIContext()
-        let filter = CIFilter.qrCodeGenerator()
-
-        filter.message = Data(string.utf8)
-        filter.correctionLevel = "M"
-
-        guard let outputImage = filter.outputImage else { return nil }
-
-        // Scale up for crisp rendering
-        let scale = size / outputImage.extent.size.width * UIScreen.main.scale
-        let scaledImage = outputImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
-
-        guard let cgImage = context.createCGImage(scaledImage, from: scaledImage.extent) else { return nil }
-
-        return UIImage(cgImage: cgImage)
-    }
-}
-
 // MARK: - Receive View (Lightning Address First per UX Guidelines)
 
 struct ReceiveView: View {
@@ -984,10 +957,13 @@ struct ReceiveView: View {
         isGenerating = true
         defer { isGenerating = false }
 
-        let amountSats: UInt64? = UInt64(amount)
-
         do {
-            let newInvoice = try await walletManager.createInvoice(amountSats: amountSats, description: nil)
+            let newInvoice: String
+            if let amountSats = UInt64(amount), amountSats > 0 {
+                newInvoice = try await walletManager.createInvoice(amountSats: amountSats, description: nil)
+            } else {
+                newInvoice = try await walletManager.createOpenInvoice(description: nil)
+            }
             invoice = newInvoice
         } catch {
             self.error = error.localizedDescription
@@ -2031,6 +2007,92 @@ extension InputType {
             return nil
         default:
             return nil
+        }
+    }
+}
+
+// MARK: - Lightning Address QR View
+
+struct LightningAddressQRView: View {
+    let address: String
+    @Environment(\.dismiss) private var dismiss
+    @State private var copied = false
+
+    private var lightningURI: String {
+        "lightning:\(address)"
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 32) {
+                Spacer()
+
+                // QR Code
+                QRCodeView(content: lightningURI, size: 280)
+                    .padding()
+
+                // Address display
+                VStack(spacing: 12) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "bolt.fill")
+                            .foregroundStyle(OlasTheme.Colors.zapGold)
+                        Text(address)
+                            .font(.system(size: 17, weight: .medium))
+                    }
+
+                    Text("Lightning Address")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                // Action buttons
+                VStack(spacing: 12) {
+                    Button {
+                        UIPasteboard.general.string = address
+                        copied = true
+                        Task {
+                            try? await Task.sleep(for: .seconds(2))
+                            copied = false
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                            Text(copied ? "Copied!" : "Copy Address")
+                        }
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color.accentColor)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                    }
+
+                    ShareLink(item: address) {
+                        HStack {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("Share")
+                        }
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color(.systemGray5))
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 40)
+            }
+            .navigationTitle("Lightning Address")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") {
+                        dismiss()
+                    }
+                }
+            }
         }
     }
 }

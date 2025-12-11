@@ -39,7 +39,12 @@ public struct WalletView: View {
                 }
             }
             .sheet(isPresented: $showDeposit) {
-                DepositView(ndk: ndk, walletViewModel: walletViewModel)
+                DepositView(
+                    walletType: .cashu(
+                        walletViewModel,
+                        selectedMint: walletViewModel.configuredMints.first ?? ""
+                    )
+                )
             }
             .sheet(isPresented: $showSend) {
                 SendView(ndk: ndk, walletViewModel: walletViewModel)

@@ -176,6 +176,9 @@ public final class SparkWalletManager {
     private let pathMonitor = NWPathMonitor()
     private let monitorQueue = DispatchQueue(label: "com.olas.spark.network")
 
+    // Deposit monitoring
+    private var activeMonitors: [String: (UInt64, AsyncThrowingStream<DepositState, Error>.Continuation)] = [:]
+
     private let keychainService = "com.olas.spark"
     private let mnemonicAccount = "spark_mnemonic"
 
@@ -293,6 +296,12 @@ public final class SparkWalletManager {
         defer { isLoading = false }
 
         await removeEventListener()
+
+        // Clean up any active monitors
+        for (_, (_, continuation)) in activeMonitors {
+            continuation.finish()
+        }
+        activeMonitors.removeAll()
 
         if let sdk = sdk {
             try? await sdk.disconnect()
@@ -430,11 +439,13 @@ public final class SparkWalletManager {
         lightningAddress = info.lightningAddress
     }
 
-    /// Create a Lightning invoice to receive payment
-    public func createInvoice(amountSats: UInt64?, description: String?) async throws -> String {
+    /// Create a Lightning invoice to receive payment with a specific amount
+    public func createInvoice(amountSats: UInt64, description: String?) async throws -> String {
         guard let sdk = sdk else {
             throw SparkWalletError.notConnected
         }
+
+        print("[Spark] Creating invoice with amount: \(amountSats) sats, description: \(description ?? "nil")")
 
         let response = try await sdk.receivePayment(
             request: ReceivePaymentRequest(
@@ -444,7 +455,66 @@ public final class SparkWalletManager {
                 )
             )
         )
+
+        print("[Spark] Generated invoice: \(response.paymentRequest)")
+        print("[Spark] Invoice length: \(response.paymentRequest.count) characters")
+
         return response.paymentRequest
+    }
+
+    /// Create a Lightning invoice to receive payment (amount optional for open invoices)
+    public func createOpenInvoice(description: String?) async throws -> String {
+        guard let sdk = sdk else {
+            throw SparkWalletError.notConnected
+        }
+
+        print("[Spark] Creating open invoice, description: \(description ?? "nil")")
+
+        let response = try await sdk.receivePayment(
+            request: ReceivePaymentRequest(
+                paymentMethod: .bolt11Invoice(
+                    description: description ?? "",
+                    amountSats: nil
+                )
+            )
+        )
+
+        print("[Spark] Generated open invoice: \(response.paymentRequest)")
+        print("[Spark] Invoice length: \(response.paymentRequest.count) characters")
+
+        return response.paymentRequest
+    }
+
+    /// Monitor an invoice for incoming payment
+    /// Returns an async stream that yields deposit state updates
+    public func monitorInvoice(
+        expectedAmount: UInt64,
+        timeout: TimeInterval = 600
+    ) -> AsyncThrowingStream<DepositState, Error> {
+        return AsyncThrowingStream { continuation in
+            let monitorId = UUID().uuidString
+            activeMonitors[monitorId] = (expectedAmount, continuation)
+
+            // Don't yield a monitoring state here - we're already in monitoring state
+            // Yielding with empty invoice would overwrite the correct invoice
+
+            // Set up timeout task
+            let timeoutTask = Task {
+                try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+                if activeMonitors[monitorId] != nil {
+                    continuation.yield(.expired)
+                    continuation.finish()
+                    activeMonitors.removeValue(forKey: monitorId)
+                }
+            }
+
+            continuation.onTermination = { @Sendable [weak self] _ in
+                Task { @MainActor in
+                    timeoutTask.cancel()
+                    self?.activeMonitors.removeValue(forKey: monitorId)
+                }
+            }
+        }
     }
 
     /// Pay a Lightning invoice directly
@@ -519,6 +589,19 @@ public final class SparkWalletManager {
             await refreshInfo()
         case .paymentSucceeded(let payment):
             await refreshInfo()
+
+            // Notify any active monitors if this is a receive payment
+            if payment.paymentType == .receive {
+                guard let paymentAmount = UInt64(payment.amount.description) else { break }
+                for (monitorId, (expectedAmount, continuation)) in activeMonitors {
+                    if paymentAmount == expectedAmount {
+                        continuation.yield(.completed(amount: Int64(paymentAmount)))
+                        continuation.finish()
+                        activeMonitors.removeValue(forKey: monitorId)
+                    }
+                }
+            }
+
             print("[Spark] Payment succeeded: \(payment.amount) sats")
         case .paymentFailed(let payment):
             error = "Payment failed. Please check your balance and try again."

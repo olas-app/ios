@@ -117,8 +117,11 @@ public struct ProfileView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .task {
-            await loadProfile()
-            await loadPosts()
+            // Run infinite streams concurrently in separate Tasks
+            Task { await loadProfile() }
+            Task { await loadPosts() }
+
+            // Run finite operations directly
             await loadLikedPosts()
             await loadFollowing()
         }
@@ -389,7 +392,7 @@ private struct GridItemView: View {
                     .fill(Color(.systemGray5))
             }
         }
-        .aspectRatio(1, contentMode: .fit)
+        .aspectRatio(1, contentMode: .fill)
         .clipped()
         .onTapGesture {
             onTap(post)

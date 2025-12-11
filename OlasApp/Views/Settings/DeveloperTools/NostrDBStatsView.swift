@@ -119,11 +119,7 @@ struct NostrDBStatsView: View {
     private func loadStats() async {
         isLoading = true
 
-        guard let cache = ndk.cache else {
-            stats = nil
-            isLoading = false
-            return
-        }
+        let cache = ndk.cache
 
         guard let nostrDBCache = cache as? NDKNostrDBCache else {
             stats = nil

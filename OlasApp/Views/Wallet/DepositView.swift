@@ -1,31 +1,26 @@
-// DepositView.swift
 import SwiftUI
-import NDKSwiftCore
-import NDKSwiftUI
-import NDKSwiftCashu
 import BreezSdkSpark
+import NDKSwiftCashu
 
 struct DepositView: View {
-    let ndk: NDK
-    @ObservedObject var walletViewModel: WalletViewModel
-
+    let walletType: DepositWallet
     @Environment(\.dismiss) private var dismiss
 
-    @State private var amount: String = ""
+    @State private var amount: String = "0"
+    @State private var selectedCurrency: Currency = .usd
+    @State private var depositState: DepositState = .idle
     @State private var selectedMint: String?
-    @State private var quote: CashuMintQuote?
-    @State private var depositStatus: DepositStatus?
-    @State private var isGeneratingInvoice = false
-    @State private var isMonitoring = false
-    @State private var error: Error?
-
-    private let suggestedAmounts = [1000, 5000, 10000, 21000]
+    @State private var cashuQuote: CashuMintQuote?
 
     var body: some View {
         NavigationStack {
             Group {
-                if let quote = quote {
-                    invoiceView(quote: quote)
+                if case .monitoring = depositState {
+                    invoiceDisplayView
+                } else if case .completed = depositState {
+                    successView
+                } else if case .expired = depositState {
+                    expiredView
                 } else {
                     amountInputView
                 }
@@ -34,77 +29,73 @@ struct DepositView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button("Close") {
                         dismiss()
                     }
                 }
             }
-            .alert("Error", isPresented: .init(
-                get: { error != nil },
-                set: { if !$0 { error = nil } }
-            )) {
-                Button("OK") { error = nil }
-            } message: {
-                Text(userFriendlyError)
-            }
+        }
+        .onAppear {
+            setupDefaultMint()
         }
     }
 
     // MARK: - Amount Input View
 
     private var amountInputView: some View {
-        VStack(spacing: 24) {
-            Spacer()
-
-            // Amount display
-            VStack(spacing: 8) {
-                Text("Enter Amount")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    TextField("0", text: $amount)
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: 200)
-
-                    Text("sats")
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            // Suggested amounts
-            HStack(spacing: 12) {
-                ForEach(suggestedAmounts, id: \.self) { suggestedAmount in
-                    Button {
-                        amount = "\(suggestedAmount)"
-                    } label: {
-                        Text(formatAmount(suggestedAmount))
-                            .font(.subheadline.weight(.medium))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .fill(amount == "\(suggestedAmount)"
-                                          ? OlasTheme.Colors.accent
-                                          : Color.secondary.opacity(0.1))
-                            )
-                            .foregroundStyle(amount == "\(suggestedAmount)" ? .white : .primary)
+        VStack(spacing: 0) {
+            // Amount section
+            VStack(spacing: 32) {
+                // Currency selector
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Currency.allCases, id: \.self) { currency in
+                            Button {
+                                selectedCurrency = currency
+                            } label: {
+                                Text(currency.rawValue)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(selectedCurrency == currency ? .white : .primary)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(selectedCurrency == currency ? Color.accentColor : Color(.systemGray5))
+                                    .clipShape(Capsule())
+                            }
+                        }
                     }
+                    .padding(.horizontal, 20)
                 }
-            }
 
-            // Mint selector
-            if walletViewModel.configuredMints.count > 1 {
+                // Amount display
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(selectedCurrency.symbol)
+                        .font(.system(size: 48, weight: .light))
+                        .foregroundStyle(.secondary)
+
+                    Text(amount)
+                        .font(.system(size: 96, weight: .light))
+                        .foregroundStyle(amount == "0" ? .secondary : .primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+                .frame(height: 96)
+
+                // Sats equivalent
+                Text(satsEquivalent)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.top, 40)
+
+            // Mint selection for Cashu
+            if case .cashu(let viewModel, _) = walletType, viewModel.configuredMints.count > 1 {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Deposit to")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
                     Picker("Mint", selection: $selectedMint) {
-                        ForEach(walletViewModel.configuredMints, id: \.self) { mint in
+                        ForEach(viewModel.configuredMints, id: \.self) { mint in
                             Text(mintDisplayName(mint))
                                 .tag(mint as String?)
                         }
@@ -112,208 +103,425 @@ struct DepositView: View {
                     .pickerStyle(.segmented)
                 }
                 .padding(.horizontal, 32)
+                .padding(.top, 16)
             }
 
-            Spacer()
-
-            // Generate invoice button
-            Button {
-                Task { await generateInvoice() }
-            } label: {
-                if isGeneratingInvoice {
-                    ProgressView()
-                        .tint(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                } else {
-                    Text("Generate Invoice")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
+            // Keypad section
+            VStack(spacing: 24) {
+                // Quick amounts
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(selectedCurrency.quickAmounts, id: \.self) { quickAmount in
+                            Button {
+                                amount = "\(quickAmount)"
+                            } label: {
+                                Text(selectedCurrency.symbol + "\(quickAmount)")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(.primary)
+                                    .padding(.horizontal, 18)
+                                    .padding(.vertical, 10)
+                                    .background(Color(.systemGray6))
+                                    .clipShape(Capsule())
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 4)
                 }
+                .padding(.horizontal, 20)
+
+                // Keypad
+                VStack(spacing: 20) {
+                    HStack(spacing: 20) {
+                        KeypadButton(digit: "1") { addDigit("1") }
+                        KeypadButton(digit: "2") { addDigit("2") }
+                        KeypadButton(digit: "3") { addDigit("3") }
+                    }
+                    HStack(spacing: 20) {
+                        KeypadButton(digit: "4") { addDigit("4") }
+                        KeypadButton(digit: "5") { addDigit("5") }
+                        KeypadButton(digit: "6") { addDigit("6") }
+                    }
+                    HStack(spacing: 20) {
+                        KeypadButton(digit: "7") { addDigit("7") }
+                        KeypadButton(digit: "8") { addDigit("8") }
+                        KeypadButton(digit: "9") { addDigit("9") }
+                    }
+                    HStack(spacing: 20) {
+                        KeypadButton(digit: ".") { addDecimal() }
+                        KeypadButton(digit: "0") { addDigit("0") }
+                        KeypadButton(digit: "⌫", isBackspace: true) { backspace() }
+                    }
+                }
+                .padding(.horizontal, 40)
+
+                // Generate button
+                Button {
+                    Task {
+                        await generateInvoice()
+                    }
+                } label: {
+                    if case .generating = depositState {
+                        ProgressView()
+                            .tint(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 18)
+                    } else {
+                        Text("GENERATE DEPOSIT")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 18)
+                    }
+                }
+                .background(Color.accentColor)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .disabled(amount == "0" || depositState == .generating)
+                .opacity(amount == "0" || depositState == .generating ? 0.3 : 1.0)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 40)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(OlasTheme.Colors.accent)
-            .disabled(!isValidAmount || isGeneratingInvoice)
-            .padding(.horizontal, 24)
-            .padding(.bottom, 32)
         }
-        .onAppear {
-            // Select first mint by default
-            if selectedMint == nil {
-                selectedMint = walletViewModel.configuredMints.first
+        .alert("Error", isPresented: Binding(
+            get: {
+                if case .error = depositState { return true }
+                return false
+            },
+            set: { if !$0 { depositState = .idle } }
+        )) {
+            Button("OK", role: .cancel) {
+                depositState = .idle
+            }
+        } message: {
+            if case .error(let message) = depositState {
+                Text(message)
             }
         }
     }
 
-    // MARK: - Invoice View
+    // MARK: - Invoice Display View
 
-    private func invoiceView(quote: CashuMintQuote) -> some View {
-        VStack(spacing: 24) {
-            // Status
-            VStack(spacing: 8) {
-                if case .minted = depositStatus {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 64))
-                        .foregroundStyle(.green)
+    private var invoiceDisplayView: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                if case .monitoring(let invoice, let amount) = depositState {
+                    let _ = print("[DepositView] Displaying - Invoice: \(invoice.isEmpty ? "EMPTY" : invoice.prefix(50))..., Length: \(invoice.count), Amount: \(amount)")
 
-                    Text("Deposit Complete!")
-                        .font(.title2.bold())
-
-                    Text("\(quote.amount) sats added to your wallet")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("Pay this invoice")
-                        .font(.headline)
-
-                    Text("\(quote.amount) sats")
+                    Text("Pay \(amount) sats")
                         .font(.title.bold())
-                }
-            }
+                        .padding(.top, 20)
 
-            if case .minted = depositStatus {
-                // Success view
-                Button {
-                    dismiss()
-                } label: {
-                    Text("Done")
-                        .font(.headline)
+                    QRCodeView(content: "lightning:\(invoice)", size: 250)
+                        .padding()
+
+                    Text(invoice)
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundStyle(.primary)
+                        .lineLimit(6)
+                        .truncationMode(.middle)
+                        .padding()
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(OlasTheme.Colors.accent)
-                .padding(.horizontal, 24)
-            } else {
-                // QR Code
-                NDKUIQRCodeView(
-                    content: "lightning:\(quote.invoice)",
-                    size: 250
-                )
-
-                // Invoice text
-                VStack(spacing: 8) {
-                    Text(truncatedInvoice(quote.invoice))
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.center)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                        .padding(.horizontal)
 
                     Button {
-                        UIPasteboard.general.string = quote.invoice
+                        UIPasteboard.general.string = invoice
                     } label: {
                         Label("Copy Invoice", systemImage: "doc.on.doc")
-                            .font(.subheadline)
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.accentColor)
+                            .foregroundStyle(.white)
+                            .cornerRadius(12)
                     }
-                }
-                .padding(.horizontal)
+                    .padding(.horizontal)
 
-                // Status indicator
-                if isMonitoring {
                     HStack(spacing: 8) {
                         ProgressView()
                             .scaleEffect(0.8)
-
                         Text("Waiting for payment...")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
-                }
+                    .padding(.top, 8)
 
-                Spacer()
+                    Button {
+                        depositState = .idle
+                        cashuQuote = nil
+                    } label: {
+                        Text("Cancel")
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.top, 16)
 
-                // Cancel button
-                Button {
-                    self.quote = nil
-                    self.depositStatus = nil
-                    self.isMonitoring = false
-                } label: {
-                    Text("Cancel")
-                        .font(.subheadline)
+                    Spacer()
                 }
-                .padding(.bottom, 32)
             }
         }
-        .padding()
         .task {
-            await monitorDeposit(quote: quote)
+            await startMonitoring()
         }
     }
 
-    // MARK: - Actions
+    // MARK: - Success View
+
+    private var successView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 64))
+                .foregroundStyle(.green)
+
+            Text("Deposit Complete!")
+                .font(.title2.bold())
+
+            if case .completed(let amount) = depositState {
+                Text("\(amount) sats added to your wallet")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button {
+                dismiss()
+            } label: {
+                Text("Done")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.accentColor)
+                    .foregroundStyle(.white)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 40)
+        }
+    }
+
+    // MARK: - Expired View
+
+    private var expiredView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 64))
+                .foregroundStyle(.orange)
+
+            Text("Invoice Expired")
+                .font(.title2.bold())
+
+            Text("The payment request has expired. Please try again.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+
+            Spacer()
+
+            Button {
+                depositState = .idle
+                cashuQuote = nil
+            } label: {
+                Text("Try Again")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.accentColor)
+                    .foregroundStyle(.white)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 40)
+        }
+    }
+
+    // MARK: - Helper Methods
+
+    private var satsEquivalent: String {
+        if selectedCurrency == .sat {
+            return "Satoshis"
+        }
+
+        guard let fiatValue = Double(amount),
+              let sats = fiatToSats(fiatValue) else {
+            return "0 sats"
+        }
+
+        return "\(sats.formatted()) sats"
+    }
+
+    private func fiatToSats(_ fiatAmount: Double) -> Int64? {
+        guard selectedCurrency != .sat else {
+            return Int64(fiatAmount)
+        }
+
+        switch walletType {
+        case .spark(let manager):
+            guard let rate = manager.fiatRates.first(where: { $0.coin == selectedCurrency.rawValue }) else {
+                return nil
+            }
+            return SatsConverter.fiatToSats(fiatAmount, btcRate: rate.value)
+
+        case .cashu:
+            return Int64(fiatAmount * 100_000_000)
+        }
+    }
+
+    private func mintDisplayName(_ mintURL: String) -> String {
+        if let url = URL(string: mintURL), let host = url.host {
+            return host
+        }
+        return mintURL
+    }
+
+    private func setupDefaultMint() {
+        if case .cashu(let viewModel, _) = walletType {
+            if selectedMint == nil {
+                selectedMint = viewModel.configuredMints.first
+            }
+        }
+    }
+
+    private func addDigit(_ digit: String) {
+        if amount == "0" {
+            amount = digit
+        } else if amount.count < 10 {
+            amount += digit
+        }
+    }
+
+    private func addDecimal() {
+        if !amount.contains(".") && amount.count < 10 {
+            amount += "."
+        }
+    }
+
+    private func backspace() {
+        if amount.count == 1 {
+            amount = "0"
+        } else {
+            amount = String(amount.dropLast())
+        }
+    }
 
     private func generateInvoice() async {
-        guard let amountValue = Int64(amount),
-              let mintURL = selectedMint else { return }
+        guard let fiatValue = Double(amount),
+              let satsValue = fiatToSats(fiatValue) else {
+            depositState = .error("Invalid amount")
+            return
+        }
 
-        isGeneratingInvoice = true
-        defer { isGeneratingInvoice = false }
+        depositState = .generating
 
         do {
-            let newQuote = try await walletViewModel.requestDeposit(
-                amount: amountValue,
-                mintURL: mintURL
-            )
-            self.quote = newQuote
+            let invoice: String
+
+            switch walletType {
+            case .spark(let manager):
+                invoice = try await manager.createInvoice(
+                    amountSats: UInt64(satsValue),
+                    description: "Deposit of \(selectedCurrency.symbol)\(amount)"
+                )
+
+            case .cashu(let viewModel, _):
+                guard let mintURL = selectedMint else {
+                    depositState = .error("No mint selected")
+                    return
+                }
+
+                let quote = try await viewModel.requestDeposit(
+                    amount: satsValue,
+                    mintURL: mintURL
+                )
+                cashuQuote = quote
+                invoice = quote.invoice
+            }
+
+            depositState = .monitoring(invoice: invoice, amount: satsValue)
+
         } catch {
-            self.error = error
+            depositState = .error(error.localizedDescription)
         }
     }
 
-    private func monitorDeposit(quote: CashuMintQuote) async {
-        isMonitoring = true
-        defer { isMonitoring = false }
+    private func startMonitoring() async {
+        guard case .monitoring(_, let amount) = depositState else { return }
 
         do {
-            for try await status in await walletViewModel.monitorDeposit(quote: quote) {
-                self.depositStatus = status
+            switch walletType {
+            case .spark(let manager):
+                for try await state in manager.monitorInvoice(expectedAmount: UInt64(amount)) {
+                    depositState = state
+                    if case .completed = state {
+                        break
+                    }
+                }
 
-                if case .minted = status {
-                    // Success - refresh wallet
-                    await walletViewModel.refreshBalance()
-                    await walletViewModel.refreshTransactions()
-                    break
+            case .cashu(let viewModel, _):
+                guard let quote = cashuQuote else { return }
+
+                for try await status in await viewModel.monitorDeposit(quote: quote) {
+                    switch status {
+                    case .pending:
+                        break
+                    case .minted:
+                        await viewModel.refreshBalance()
+                        await viewModel.refreshTransactions()
+                        depositState = .completed(amount: amount)
+                    case .expired:
+                        depositState = .expired
+                    case .cancelled:
+                        depositState = .idle
+                    }
+
+                    if case .completed = depositState {
+                        break
+                    }
                 }
             }
         } catch {
-            self.error = error
+            depositState = .error(error.localizedDescription)
         }
     }
+}
 
-    // MARK: - Helpers
+// MARK: - Keypad Button
 
-    private var isValidAmount: Bool {
-        guard let value = Int(amount) else { return false }
-        return value > 0
+private struct KeypadButton: View {
+    let digit: String
+    let isBackspace: Bool
+    let action: () -> Void
+
+    init(digit: String, isBackspace: Bool = false, action: @escaping () -> Void) {
+        self.digit = digit
+        self.isBackspace = isBackspace
+        self.action = action
     }
 
-    private func formatAmount(_ amount: Int) -> String {
-        if amount >= 1000 {
-            return "\(amount / 1000)k"
+    var body: some View {
+        Button(action: action) {
+            Text(digit)
+                .font(.system(size: isBackspace ? 28 : (digit == "." ? 48 : 36), weight: .light))
+                .foregroundStyle(.primary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
         }
-        return "\(amount)"
+        .buttonStyle(KeypadButtonStyle())
     }
+}
 
-    private func mintDisplayName(_ url: String) -> String {
-        guard let parsedURL = URL(string: url) else { return url }
-        return parsedURL.host ?? url
-    }
-
-    private func truncatedInvoice(_ invoice: String) -> String {
-        guard invoice.count > 40 else { return invoice }
-        let prefix = String(invoice.prefix(20))
-        let suffix = String(invoice.suffix(20))
-        return "\(prefix)...\(suffix)"
-    }
-
-    private var userFriendlyError: String {
-        guard let error = error else { return "Unknown error" }
-
-        if let sdkError = error as? SdkError {
-            return sdkError.userFriendlyMessage
-        }
-
-        return error.localizedDescription
+private struct KeypadButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(
+                Circle()
+                    .fill(configuration.isPressed ? Color(.systemGray4) : .clear)
+            )
+            .scaleEffect(configuration.isPressed ? 0.9 : 1.0)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }

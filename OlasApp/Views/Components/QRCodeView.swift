@@ -6,6 +6,8 @@ struct QRCodeView: View {
     let size: CGFloat
 
     var body: some View {
+        let _ = print("[QRCodeView] Generating QR code for content length: \(content.count), prefix: \(content.prefix(20))")
+
         if let qrImage = generateQRCode(from: content) {
             Image(uiImage: qrImage)
                 .interpolation(.none)
@@ -13,6 +15,7 @@ struct QRCodeView: View {
                 .scaledToFit()
                 .frame(width: size, height: size)
         } else {
+            let _ = print("[QRCodeView] ERROR: Failed to generate QR code for: \(content)")
             Rectangle()
                 .fill(Color.gray.opacity(0.2))
                 .frame(width: size, height: size)

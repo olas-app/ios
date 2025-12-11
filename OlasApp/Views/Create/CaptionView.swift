@@ -62,9 +62,13 @@ struct CaptionView: View {
     private var imagePreview: some View {
         Image(uiImage: image)
             .resizable()
-            .scaledToFit()
-            .frame(maxHeight: 280)
-            .cornerRadius(16)
+            .scaledToFill()
+            .frame(width: 80, height: 80)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color(.systemGray4).opacity(0.3), lineWidth: 1)
+            )
     }
 
     private var captionInput: some View {

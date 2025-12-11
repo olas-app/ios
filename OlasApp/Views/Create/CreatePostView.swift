@@ -29,7 +29,7 @@ public struct CreatePostView: View {
     public var body: some View {
         NavigationStack {
             ZStack {
-                Color.black.ignoresSafeArea()
+                Color(.systemBackground).ignoresSafeArea()
 
                 Group {
                     switch step {
@@ -86,7 +86,6 @@ public struct CreatePostView: View {
                 Text(error?.localizedDescription ?? "Unknown error")
             }
         }
-        .preferredColorScheme(.dark)
     }
 
     private func publishPost() async {

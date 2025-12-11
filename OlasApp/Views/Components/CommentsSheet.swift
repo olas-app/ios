@@ -86,6 +86,7 @@ struct CommentsSheet: View {
         // Fetch comments (kind 1111) that reference this event
         let filter = NDKFilter(
             kinds: [OlasConstants.EventKinds.comment],
+            events: [event.id],
             limit: 100
         )
 
@@ -93,16 +94,11 @@ struct CommentsSheet: View {
 
         // Stream comments as they arrive
         for await commentEvent in subscription.events {
-            // Check if comment references our event
-            let referencesOurEvent = commentEvent.tags.contains { tag in
-                tag.first == "e" && tag.count > 1 && tag[1] == event.id
-            }
+            guard !Task.isCancelled else { break }
 
-            if referencesOurEvent {
-                // Insert in sorted position (oldest first for comments)
-                let insertIndex = comments.firstIndex { commentEvent.createdAt < $0.createdAt } ?? comments.endIndex
-                comments.insert(commentEvent, at: insertIndex)
-            }
+            // Insert in sorted position (oldest first for comments)
+            let insertIndex = comments.firstIndex { commentEvent.createdAt < $0.createdAt } ?? comments.endIndex
+            comments.insert(commentEvent, at: insertIndex)
         }
     }
 
