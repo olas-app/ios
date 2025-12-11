@@ -7,12 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1F178AB05E8343D4BE644F0B /* NDKSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 7A70522E321945EFB4B338AE /* NDKSwiftUI */; };
-		327D0DEA8DF1460EB45314E5 /* UnifiedBlurHash in Frameworks */ = {isa = PBXBuildFile; productRef = 7A0D014EC5A747D3A5AA06E7 /* UnifiedBlurHash */; };
-		513D1DDCE7AA4A589BB99DCE /* BreezSdkSpark in Frameworks */ = {isa = PBXBuildFile; productRef = 17B92841420D445F9619DDC3 /* BreezSdkSpark */; };
-		7BE79112E9CE4320A87F2423 /* NDKSwiftNostrDB in Frameworks */ = {isa = PBXBuildFile; productRef = 474C0B2C35BA4E14BA4C3682 /* NDKSwiftNostrDB */; };
-		A01197F93009450ABB0698A9 /* MnemonicSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 6BFBD576CA594027BCF7349A /* MnemonicSwift */; };
-		E1DE6D65E58549D2A883B207 /* NDKSwiftCore in Frameworks */ = {isa = PBXBuildFile; productRef = 998E391250C94006AEB38E8E /* NDKSwiftCore */; };
+		8B41F6832DEDD23B001A66F9 /* OlasAppFeature in Frameworks */ = {isa = PBXBuildFile; productRef = 8B41F6822DEDD23B001A66F9 /* OlasAppFeature */; };
+		8B41F6852DEDD25C001A66F9 /* OlasAppFeature in Frameworks */ = {isa = PBXBuildFile; productRef = 8B41F6842DEDD25C001A66F9 /* OlasAppFeature */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -69,12 +65,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E1DE6D65E58549D2A883B207 /* NDKSwiftCore in Frameworks */,
-				1F178AB05E8343D4BE644F0B /* NDKSwiftUI in Frameworks */,
-				7BE79112E9CE4320A87F2423 /* NDKSwiftNostrDB in Frameworks */,
-				327D0DEA8DF1460EB45314E5 /* UnifiedBlurHash in Frameworks */,
-				513D1DDCE7AA4A589BB99DCE /* BreezSdkSpark in Frameworks */,
-				A01197F93009450ABB0698A9 /* MnemonicSwift in Frameworks */,
+				8B41F6852DEDD25C001A66F9 /* OlasAppFeature in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -82,6 +73,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8B41F6832DEDD23B001A66F9 /* OlasAppFeature in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -136,12 +128,7 @@
 			);
 			name = OlasApp;
 			packageProductDependencies = (
-				998E391250C94006AEB38E8E /* NDKSwiftCore */,
-				7A70522E321945EFB4B338AE /* NDKSwiftUI */,
-				474C0B2C35BA4E14BA4C3682 /* NDKSwiftNostrDB */,
-				7A0D014EC5A747D3A5AA06E7 /* UnifiedBlurHash */,
-				17B92841420D445F9619DDC3 /* BreezSdkSpark */,
-				6BFBD576CA594027BCF7349A /* MnemonicSwift */,
+				8B41F6842DEDD25C001A66F9 /* OlasAppFeature */,
 			);
 			productName = OlasApp;
 			productReference = 8B41F6452DEDD0D5001A66F9 /* OlasApp.app */;
@@ -165,6 +152,7 @@
 			);
 			name = OlasAppUITests;
 			packageProductDependencies = (
+				8B41F6822DEDD23B001A66F9 /* OlasAppFeature */,
 			);
 			productName = OlasAppUITests;
 			productReference = 8B41F65C2DEDD0D6001A66F9 /* OlasApp.xctest */;
@@ -199,10 +187,7 @@
 			mainGroup = 8B41F63C2DEDD0D5001A66F9;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				BCADD6C81B824D75AC023BFA /* XCRemoteSwiftPackageReference "NDKSwift" */,
-				6EF7FD8648014C208EB4DE72 /* XCRemoteSwiftPackageReference "UnifiedBlurHash" */,
-				F346A611DD4340238529C9E7 /* XCRemoteSwiftPackageReference "breez-sdk-spark-swift" */,
-				0B59A6E543434BB593C819DA /* XCRemoteSwiftPackageReference "MnemonicSwift" */,
+				8B41F6862DEDD300001A66F9 /* XCLocalSwiftPackageReference "OlasAppPackage" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8B41F6462DEDD0D5001A66F9 /* Products */;
@@ -489,71 +474,23 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		0B59A6E543434BB593C819DA /* XCRemoteSwiftPackageReference "MnemonicSwift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/zcash-hackworks/MnemonicSwift";
-			requirement = {
-				kind = upToNextMinorVersion;
-				minimumVersion = 2.2.4;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		8B41F6862DEDD300001A66F9 /* XCLocalSwiftPackageReference "OlasAppPackage" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = OlasAppPackage;
 		};
-		6EF7FD8648014C208EB4DE72 /* XCRemoteSwiftPackageReference "UnifiedBlurHash" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/iankoex/UnifiedBlurHash";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.0.0;
-			};
-		};
-		BCADD6C81B824D75AC023BFA /* XCRemoteSwiftPackageReference "NDKSwift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/pablof7z/NDKSwift";
-			requirement = {
-				branch = master;
-				kind = branch;
-			};
-		};
-		F346A611DD4340238529C9E7 /* XCRemoteSwiftPackageReference "breez-sdk-spark-swift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/breez/breez-sdk-spark-swift";
-			requirement = {
-				kind = upToNextMinorVersion;
-				minimumVersion = 0.6.1;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		17B92841420D445F9619DDC3 /* BreezSdkSpark */ = {
+		8B41F6822DEDD23B001A66F9 /* OlasAppFeature */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = F346A611DD4340238529C9E7 /* XCRemoteSwiftPackageReference "breez-sdk-spark-swift" */;
-			productName = BreezSdkSpark;
+			package = 8B41F6862DEDD300001A66F9 /* XCLocalSwiftPackageReference "OlasAppPackage" */;
+			productName = OlasAppFeature;
 		};
-		474C0B2C35BA4E14BA4C3682 /* NDKSwiftNostrDB */ = {
+		8B41F6842DEDD25C001A66F9 /* OlasAppFeature */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = BCADD6C81B824D75AC023BFA /* XCRemoteSwiftPackageReference "NDKSwift" */;
-			productName = NDKSwiftNostrDB;
-		};
-		6BFBD576CA594027BCF7349A /* MnemonicSwift */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 0B59A6E543434BB593C819DA /* XCRemoteSwiftPackageReference "MnemonicSwift" */;
-			productName = MnemonicSwift;
-		};
-		7A0D014EC5A747D3A5AA06E7 /* UnifiedBlurHash */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 6EF7FD8648014C208EB4DE72 /* XCRemoteSwiftPackageReference "UnifiedBlurHash" */;
-			productName = UnifiedBlurHash;
-		};
-		7A70522E321945EFB4B338AE /* NDKSwiftUI */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = BCADD6C81B824D75AC023BFA /* XCRemoteSwiftPackageReference "NDKSwift" */;
-			productName = NDKSwiftUI;
-		};
-		998E391250C94006AEB38E8E /* NDKSwiftCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = BCADD6C81B824D75AC023BFA /* XCRemoteSwiftPackageReference "NDKSwift" */;
-			productName = NDKSwiftCore;
+			package = 8B41F6862DEDD300001A66F9 /* XCLocalSwiftPackageReference "OlasAppPackage" */;
+			productName = OlasAppFeature;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
