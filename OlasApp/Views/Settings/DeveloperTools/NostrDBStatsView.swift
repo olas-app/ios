@@ -78,8 +78,29 @@ struct NostrDBStatsView: View {
                 }
             } else {
                 Section {
-                    Text("Unable to load statistics")
-                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.orange)
+                            Text("NostrDB Cache Not Available")
+                                .font(.headline)
+                        }
+
+                        if ndk.cache == nil {
+                            Text("The cache was not initialized. Check app logs for initialization errors.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("The cache is using a different backend (not NostrDB). Stats are only available with NostrDB.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Text("Tip: Restart the app to retry cache initialization.")
+                            .font(.caption)
+                            .foregroundStyle(.blue)
+                    }
+                    .padding(.vertical, 8)
                 }
             }
         }
@@ -97,12 +118,31 @@ struct NostrDBStatsView: View {
 
     private func loadStats() async {
         isLoading = true
+<<<<<<< HEAD
         if let cache = ndk.cache as? NDKNostrDBCache {
             stats = cache.getStats()
             databaseSize = cache.getDatabaseSize()
             cachePath = cache.getCachePath()
             inMemoryCount = cache.inMemoryEventCount
+=======
+
+        guard let cache = ndk.cache else {
+            stats = nil
+            isLoading = false
+            return
+>>>>>>> origin/pr-10
         }
+
+        guard let nostrDBCache = cache as? NDKNostrDBCache else {
+            stats = nil
+            isLoading = false
+            return
+        }
+
+        stats = nostrDBCache.getStats()
+        databaseSize = nostrDBCache.getDatabaseSize()
+        cachePath = nostrDBCache.getCachePath()
+        inMemoryCount = nostrDBCache.inMemoryEventCount
         isLoading = false
     }
 
