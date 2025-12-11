@@ -7,7 +7,7 @@ public struct MainTabView: View {
     @StateObject private var walletViewModel: WalletViewModel
     @StateObject private var muteListManager: MuteListManager
     @Environment(SettingsManager.self) private var settings
-    @Environment(PostManager.self) private var postManager
+    @Environment(PublishingState.self) private var publishingState
     @State private var selectedTab = 0
     @State private var showCreatePost = false
 
@@ -87,9 +87,9 @@ public struct MainTabView: View {
         .environmentObject(muteListManager)
         .environment(sparkWalletManager)
         .overlay(alignment: .top) {
-            if postManager.isPublishing || postManager.error != nil {
+            if publishingState.isPublishing || publishingState.error != nil {
                 HStack(spacing: 12) {
-                    if postManager.error != nil {
+                    if publishingState.error != nil {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundStyle(.red)
                     } else {
@@ -97,15 +97,15 @@ public struct MainTabView: View {
                             .tint(.white)
                     }
 
-                    Text(postManager.publishingStatus)
+                    Text(publishingState.publishingStatus)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.white)
 
                     Spacer()
 
-                    if postManager.error != nil {
+                    if publishingState.error != nil {
                         Button {
-                            postManager.dismissError()
+                            publishingState.dismissError()
                         } label: {
                             Image(systemName: "xmark")
                                 .font(.system(size: 14, weight: .bold))
@@ -122,8 +122,8 @@ public struct MainTabView: View {
                 }
                 .padding(.top, 8)
                 .transition(.move(edge: .top).combined(with: .opacity))
-                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: postManager.isPublishing)
-                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: postManager.error != nil)
+                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: publishingState.isPublishing)
+                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: publishingState.error != nil)
             }
         }
     }

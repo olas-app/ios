@@ -5,7 +5,7 @@ import UnifiedBlurHash
 
 public struct CreatePostView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(PostManager.self) private var postManager
+    @Environment(PublishingState.self) private var publishingState
     let ndk: NDK
 
     @State private var selectedImage: UIImage?
@@ -92,9 +92,32 @@ public struct CreatePostView: View {
     private func publishPost() async {
         guard let image = editedImage ?? selectedImage else { return }
 
+        let service = PostPublishingService(ndk: ndk)
+
         // Start background publishing
         Task {
-            await postManager.publish(image: image, caption: caption)
+            publishingState.isPublishing = true
+            publishingState.error = nil
+
+            do {
+                let eventId = try await service.publish(
+                    image: image,
+                    caption: caption,
+                    onProgress: { status, progress in
+                        publishingState.publishingStatus = status
+                        publishingState.publishingProgress = progress
+                    }
+                )
+
+                publishingState.lastPublishedEventId = eventId
+
+                // Auto-hide after 2 seconds
+                try? await Task.sleep(for: .seconds(2))
+                publishingState.reset()
+            } catch {
+                publishingState.error = error
+                publishingState.publishingStatus = "Failed: \(error.localizedDescription)"
+            }
         }
 
         // Immediately dismiss the view
