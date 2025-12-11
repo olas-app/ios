@@ -153,7 +153,7 @@ public struct PostCard: View {
                                 .fill(Color.gray.opacity(0.1))
                                 .overlay(
                                     ProgressView()
-                                        .tint(OlasTheme.Colors.deepTeal)
+                                        .tint(OlasTheme.Colors.accent)
                                 )
                         }
                         .accessibilityLabel(image.primaryAlt ?? "Post image")

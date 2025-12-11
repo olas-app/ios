@@ -119,7 +119,7 @@ public struct ExploreView: View {
                     searchResults = []
                     userResults = []
                 }
-                .foregroundStyle(OlasTheme.Colors.deepTeal)
+                .foregroundStyle(OlasTheme.Colors.accent)
                 .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
@@ -235,7 +235,7 @@ public struct ExploreView: View {
                             .foregroundStyle(selectedTab == tab ? .primary : .secondary)
 
                         Rectangle()
-                            .fill(selectedTab == tab ? OlasTheme.Colors.deepTeal : .clear)
+                            .fill(selectedTab == tab ? OlasTheme.Colors.accent : .clear)
                             .frame(height: 2)
                     }
                 }
@@ -255,7 +255,7 @@ public struct ExploreView: View {
 
                 Button("See All") {}
                     .font(.subheadline)
-                    .foregroundStyle(OlasTheme.Colors.deepTeal)
+                    .foregroundStyle(OlasTheme.Colors.accent)
             }
             .padding(.horizontal, 16)
             .padding(.top, 20)
@@ -570,13 +570,13 @@ private struct GridPostCell: View {
                     } placeholder: {
                         Rectangle()
                             .fill(Color.gray.opacity(0.1))
-                            .overlay(ProgressView().tint(OlasTheme.Colors.deepTeal))
+                            .overlay(ProgressView().tint(OlasTheme.Colors.accent))
                     }
                     .accessibilityLabel(isVideo ? (video.primaryAlt ?? "Video") : (image.primaryAlt ?? "Post image"))
                 } else if isVideo {
                     // Video without thumbnail - show gradient with play icon
                     LinearGradient(
-                        colors: [OlasTheme.Colors.deepTeal.opacity(0.8), OlasTheme.Colors.oceanBlue.opacity(0.8)],
+                        colors: [OlasTheme.Colors.accent.opacity(0.8), OlasTheme.Colors.accent.opacity(0.8)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )

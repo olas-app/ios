@@ -62,7 +62,7 @@ struct AddToCollectionSheet: View {
                     .font(.subheadline.weight(.semibold))
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
-                    .background(OlasTheme.Colors.deepTeal)
+                    .background(OlasTheme.Colors.accent)
                     .foregroundStyle(.white)
                     .cornerRadius(12)
             }

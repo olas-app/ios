@@ -32,7 +32,7 @@ public struct LoginView: View {
 
                 HStack {
                     Image(systemName: "lock.fill")
-                        .foregroundStyle(OlasTheme.Colors.deepTeal)
+                        .foregroundStyle(OlasTheme.Colors.accent)
                     Text("Your key stays on device and is never sent anywhere")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -60,7 +60,7 @@ public struct LoginView: View {
                             .padding()
                     }
                 }
-                .background(OlasTheme.Colors.deepTeal)
+                .background(OlasTheme.Colors.accent)
                 .foregroundStyle(.white)
                 .cornerRadius(12)
                 .disabled(nsec.isEmpty || authViewModel.isLoading)
@@ -69,7 +69,7 @@ public struct LoginView: View {
                     pasteFromClipboard()
                 }
                 .font(.subheadline)
-                .foregroundStyle(OlasTheme.Colors.oceanBlue)
+                .foregroundStyle(OlasTheme.Colors.accent)
 
                 Spacer()
             }
