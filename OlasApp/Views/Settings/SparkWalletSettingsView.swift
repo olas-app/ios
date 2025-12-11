@@ -7,6 +7,7 @@ public struct SparkWalletSettingsView: View {
     @State private var showImportWallet = false
     @State private var showDisconnectAlert = false
     @State private var showLightningAddressSetup = false
+    @State private var showBackupWallet = false
 
     public init(walletManager: SparkWalletManager) {
         self.walletManager = walletManager
@@ -44,6 +45,9 @@ public struct SparkWalletSettingsView: View {
         }
         .sheet(isPresented: $showLightningAddressSetup) {
             LightningAddressSetupView(walletManager: walletManager)
+        }
+        .sheet(isPresented: $showBackupWallet) {
+            BackupWalletView(walletManager: walletManager)
         }
         .alert("Disconnect Wallet", isPresented: $showDisconnectAlert) {
             Button("Cancel", role: .cancel) {}
@@ -124,6 +128,15 @@ public struct SparkWalletSettingsView: View {
                 HStack {
                     Image(systemName: "arrow.triangle.2.circlepath")
                     Text("Sync Wallet")
+                }
+            }
+
+            Button {
+                showBackupWallet = true
+            } label: {
+                HStack {
+                    Image(systemName: "key.fill")
+                    Text("Show Recovery Phrase")
                 }
             }
 
@@ -607,6 +620,127 @@ struct LightningAddressSetupView: View {
             dismiss()
         } catch {
             self.error = error.localizedDescription
+        }
+    }
+}
+
+// MARK: - Backup Wallet View
+
+struct BackupWalletView: View {
+    @ObservedObject var walletManager: SparkWalletManager
+    @Environment(\.dismiss) private var dismiss
+    @State private var mnemonic: String?
+    @State private var isRevealed = false
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                if !isRevealed {
+                    Image(systemName: "lock.shield")
+                        .font(.system(size: 60))
+                        .foregroundStyle(OlasTheme.Colors.deepTeal)
+
+                    Text("Show Recovery Phrase")
+                        .font(.title2.bold())
+
+                    Text("Your recovery phrase gives full access to your wallet and funds. Never share it with anyone. View it only in a private, secure location.")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+
+                    Spacer()
+
+                    Button {
+                        revealMnemonic()
+                    } label: {
+                        HStack {
+                            Image(systemName: "eye.fill")
+                            Text("Reveal Phrase")
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(OlasTheme.Colors.deepTeal)
+                        .foregroundStyle(.white)
+                        .cornerRadius(12)
+                    }
+                    .padding(.horizontal)
+                } else if let mnemonic = mnemonic {
+                    mnemonicDisplay(mnemonic)
+                }
+            }
+            .padding()
+            .navigationTitle("Backup Wallet")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func revealMnemonic() {
+        if let key = walletManager.retrieveMnemonic() {
+            self.mnemonic = key
+            withAnimation {
+                isRevealed = true
+            }
+        }
+    }
+
+    private func mnemonicDisplay(_ mnemonic: String) -> some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                Image(systemName: "shield.checkered")
+                    .font(.system(size: 60))
+                    .foregroundStyle(OlasTheme.Colors.zapGold)
+
+                Text("Your Recovery Phrase")
+                    .font(.title2.bold())
+
+                Text("Write these words down in order. Store them safely.")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                    let words = mnemonic.split(separator: " ")
+                    ForEach(Array(words.enumerated()), id: \.offset) { index, word in
+                        HStack {
+                            Text("\(index + 1).")
+                                .foregroundStyle(.secondary)
+                                .frame(width: 24, alignment: .trailing)
+                            Text(String(word))
+                                .font(.body.monospaced())
+                            Spacer()
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(6)
+                    }
+                }
+                .padding()
+
+                Button {
+                    #if os(iOS)
+                    UIPasteboard.general.string = mnemonic
+                    #endif
+                } label: {
+                    HStack {
+                        Image(systemName: "doc.on.doc")
+                        Text("Copy to Clipboard")
+                    }
+                    .font(.subheadline)
+                }
+                .padding(.bottom)
+
+                Text("Warning: Copying your phrase to the clipboard can be risky if you have malicious apps installed.")
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+            }
         }
     }
 }
