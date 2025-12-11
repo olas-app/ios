@@ -2,12 +2,17 @@ import SwiftUI
 import BreezSdkSpark
 import NDKSwiftCashu
 
+enum CurrencyDisplayMode {
+    case sats
+    case fiat
+}
+
 struct DepositView: View {
     let walletType: DepositWallet
     @Environment(\.dismiss) private var dismiss
 
     @State private var amount: String = "0"
-    @State private var selectedCurrency: Currency = .usd
+    @State private var currencyMode: CurrencyDisplayMode = .sats
     @State private var depositState: DepositState = .idle
     @State private var selectedMint: String?
     @State private var cashuQuote: CashuMintQuote?
@@ -33,6 +38,17 @@ struct DepositView: View {
                         dismiss()
                     }
                 }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        currencyMode = currencyMode == .sats ? .fiat : .sats
+                        amount = "0" // Clear amount when switching currency
+                    } label: {
+                        Text(currencyMode == .sats ? currencySymbol : "sats")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.accent)
+                    }
+                }
             }
         }
         .onAppear {
@@ -46,44 +62,34 @@ struct DepositView: View {
         VStack(spacing: 0) {
             // Amount section
             VStack(spacing: 32) {
-                // Currency selector
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(Currency.allCases, id: \.self) { currency in
-                            Button {
-                                selectedCurrency = currency
-                            } label: {
-                                Text(currency.rawValue)
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(selectedCurrency == currency ? .white : .primary)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(selectedCurrency == currency ? Color.accentColor : Color(.systemGray5))
-                                    .clipShape(Capsule())
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                }
-
                 // Amount display
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(selectedCurrency.symbol)
-                        .font(.system(size: 48, weight: .light))
-                        .foregroundStyle(.secondary)
+                    if currencyMode == .fiat {
+                        Text(currencySymbol)
+                            .font(.system(size: 48, weight: .light))
+                            .foregroundStyle(.secondary)
+                    }
 
                     Text(amount)
                         .font(.system(size: 96, weight: .light))
                         .foregroundStyle(amount == "0" ? .secondary : .primary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
+
+                    if currencyMode == .sats {
+                        Text("sats")
+                            .font(.system(size: 48, weight: .light))
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 .frame(height: 96)
 
-                // Sats equivalent
-                Text(satsEquivalent)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                // Equivalent display
+                if currencyMode == .fiat {
+                    Text(satsEquivalent)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
             }
             .padding(.top, 40)
 
@@ -108,27 +114,6 @@ struct DepositView: View {
 
             // Keypad section
             VStack(spacing: 24) {
-                // Quick amounts
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(selectedCurrency.quickAmounts, id: \.self) { quickAmount in
-                            Button {
-                                amount = "\(quickAmount)"
-                            } label: {
-                                Text(selectedCurrency.symbol + "\(quickAmount)")
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundStyle(.primary)
-                                    .padding(.horizontal, 18)
-                                    .padding(.vertical, 10)
-                                    .background(Color(.systemGray6))
-                                    .clipShape(Capsule())
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 4)
-                }
-                .padding(.horizontal, 20)
-
                 // Keypad
                 VStack(spacing: 20) {
                     HStack(spacing: 20) {
@@ -341,12 +326,30 @@ struct DepositView: View {
 
     // MARK: - Helper Methods
 
-    private var satsEquivalent: String {
-        if selectedCurrency == .sat {
-            return "Satoshis"
+    private var currencySymbol: String {
+        switch walletType {
+        case .spark(let manager):
+            return manager.preferredCurrency
+        case .cashu:
+            return "$" // Default to USD for Cashu
         }
+    }
 
-        guard let fiatValue = Double(amount),
+    private var currentBTCRate: Double {
+        switch walletType {
+        case .spark(let manager):
+            guard let rate = manager.fiatRates.first(where: { $0.coin == currencySymbol }) else {
+                return 0
+            }
+            return rate.value
+        case .cashu:
+            return 50000 // Placeholder - Cashu doesn't have rate info
+        }
+    }
+
+    private var satsEquivalent: String {
+        guard currencyMode == .fiat,
+              let fiatValue = Double(amount),
               let sats = fiatToSats(fiatValue) else {
             return "0 sats"
         }
@@ -355,20 +358,16 @@ struct DepositView: View {
     }
 
     private func fiatToSats(_ fiatAmount: Double) -> Int64? {
-        guard selectedCurrency != .sat else {
+        guard currencyMode == .fiat else {
+            // Already in sats
             return Int64(fiatAmount)
         }
 
-        switch walletType {
-        case .spark(let manager):
-            guard let rate = manager.fiatRates.first(where: { $0.coin == selectedCurrency.rawValue }) else {
-                return nil
-            }
-            return SatsConverter.fiatToSats(fiatAmount, btcRate: rate.value)
-
-        case .cashu:
-            return Int64(fiatAmount * 100_000_000)
+        guard currentBTCRate > 0 else {
+            return nil
         }
+
+        return SatsConverter.fiatToSats(fiatAmount, btcRate: currentBTCRate)
     }
 
     private func mintDisplayName(_ mintURL: String) -> String {
@@ -395,6 +394,9 @@ struct DepositView: View {
     }
 
     private func addDecimal() {
+        // Only allow decimals in fiat mode
+        guard currencyMode == .fiat else { return }
+
         if !amount.contains(".") && amount.count < 10 {
             amount += "."
         }
@@ -409,8 +411,8 @@ struct DepositView: View {
     }
 
     private func generateInvoice() async {
-        guard let fiatValue = Double(amount),
-              let satsValue = fiatToSats(fiatValue) else {
+        guard let amountValue = Double(amount),
+              let satsValue = fiatToSats(amountValue) else {
             depositState = .error("Invalid amount")
             return
         }
@@ -419,12 +421,13 @@ struct DepositView: View {
 
         do {
             let invoice: String
+            let description = currencyMode == .fiat ? "Deposit of \(currencySymbol)\(amount)" : "Deposit of \(amount) sats"
 
             switch walletType {
             case .spark(let manager):
                 invoice = try await manager.createInvoice(
                     amountSats: UInt64(satsValue),
-                    description: "Deposit of \(selectedCurrency.symbol)\(amount)"
+                    description: description
                 )
 
             case .cashu(let viewModel, _):
