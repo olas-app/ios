@@ -1,8 +1,7 @@
-// SendView.swift
+// SendView.swift - Cashu Wallet Send (Dual Lightning/Ecash)
 import SwiftUI
 import NDKSwiftCore
 import NDKSwiftUI
-import BreezSdkSpark
 
 struct SendView: View {
     let ndk: NDK
@@ -417,15 +416,6 @@ struct SendView: View {
 
     private var userFriendlyError: String {
         guard let error = error else { return "Unknown error" }
-
-        if let sdkError = error as? SdkError {
-            return sdkError.userFriendlyMessage
-        }
-
-        if let sendError = error as? SendError {
-            return sendError.errorDescription ?? "Unknown error"
-        }
-
         return error.localizedDescription
     }
 }
