@@ -19,9 +19,9 @@ public final class SettingsManager {
     // Shared instance removed
     // public static let shared = SettingsManager()
 
-    @AppStorage("showVideos") public var showVideos: Bool = true
-    @AppStorage("autoplayVideos") public var autoplayVideos: Bool = true
-    @AppStorage("walletType") public var walletType: WalletType = .spark
+    @ObservationIgnored @AppStorage("showVideos") public var showVideos: Bool = true
+    @ObservationIgnored @AppStorage("autoplayVideos") public var autoplayVideos: Bool = true
+    @ObservationIgnored @AppStorage("walletType") public var walletType: WalletType = .spark
 
     public init() {}
 }
