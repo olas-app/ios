@@ -1,7 +1,7 @@
 import SwiftUI
 
 public struct SparkWalletSettingsView: View {
-    @ObservedObject var walletManager: SparkWalletManager
+    var walletManager: SparkWalletManager
 
     @State private var showCreateWallet = false
     @State private var showImportWallet = false
@@ -192,7 +192,7 @@ public struct SparkWalletSettingsView: View {
 // MARK: - Create Wallet View
 
 struct CreateSparkWalletView: View {
-    @ObservedObject var walletManager: SparkWalletManager
+    var walletManager: SparkWalletManager
 
     @Environment(\.dismiss) private var dismiss
 
@@ -431,7 +431,7 @@ struct CreateSparkWalletView: View {
 // MARK: - Import Wallet View
 
 struct ImportSparkWalletView: View {
-    @ObservedObject var walletManager: SparkWalletManager
+    var walletManager: SparkWalletManager
 
     @Environment(\.dismiss) private var dismiss
     @State private var mnemonic = ""
@@ -529,7 +529,7 @@ struct ImportSparkWalletView: View {
 // MARK: - Lightning Address Setup View
 
 struct LightningAddressSetupView: View {
-    @ObservedObject var walletManager: SparkWalletManager
+    var walletManager: SparkWalletManager
 
     @Environment(\.dismiss) private var dismiss
     @State private var username = ""
@@ -627,7 +627,7 @@ struct LightningAddressSetupView: View {
 // MARK: - Backup Wallet View
 
 struct BackupWalletView: View {
-    @ObservedObject var walletManager: SparkWalletManager
+    var walletManager: SparkWalletManager
     @Environment(\.dismiss) private var dismiss
     @State private var mnemonic: String?
     @State private var isRevealed = false

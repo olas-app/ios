@@ -3,7 +3,7 @@ import BreezSdkSpark
 import CoreImage.CIFilterBuiltins
 
 public struct SparkWalletView: View {
-    @ObservedObject var walletManager: SparkWalletManager
+    var walletManager: SparkWalletManager
 
     @State private var showCreateWallet = false
     @State private var showImportWallet = false
@@ -533,7 +533,7 @@ struct QRCodeView: View {
 // MARK: - Receive View (Lightning Address First per UX Guidelines)
 
 struct ReceiveView: View {
-    @ObservedObject var walletManager: SparkWalletManager
+    var walletManager: SparkWalletManager
     @Environment(\.dismiss) private var dismiss
 
     @State private var selectedTab = 0
@@ -797,7 +797,7 @@ struct ReceiveView: View {
 // MARK: - Send View (with parsing, fees, and scanner)
 
 struct SparkSendView: View {
-    @ObservedObject var walletManager: SparkWalletManager
+    var walletManager: SparkWalletManager
     @Environment(\.dismiss) private var dismiss
 
     enum SendState {
