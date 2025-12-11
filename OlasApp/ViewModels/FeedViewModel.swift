@@ -3,11 +3,12 @@ import SwiftUI
 import NDKSwiftCore
 
 @MainActor
-public final class FeedViewModel: ObservableObject {
-    @Published public private(set) var posts: [NDKEvent] = []
-    @Published public private(set) var isLoading = false
-    @Published public private(set) var error: Error?
-    @Published public var feedMode: FeedMode = .following
+@Observable
+public final class FeedViewModel {
+    public private(set) var posts: [NDKEvent] = []
+    public private(set) var isLoading = false
+    public private(set) var error: Error?
+    public var feedMode: FeedMode = .following
 
     private let ndk: NDK
     private let settings: SettingsManager
@@ -35,6 +36,7 @@ public final class FeedViewModel: ObservableObject {
         isLoading = true
         error = nil
         posts = []
+        allPosts = []
 
         let filter = NDKFilter(kinds: feedKinds, limit: 50)
 
@@ -67,13 +69,17 @@ public final class FeedViewModel: ObservableObject {
                 guard !seenEvents.contains(event.id) else { continue }
                 seenEvents.insert(event.id)
 
-                // Add to allPosts
+                // Filter muted pubkeys
+                guard !muteListManager.mutedPubkeys.contains(event.pubkey) else {
+                    continue
+                }
+
+                // Add to allPosts for tracking
                 allPosts.append(event)
 
-                // Filter and sort posts
-                posts = allPosts
-                    .filter { !muteListManager.mutedPubkeys.contains($0.pubkey) }
-                    .sorted { $0.createdAt > $1.createdAt }
+                // Insert in sorted position using binary search
+                let insertIndex = posts.insertionIndex(for: event) { $0.createdAt > $1.createdAt }
+                posts.insert(event, at: insertIndex)
 
                 isLoading = false
             }
@@ -84,6 +90,12 @@ public final class FeedViewModel: ObservableObject {
         subscriptionTask?.cancel()
         subscriptionTask = nil
         subscription = nil
+    }
+
+    public func updateForMuteList(_ mutedPubkeys: Set<String>) {
+        // Remove muted posts without re-sorting
+        posts.removeAll { mutedPubkeys.contains($0.pubkey) }
+        allPosts.removeAll { mutedPubkeys.contains($0.pubkey) }
     }
 
     public func switchMode(to mode: FeedMode, muteListManager: MuteListManager) {

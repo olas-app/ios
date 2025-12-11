@@ -3,18 +3,14 @@ import SwiftUI
 import NDKSwiftCore
 import NDKSwiftUI
 
-public struct PostCard: View {
+public struct PostCard: View, Equatable {
     let event: NDKEvent
     let ndk: NDK
     let onProfileTap: ((String) -> Void)?
 
-    @State private var isLiked = false
     @State private var showLikeAnimation = false
-    @State private var showComments = false
     @State private var showFullscreenImage = false
     @State private var showReportSheet = false
-    @State private var likeCount = 0
-    @State private var commentCount = 0
 
     @EnvironmentObject private var muteListManager: MuteListManager
 
@@ -22,6 +18,11 @@ public struct PostCard: View {
         self.event = event
         self.ndk = ndk
         self.onProfileTap = onProfileTap
+    }
+
+    public static func == (lhs: PostCard, rhs: PostCard) -> Bool {
+        // Only compare event IDs to prevent unnecessary rerenders
+        lhs.event.id == rhs.event.id
     }
 
     private var image: NDKImage {
@@ -48,12 +49,6 @@ public struct PostCard: View {
             postCaption
         }
         .accessibilityIdentifier("post_card")
-        .task {
-            await loadReactions()
-        }
-        .sheet(isPresented: $showComments) {
-            CommentsSheet(event: event, ndk: ndk)
-        }
         .fullScreenCover(isPresented: $showFullscreenImage) {
             if let imageURL = image.primaryImageURL, let url = URL(string: imageURL) {
                 FullscreenImageViewer(
@@ -200,13 +195,9 @@ public struct PostCard: View {
 
     private var postActions: some View {
         HStack(spacing: 20) {
-            LikeButton(isLiked: $isLiked, likeCount: likeCount) {
-                Task { await toggleLike() }
-            }
+            LikeButton(event: event, ndk: ndk)
 
-            CommentButton(commentCount: commentCount) {
-                showComments = true
-            }
+            CommentButton(event: event, ndk: ndk)
 
             ZapButton(event: event, ndk: ndk)
 
@@ -223,21 +214,8 @@ public struct PostCard: View {
     private var postCaption: some View {
         Group {
             if !event.content.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    PostCaptionText(ndk: ndk, pubkey: event.pubkey, content: event.content)
-                        .lineLimit(3)
-
-                    if likeCount > 0 {
-                        Text("\(likeCount) like\(likeCount == 1 ? "" : "s")")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.primary)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
-            } else if likeCount > 0 {
-                Text("\(likeCount) like\(likeCount == 1 ? "" : "s")")
-                    .font(.subheadline.weight(.semibold))
+                PostCaptionText(ndk: ndk, pubkey: event.pubkey, content: event.content)
+                    .lineLimit(3)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
             }
@@ -245,8 +223,6 @@ public struct PostCard: View {
     }
 
     private func handleDoubleTap() {
-        guard !isLiked else { return }
-
         // Haptic feedback
         let impact = UIImpactFeedbackGenerator(style: .medium)
         impact.impactOccurred()
@@ -254,33 +230,9 @@ public struct PostCard: View {
         // Show animation
         showLikeAnimation = true
 
-        // Update state
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-            isLiked = true
-            likeCount += 1
-        }
-
-        // Publish reaction
-        Task { await publishReaction() }
-    }
-
-    private func toggleLike() async {
-        if isLiked {
-            // Unlike - we don't actually delete, just update UI
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                likeCount = max(0, likeCount - 1)
-            }
-        } else {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                likeCount += 1
-            }
-            await publishReaction()
-        }
-    }
-
-    private func publishReaction() async {
-        do {
-            _ = try await ndk.publish { builder in
+        // Publish reaction - LikeButton will pick it up via subscription
+        Task {
+            try? await ndk.publish { builder in
                 builder
                     .kind(OlasConstants.EventKinds.reaction)
                     .content("+")
@@ -288,61 +240,9 @@ public struct PostCard: View {
                     .tag(["p", event.pubkey])
                     .tag(["k", "\(event.kind)"])
             }
-        } catch {
-            // Revert on error
-            withAnimation {
-                isLiked = false
-                likeCount = max(0, likeCount - 1)
-            }
         }
     }
 
-    private func loadReactions() async {
-        // Load reactions and comments in parallel, streaming counts as they arrive
-        async let reactionTask: () = loadReactionCount()
-        async let commentTask: () = loadCommentCount()
-        _ = await (reactionTask, commentTask)
-    }
-
-    private func loadReactionCount() async {
-        let reactionFilter = NDKFilter(
-            kinds: [OlasConstants.EventKinds.reaction],
-            limit: 500
-        )
-
-        let subscription = ndk.subscribe(filter: reactionFilter)
-
-        // Stream reaction count - increment as each reaction arrives
-        for await reactionEvent in subscription.events {
-            let referencesOurEvent = reactionEvent.tags.contains { tag in
-                tag.first == "e" && tag.count > 1 && tag[1] == event.id
-            }
-
-            if referencesOurEvent && reactionEvent.content == "+" {
-                likeCount += 1
-            }
-        }
-    }
-
-    private func loadCommentCount() async {
-        let commentFilter = NDKFilter(
-            kinds: [OlasConstants.EventKinds.comment],
-            limit: 100
-        )
-
-        let commentSub = ndk.subscribe(filter: commentFilter)
-
-        // Stream comment count - increment as each comment arrives
-        for await commentEvent in commentSub.events {
-            let referencesOurEvent = commentEvent.tags.contains { tag in
-                tag.first == "e" && tag.count > 1 && tag[1] == event.id
-            }
-
-            if referencesOurEvent {
-                commentCount += 1
-            }
-        }
-    }
 
     private func muteAuthor() async {
         let impact = UIImpactFeedbackGenerator(style: .medium)

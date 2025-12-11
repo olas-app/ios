@@ -3,7 +3,7 @@ import SwiftUI
 import NDKSwiftCore
 
 public struct FeedView: View {
-    @StateObject private var viewModel: FeedViewModel
+    @State private var viewModel: FeedViewModel
     @Environment(RelayMetadataCache.self) private var relayMetadataCache
     @EnvironmentObject private var authViewModel: AuthViewModel
     @EnvironmentObject private var muteListManager: MuteListManager
@@ -13,7 +13,7 @@ public struct FeedView: View {
 
     public init(ndk: NDK, settings: SettingsManager) {
         self.ndk = ndk
-        _viewModel = StateObject(wrappedValue: FeedViewModel(ndk: ndk, settings: settings))
+        self.viewModel = FeedViewModel(ndk: ndk, settings: settings)
     }
 
     private var currentFeedDisplayName: String {
@@ -27,16 +27,18 @@ public struct FeedView: View {
 
     public var body: some View {
         NavigationStack(path: $navigationPath) {
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(viewModel.posts, id: \.id) { event in
-                        PostCard(event: event, ndk: ndk) { pubkey in
-                            navigationPath.append(pubkey)
-                        }
-                        .padding(.bottom, 8)
+            List {
+                ForEach(viewModel.posts, id: \.id) { event in
+                    PostCard(event: event, ndk: ndk) { pubkey in
+                        navigationPath.append(pubkey)
                     }
+                    .equatable()
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 8, trailing: 0))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
                 }
             }
+            .listStyle(.plain)
             .refreshable {
                 viewModel.stopSubscription()
                 viewModel.startSubscription(muteListManager: muteListManager)
@@ -76,15 +78,21 @@ public struct FeedView: View {
                 ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: authViewModel.currentUser?.pubkey)
             }
         }
-        .onAppear {
+        .task {
+            // Start subscription
             viewModel.startSubscription(muteListManager: muteListManager)
-            Task {
+
+            // Fetch relay metadata in parallel
+            await withTaskGroup(of: Void.self) { group in
                 for relayURL in DiscoveryRelays.relays {
-                    await relayMetadataCache.fetchMetadata(for: relayURL)
+                    group.addTask {
+                        await relayMetadataCache.fetchMetadata(for: relayURL)
+                    }
                 }
             }
         }
         .onDisappear {
+            // Stop subscription when view disappears
             viewModel.stopSubscription()
         }
         .overlay {
