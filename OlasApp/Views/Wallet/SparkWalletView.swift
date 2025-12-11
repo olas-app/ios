@@ -401,10 +401,6 @@ public struct SparkWalletView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 32))
-        .padding(.horizontal, 20)
-        .padding(.top, 8)
     }
 }
 
