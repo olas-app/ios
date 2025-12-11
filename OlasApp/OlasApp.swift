@@ -7,6 +7,7 @@ struct OlasApp: App {
     @StateObject private var authViewModel = AuthViewModel()
     @State private var settings = SettingsManager()
     @State private var relayCache = RelayMetadataCache()
+    @State private var imageCache = ImageCache()
     @State private var ndk: NDK?
     @State private var sparkWalletManager: SparkWalletManager?
     @State private var isInitialized = false
@@ -26,10 +27,12 @@ struct OlasApp: App {
                         .environmentObject(authViewModel)
                         .environment(settings)
                         .environment(relayCache)
+                        .environment(imageCache)
                 }
             }
             .environment(settings)
             .environment(relayCache)
+            .environment(imageCache)
             .onChange(of: authViewModel.isLoggedIn) { _, isLoggedIn in
                 if isLoggedIn {
                     ndk?.signer = authViewModel.signer
