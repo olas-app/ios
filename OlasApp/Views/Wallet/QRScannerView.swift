@@ -83,7 +83,7 @@ struct QRScannerView: View {
                     Text("Open Settings")
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(OlasTheme.Colors.deepTeal)
+                        .background(OlasTheme.Colors.accent)
                         .foregroundStyle(.white)
                         .cornerRadius(12)
                 }

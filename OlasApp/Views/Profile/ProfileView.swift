@@ -9,6 +9,7 @@ public struct ProfileView: View {
     var sparkWalletManager: SparkWalletManager?
 
     @EnvironmentObject private var muteListManager: MuteListManager
+    @Environment(SettingsManager.self) private var settings
     @State private var profile: NDKUserMetadata?
     @State private var posts: [NDKEvent] = []
     @State private var followingCount = 0
@@ -117,7 +118,7 @@ public struct ProfileView: View {
 
     private var feedKinds: [Kind] {
         var kinds: [Kind] = [OlasConstants.EventKinds.image]
-        if SettingsManager.shared.showVideos {
+        if settings.showVideos {
             kinds.append(OlasConstants.EventKinds.shortVideo)
         }
         return kinds

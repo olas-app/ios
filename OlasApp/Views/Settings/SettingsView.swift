@@ -5,8 +5,8 @@ public struct SettingsView: View {
     let ndk: NDK
     @EnvironmentObject private var authViewModel: AuthViewModel
     @State private var blossomManager: NDKBlossomServerManager
-    @ObservedObject var sparkWalletManager: SparkWalletManager
-    @ObservedObject private var settings = SettingsManager.shared
+    var sparkWalletManager: SparkWalletManager
+    @Environment(SettingsManager.self) private var settings
 
     public init(ndk: NDK, sparkWalletManager: SparkWalletManager) {
         self.ndk = ndk
@@ -23,6 +23,7 @@ public struct SettingsView: View {
             }
 
             Section("Wallet") {
+                @Bindable var settings = settings
                 Picker("Wallet Type", selection: $settings.walletType) {
                     ForEach(WalletType.allCases, id: \.self) { type in
                         Text(type.displayName).tag(type)

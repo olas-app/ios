@@ -1,17 +1,18 @@
 import SwiftUI
 import UIKit
 import UnifiedBlurHash
+import Observation
 
 /// Thread-safe image cache using NSCache
-actor ImageCache {
-    static let shared = ImageCache()
-
+@Observable
+@MainActor
+public final class ImageCache {
     private let cache = NSCache<NSString, UIImage>()
-    private var runningTasks: [String: Task<UIImage?, Never>] = [:]
+    @ObservationIgnored private var runningTasks: [String: Task<UIImage?, Never>] = [:]
 
-    private init() {
-        cache.countLimit = 100
-        cache.totalCostLimit = 100 * 1024 * 1024 // 100MB
+    public init(countLimit: Int = 100, sizeLimit: Int = 100 * 1024 * 1024) {
+        cache.countLimit = countLimit
+        cache.totalCostLimit = sizeLimit
     }
 
     func image(for url: URL) -> UIImage? {
@@ -39,7 +40,7 @@ actor ImageCache {
             do {
                 let (data, _) = try await URLSession.shared.data(from: url)
                 if let image = UIImage(data: data) {
-                    await self.setImage(image, for: url)
+                    self.setImage(image, for: url)
                     return image
                 }
             } catch {
@@ -78,6 +79,8 @@ enum BlurhashDecoder {
 
 /// Cached async image view with blurhash placeholder support (NIP-68)
 struct CachedAsyncImage<Content: View, Placeholder: View>: View {
+    @Environment(ImageCache.self) private var imageCache
+
     let url: URL?
     let blurhash: String?
     let aspectRatio: CGFloat?
@@ -144,7 +147,7 @@ struct CachedAsyncImage<Content: View, Placeholder: View>: View {
     private func loadImage() async {
         guard let url else { return }
 
-        if let loadedImage = await ImageCache.shared.loadImage(from: url) {
+        if let loadedImage = await imageCache.loadImage(from: url) {
             self.image = loadedImage
         }
     }

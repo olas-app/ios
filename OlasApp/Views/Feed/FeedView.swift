@@ -4,16 +4,16 @@ import NDKSwiftCore
 
 public struct FeedView: View {
     @StateObject private var viewModel: FeedViewModel
-    @StateObject private var relayMetadataCache = RelayMetadataCache.shared
+    @Environment(RelayMetadataCache.self) private var relayMetadataCache
     @EnvironmentObject private var authViewModel: AuthViewModel
     @EnvironmentObject private var muteListManager: MuteListManager
     private let ndk: NDK
 
     @State private var navigationPath = NavigationPath()
 
-    public init(ndk: NDK) {
+    public init(ndk: NDK, settings: SettingsManager) {
         self.ndk = ndk
-        _viewModel = StateObject(wrappedValue: FeedViewModel(ndk: ndk))
+        _viewModel = StateObject(wrappedValue: FeedViewModel(ndk: ndk, settings: settings))
     }
 
     private var currentFeedDisplayName: String {

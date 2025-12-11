@@ -1,4 +1,5 @@
 import SwiftUI
+import Observation
 
 public enum WalletType: String, CaseIterable, Hashable {
     case spark = "spark"
@@ -12,21 +13,15 @@ public enum WalletType: String, CaseIterable, Hashable {
     }
 }
 
+@Observable
 @MainActor
-public final class SettingsManager: ObservableObject {
-    public static let shared = SettingsManager()
+public final class SettingsManager {
+    // Shared instance removed
+    // public static let shared = SettingsManager()
 
-    @AppStorage("showVideos") public var showVideos: Bool = true
-    @AppStorage("autoplayVideos") public var autoplayVideos: Bool = true
+    @ObservationIgnored @AppStorage("showVideos") public var showVideos: Bool = true
+    @ObservationIgnored @AppStorage("autoplayVideos") public var autoplayVideos: Bool = true
+    @ObservationIgnored @AppStorage("walletType") public var walletType: WalletType = .spark
 
-    @Published public var walletType: WalletType {
-        didSet {
-            UserDefaults.standard.set(walletType.rawValue, forKey: "walletType")
-        }
-    }
-
-    private init() {
-        let savedType = UserDefaults.standard.string(forKey: "walletType")
-        self.walletType = WalletType(rawValue: savedType ?? "") ?? .spark
-    }
+    public init() {}
 }
