@@ -55,11 +55,25 @@ struct OlasApp: App {
             .appendingPathComponent("olas_cache")
             .path
 
+        // Ensure cache directory exists
+        do {
+            try FileManager.default.createDirectory(
+                atPath: cachePath,
+                withIntermediateDirectories: true,
+                attributes: nil
+            )
+        } catch {
+            print("Failed to create cache directory: \(error)")
+        }
+
         do {
             let cache = try await NDKNostrDBCache(path: cachePath)
             newNDK.cache = cache
+            print("✓ NostrDB cache initialized at: \(cachePath)")
         } catch {
-            print("Failed to initialize cache: \(error)")
+            print("❌ Failed to initialize NostrDB cache: \(error)")
+            print("   Path: \(cachePath)")
+            print("   Stats will be unavailable in Developer Tools")
         }
 
         // Restore session if available

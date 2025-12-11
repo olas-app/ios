@@ -27,7 +27,7 @@ public struct PostPublishingService {
 
     public init(ndk: NDK) {
         self.ndk = ndk
-        var manager = NDKBlossomServerManager(ndk: ndk)
+        let manager = NDKBlossomServerManager(ndk: ndk)
 
         // Initialize with default servers if none configured
         if manager.userServers.isEmpty {
@@ -62,7 +62,7 @@ public struct PostPublishingService {
 
         // Publish
         await onProgress("Publishing...", 0.8)
-        let event = try await ndk.publish { builder in
+        let (event, _) = try await ndk.publish { builder in
             builder
                 .kind(OlasConstants.EventKinds.image)
                 .content(caption)

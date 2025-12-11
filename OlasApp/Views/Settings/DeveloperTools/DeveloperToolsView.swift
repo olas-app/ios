@@ -11,6 +11,7 @@ struct DeveloperToolsView: View {
     @State private var signerPubkey: String?
     @State private var cachePath: String?
     @State private var isLoading = true
+    @State private var isNetworkLoggingEnabled = false
 
     var body: some View {
         List {
@@ -70,11 +71,12 @@ struct DeveloperToolsView: View {
                 }
 
                 Button {
-                    NDKLogger.logNetworkTraffic.toggle()
+                    isNetworkLoggingEnabled.toggle()
+                    NDKLogger.logNetworkTraffic = isNetworkLoggingEnabled
                 } label: {
                     Label(
-                        NDKLogger.logNetworkTraffic ? "Disable Network Logging" : "Enable Network Logging",
-                        systemImage: NDKLogger.logNetworkTraffic ? "wifi.slash" : "wifi"
+                        isNetworkLoggingEnabled ? "Disable Network Logging" : "Enable Network Logging",
+                        systemImage: isNetworkLoggingEnabled ? "wifi.slash" : "wifi"
                     )
                 }
 
@@ -104,8 +106,8 @@ struct DeveloperToolsView: View {
                 }
 
                 LabeledContent("Network Logging") {
-                    Text(NDKLogger.logNetworkTraffic ? "Enabled" : "Disabled")
-                        .foregroundStyle(NDKLogger.logNetworkTraffic ? .green : .secondary)
+                    Text(isNetworkLoggingEnabled ? "Enabled" : "Disabled")
+                        .foregroundStyle(isNetworkLoggingEnabled ? .green : .secondary)
                 }
             }
         }
@@ -114,6 +116,7 @@ struct DeveloperToolsView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .task {
+            isNetworkLoggingEnabled = NDKLogger.logNetworkTraffic
             await refreshStats()
         }
         .refreshable {
@@ -123,12 +126,18 @@ struct DeveloperToolsView: View {
 
     private func refreshStats() async {
         isLoading = true
+
         if let cache = ndk.cache as? NDKNostrDBCache {
-            stats = await cache.getStats()
-            databaseSize = await cache.getDatabaseSize()
-            cachePath = await cache.getCachePath()
+            stats = cache.getStats()
+            databaseSize = cache.getDatabaseSize()
+            cachePath = cache.getCachePath()
+        } else {
+            stats = nil
+            databaseSize = 0
+            cachePath = nil
         }
-        relayCount = await ndk.relays.count
+
+        relayCount = ndk.relays.count
         if let signer = ndk.signer {
             signerPubkey = try? await signer.pubkey
         }
