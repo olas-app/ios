@@ -77,6 +77,9 @@ struct OlasApp: App {
             print("   Stats will be unavailable in Developer Tools")
         }
 
+        // Set NDK reference in AuthViewModel before restoring session
+        authViewModel.setNDK(newNDK)
+
         // Restore session if available
         await authViewModel.restoreSession()
 

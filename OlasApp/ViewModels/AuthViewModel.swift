@@ -10,13 +10,19 @@ public final class AuthViewModel: ObservableObject {
     @Published public private(set) var isLoading = false
     @Published public var error: Error?
 
-    public private(set) var signer: NDKPrivateKeySigner?
+    public private(set) var signer: (any NDKSigner)?
+    public weak var ndk: NDK?
 
     private let keychainService = "com.olas.keychain"
     private let keychainAccount = "user_nsec"
+    private let keychainBunkerAccount = "user_bunker"
 
     public init() {
         // Session restoration happens in restoreSession()
+    }
+
+    public func setNDK(_ ndk: NDK) {
+        self.ndk = ndk
     }
 
     // MARK: - Public Methods
@@ -44,33 +50,72 @@ public final class AuthViewModel: ObservableObject {
         }
 
         let newSigner = try NDKPrivateKeySigner(nsec: nsec)
-        try saveToKeychain(nsec: nsec)
+        try saveToKeychain(nsec: nsec, account: keychainAccount)
 
         signer = newSigner
         currentUser = try await newSigner.user()
         isLoggedIn = true
     }
 
+    public func loginWithBunker(_ bunkerUri: String) async throws {
+        isLoading = true
+        defer { isLoading = false }
+
+        guard let ndk = ndk else {
+            throw AuthError.ndkNotInitialized
+        }
+
+        // Validate bunker URI format
+        guard bunkerUri.hasPrefix("bunker://") || bunkerUri.hasPrefix("nostrconnect://") else {
+            throw AuthError.invalidBunkerUri
+        }
+
+        // Create bunker signer
+        let bunkerSigner = try NDKBunkerSigner.bunker(ndk: ndk, connectionToken: bunkerUri)
+
+        // Connect to the remote signer
+        let user = try await bunkerSigner.connect()
+
+        // Save bunker URI to keychain
+        try saveToKeychain(nsec: bunkerUri, account: keychainBunkerAccount)
+
+        signer = bunkerSigner
+        currentUser = user
+        isLoggedIn = true
+    }
+
     public func logout() async {
-        deleteFromKeychain()
+        deleteFromKeychain(account: keychainAccount)
+        deleteFromKeychain(account: keychainBunkerAccount)
         signer = nil
         currentUser = nil
         isLoggedIn = false
     }
 
     public func restoreSession() async {
-        guard let nsec = loadFromKeychain() else { return }
+        // Try to restore bunker session first
+        if let bunkerUri = loadFromKeychain(account: keychainBunkerAccount) {
+            do {
+                try await loginWithBunker(bunkerUri)
+                return
+            } catch {
+                deleteFromKeychain(account: keychainBunkerAccount)
+            }
+        }
+
+        // Fall back to nsec
+        guard let nsec = loadFromKeychain(account: keychainAccount) else { return }
 
         do {
             try await loginWithNsec(nsec)
         } catch {
-            deleteFromKeychain()
+            deleteFromKeychain(account: keychainAccount)
         }
     }
 
     // MARK: - Keychain
 
-    private func saveToKeychain(nsec: String) throws {
+    private func saveToKeychain(nsec: String, account: String) throws {
         guard let data = nsec.data(using: .utf8) else {
             throw AuthError.keychainError(-1)
         }
@@ -78,7 +123,7 @@ public final class AuthViewModel: ObservableObject {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: keychainAccount,
+            kSecAttrAccount as String: account,
             kSecValueData as String: data,
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
@@ -92,11 +137,11 @@ public final class AuthViewModel: ObservableObject {
         }
     }
 
-    private func loadFromKeychain() -> String? {
+    private func loadFromKeychain(account: String) -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: keychainAccount,
+            kSecAttrAccount as String: account,
             kSecReturnData as String: true
         ]
 
@@ -112,11 +157,11 @@ public final class AuthViewModel: ObservableObject {
         return nsec
     }
 
-    private func deleteFromKeychain() {
+    private func deleteFromKeychain(account: String) {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: keychainAccount
+            kSecAttrAccount as String: account
         ]
 
         SecItemDelete(query as CFDictionary)
@@ -127,12 +172,18 @@ public final class AuthViewModel: ObservableObject {
 
 public enum AuthError: LocalizedError, Equatable {
     case invalidNsec
+    case invalidBunkerUri
+    case ndkNotInitialized
     case keychainError(OSStatus)
 
     public var errorDescription: String? {
         switch self {
         case .invalidNsec:
             return "Invalid private key format. Must start with 'nsec1'"
+        case .invalidBunkerUri:
+            return "Invalid bunker URI. Must start with 'bunker://' or 'nostrconnect://'"
+        case .ndkNotInitialized:
+            return "NDK not initialized. Please try again."
         case .keychainError(let status):
             return "Keychain error: \(status)"
         }

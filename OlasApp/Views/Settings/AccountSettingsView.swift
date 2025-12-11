@@ -96,9 +96,9 @@ struct AccountSettingsView: View {
     }
 
     private func loadKeys() {
-        guard let signer = authViewModel.signer else { return }
-        npub = try? signer.npub
-        nsec = try? signer.nsec
+        guard let signer = authViewModel.signer as? NDKPrivateKeySigner else { return }
+        npub = signer.publicKey.npub
+        nsec = signer.privateKey?.nsec
     }
 
     private func copyToClipboard(_ value: String, label: String) {
