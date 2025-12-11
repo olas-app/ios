@@ -34,7 +34,7 @@ public final class AuthViewModel: ObservableObject {
         let newSigner = try NDKPrivateKeySigner.generate()
         let nsec = try newSigner.nsec
 
-        try saveToKeychain(nsec: nsec)
+        try saveToKeychain(nsec: nsec, account: keychainAccount)
 
         signer = newSigner
         currentUser = try await newSigner.user()
