@@ -16,8 +16,15 @@ public class WalletViewModel: ObservableObject {
     @Published public private(set) var transactions: [WalletTransaction] = []
     @Published public private(set) var configuredMints: [String] = []
     @Published public private(set) var error: Error?
+    @Published public private(set) var btcRate: Double?
+    @Published public var preferredCurrency: String = UserDefaults.standard.string(forKey: "preferred_fiat_currency") ?? "USD" {
+        didSet {
+            UserDefaults.standard.set(preferredCurrency, forKey: "preferred_fiat_currency")
+        }
+    }
 
     private var eventObservationTask: Task<Void, Never>?
+    private var priceRefreshTask: Task<Void, Never>?
 
     public init(ndk: NDK) {
         self.ndk = ndk
@@ -25,6 +32,7 @@ public class WalletViewModel: ObservableObject {
 
     deinit {
         eventObservationTask?.cancel()
+        priceRefreshTask?.cancel()
     }
 
     // MARK: - Wallet Lifecycle
@@ -63,8 +71,24 @@ public class WalletViewModel: ObservableObject {
             // Configure zap manager with this wallet
             await ndk.zapManager.configureDefaults(cashuWallet: newWallet)
 
+            // Fetch initial BTC price
+            await fetchBTCPrice()
+
+            // Start periodic price refresh (every 5 minutes)
+            startPriceRefreshTask()
+
         } catch {
             self.error = error
+        }
+    }
+
+    private func startPriceRefreshTask() {
+        priceRefreshTask?.cancel()
+        priceRefreshTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 5 * 60 * 1_000_000_000) // 5 minutes
+                await self?.fetchBTCPrice()
+            }
         }
     }
 
@@ -162,6 +186,42 @@ public class WalletViewModel: ObservableObject {
     public func refreshTransactions() async {
         guard let wallet = wallet else { return }
         transactions = await wallet.getTransactionHistory()
+    }
+
+    // MARK: - Fiat Conversion
+
+    /// Fetch BTC price from CoinGecko API
+    public func fetchBTCPrice() async {
+        do {
+            let urlString = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=\(preferredCurrency.lowercased())"
+            guard let url = URL(string: urlString) else { return }
+
+            let (data, _) = try await URLSession.shared.data(from: url)
+
+            struct PriceResponse: Codable {
+                let bitcoin: [String: Double]
+            }
+
+            let response = try JSONDecoder().decode(PriceResponse.self, from: data)
+            if let rate = response.bitcoin[preferredCurrency.lowercased()] {
+                btcRate = rate
+            }
+        } catch {
+            print("[Wallet] Failed to fetch BTC price: \(error)")
+            // Don't set error to avoid disrupting UI for non-critical feature
+        }
+    }
+
+    /// Convert sats to fiat using current rate
+    public func satsToFiat(_ sats: Int64) -> Double? {
+        guard let rate = btcRate else { return nil }
+        return SatsConverter.satsToFiat(sats, btcRate: rate)
+    }
+
+    /// Format fiat amount with currency symbol
+    public func formatFiat(_ sats: Int64) -> String? {
+        guard let fiatValue = satsToFiat(sats) else { return nil }
+        return SatsConverter.formatFiat(fiatValue, currencyCode: preferredCurrency)
     }
 
     // MARK: - Event Observation

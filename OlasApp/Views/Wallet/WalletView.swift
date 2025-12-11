@@ -74,7 +74,8 @@ public struct WalletView: View {
                     balance: walletViewModel.balance,
                     balancesByMint: walletViewModel.balancesByMint,
                     onDeposit: { showDeposit = true },
-                    onSend: { showSend = true }
+                    onSend: { showSend = true },
+                    walletViewModel: walletViewModel
                 )
                 .padding(.horizontal)
 

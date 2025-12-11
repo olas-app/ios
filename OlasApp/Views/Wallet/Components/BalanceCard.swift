@@ -6,8 +6,10 @@ struct BalanceCard: View {
     let balancesByMint: [String: Int64]
     let onDeposit: () -> Void
     let onSend: () -> Void
+    @ObservedObject var walletViewModel: WalletViewModel
 
     @State private var showMintBreakdown = false
+    @State private var showFiat = false
 
     var body: some View {
         VStack(spacing: 24) {
@@ -17,14 +19,47 @@ struct BalanceCard: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(formatSats(balance))
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                // Tappable balance with toggle
+                Button {
+                    withAnimation(.spring(response: 0.3)) {
+                        showFiat.toggle()
+                    }
+                } label: {
+                    VStack(spacing: 4) {
+                        if showFiat, let fiatAmount = walletViewModel.formatFiat(balance) {
+                            // Show fiat value
+                            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                                Text(fiatAmount)
+                                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                                    .foregroundStyle(.primary)
+                            }
 
-                    Text("sats")
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
+                            // Show sats as secondary
+                            Text("\(formatSats(balance)) sats")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            // Show sats value
+                            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                                Text(formatSats(balance))
+                                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                                    .foregroundStyle(.primary)
+
+                                Text("sats")
+                                    .font(.title3)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            // Show fiat as secondary if available
+                            if let fiatAmount = walletViewModel.formatFiat(balance) {
+                                Text(fiatAmount)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
                 }
+                .buttonStyle(.plain)
 
                 // Mint breakdown toggle
                 if balancesByMint.count > 1 {

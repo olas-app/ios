@@ -1337,47 +1337,22 @@ struct SparkSendView: View {
     @ViewBuilder
     private func parsedInvoiceInfo(_ invoice: some Any) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            if let amountMsat = (invoice as AnyObject).value(forKey: "amountMsat") as? UInt64 {
-                HStack {
-                    Text("Amount:")
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Text("\(amountMsat / 1000) sats")
-                        .font(.headline)
-                }
+            Text("Lightning Invoice")
+                .font(.headline)
 
-                if let description = (invoice as AnyObject).value(forKey: "description") as? String,
-                   !description.isEmpty {
-                    HStack(alignment: .top) {
-                        Text("Description:")
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text(description)
-                            .font(.subheadline)
-                            .multilineTextAlignment(.trailing)
-                    }
-                }
-            } else {
-                Text("Lightning Invoice")
-                    .font(.headline)
-            }
+            Text("Invoice details will be shown after validation")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Lightning invoice details")
+        .accessibilityLabel("Lightning invoice validated")
     }
 
     @ViewBuilder
     private func parsedAddressInfo(_ address: some Any) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            if let addressString = (address as AnyObject).value(forKey: "lightningAddress") as? String {
-                HStack {
-                    Text("Address:")
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Text(addressString)
-                        .font(.subheadline.monospaced())
-                }
-            }
+            Text("Lightning Address")
+                .font(.headline)
 
             // Amount entry
             VStack(alignment: .leading, spacing: 8) {
