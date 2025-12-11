@@ -4,13 +4,8 @@ import SwiftUI
 public enum OlasTheme {
     // MARK: - Colors
     public enum Colors {
-        // Primary accent - neutral black/white (adapts to light/dark mode)
-        public static let accent = Color.primary
-
-        // Legacy aliases - now neutral
-        public static let deepTeal = Color.primary
-        public static let oceanBlue = Color.primary
-        public static let seafoam = Color.secondary
+        // Primary accent - native blue
+        public static let accent = Color.blue
 
         // Feedback colors
         public static let zapGold = Color(hex: "FFB800")

@@ -173,13 +173,7 @@ struct ImageEditorView: View {
                         }
                     }
                     .fontWeight(.semibold)
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [OlasTheme.Colors.deepTeal, OlasTheme.Colors.oceanBlue],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+                    .foregroundStyle(OlasTheme.Colors.accent)
                 }
             }
         }
@@ -190,6 +184,9 @@ struct ImageEditorView: View {
             Task { await updatePreview() }
         }
         .onChange(of: adjustments) { _, _ in
+            Task { await updatePreview() }
+        }
+        .onChange(of: selectedAspectRatio) { _, _ in
             Task { await updatePreview() }
         }
         .task {
@@ -357,7 +354,7 @@ struct ImageEditorView: View {
                     }
 
                     Slider(value: $filterIntensity, in: 0...1)
-                        .tint(OlasTheme.Colors.deepTeal)
+                        .tint(OlasTheme.Colors.accent)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
@@ -405,7 +402,7 @@ struct ImageEditorView: View {
                     ),
                     in: selectedAdjustment.range
                 )
-                .tint(OlasTheme.Colors.deepTeal)
+                .tint(OlasTheme.Colors.accent)
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
@@ -435,10 +432,11 @@ struct ImageEditorView: View {
         let filter = selectedFilter
         let intensity = filterIntensity
         let currentAdjustments = adjustments
+        let aspectRatio = selectedAspectRatio
         let sourceImage = image
 
         let result = await Task.detached(priority: .userInitiated) {
-            self.applyEdits(to: sourceImage, filter: filter, intensity: intensity, adjustments: currentAdjustments)
+            self.applyEdits(to: sourceImage, filter: filter, intensity: intensity, adjustments: currentAdjustments, aspectRatio: aspectRatio)
         }.value
 
         await MainActor.run {
@@ -453,12 +451,13 @@ struct ImageEditorView: View {
         let filter = selectedFilter
         let intensity = filterIntensity
         let currentAdjustments = adjustments
+        let aspectRatio = selectedAspectRatio
         let sourceImage = image
         let currentRotation = rotation
         let flipped = isFlipped
 
         let result = await Task.detached(priority: .userInitiated) {
-            var processed = self.applyEdits(to: sourceImage, filter: filter, intensity: intensity, adjustments: currentAdjustments)
+            var processed = self.applyEdits(to: sourceImage, filter: filter, intensity: intensity, adjustments: currentAdjustments, aspectRatio: aspectRatio)
 
             // Apply rotation and flip
             if currentRotation != 0 || flipped {
@@ -473,8 +472,34 @@ struct ImageEditorView: View {
         }
     }
 
-    private func applyEdits(to image: UIImage, filter: ImageFilter, intensity: Double, adjustments: [ImageAdjustment: Double]) -> UIImage? {
+    private func applyEdits(to image: UIImage, filter: ImageFilter, intensity: Double, adjustments: [ImageAdjustment: Double], aspectRatio: AspectRatio) -> UIImage? {
         guard var ciImage = CIImage(image: image) else { return image }
+
+        // Apply crop if needed
+        if let targetRatio = aspectRatio.ratio {
+            let extent = ciImage.extent
+            let currentRatio = extent.width / extent.height
+
+            var cropRect = extent
+
+            if currentRatio > targetRatio {
+                // Image is wider than target, crop width
+                let newWidth = extent.height * targetRatio
+                let xOffset = (extent.width - newWidth) / 2
+                cropRect = CGRect(x: extent.origin.x + xOffset, y: extent.origin.y, width: newWidth, height: extent.height)
+            } else if currentRatio < targetRatio {
+                // Image is taller than target, crop height
+                let newHeight = extent.width / targetRatio
+                let yOffset = (extent.height - newHeight) / 2
+                cropRect = CGRect(x: extent.origin.x, y: extent.origin.y + yOffset, width: extent.width, height: newHeight)
+            }
+
+            if cropRect != extent {
+                ciImage = ciImage.cropped(to: cropRect)
+                // Translate back to origin to avoid issues
+                ciImage = ciImage.transformed(by: CGAffineTransform(translationX: -cropRect.origin.x, y: -cropRect.origin.y))
+            }
+        }
 
         // Apply filter
         if filter != .original {
@@ -734,7 +759,7 @@ private struct AspectRatioButton: View {
         Button(action: onTap) {
             VStack(spacing: 8) {
                 RoundedRectangle(cornerRadius: 4)
-                    .stroke(isSelected ? OlasTheme.Colors.deepTeal : Color.secondary, lineWidth: 2)
+                    .stroke(isSelected ? OlasTheme.Colors.accent : Color.secondary, lineWidth: 2)
                     .frame(width: ratioWidth, height: ratioHeight)
 
                 Text(ratio.rawValue)
@@ -745,13 +770,13 @@ private struct AspectRatioButton: View {
             .padding(.vertical, 12)
             .background(
                 isSelected
-                    ? OlasTheme.Colors.deepTeal.opacity(0.15)
+                    ? OlasTheme.Colors.accent.opacity(0.15)
                     : Color(white: 0.15)
             )
             .cornerRadius(12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? OlasTheme.Colors.deepTeal : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? OlasTheme.Colors.accent : Color.clear, lineWidth: 2)
             )
         }
     }
@@ -802,7 +827,7 @@ private struct FilterThumbnail: View {
                 .cornerRadius(12)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(isSelected ? OlasTheme.Colors.deepTeal : Color.clear, lineWidth: 3)
+                        .stroke(isSelected ? OlasTheme.Colors.accent : Color.clear, lineWidth: 3)
                 )
 
                 Text(filter.rawValue)
@@ -920,11 +945,11 @@ private struct AdjustmentButton: View {
                 ZStack {
                     Image(systemName: adjustment.icon)
                         .font(.system(size: 20))
-                        .foregroundStyle(isSelected ? OlasTheme.Colors.deepTeal : .secondary)
+                        .foregroundStyle(isSelected ? OlasTheme.Colors.accent : .secondary)
 
                     if hasValue {
                         Circle()
-                            .fill(OlasTheme.Colors.deepTeal)
+                            .fill(OlasTheme.Colors.accent)
                             .frame(width: 6, height: 6)
                             .offset(x: 12, y: -10)
                     }
@@ -939,13 +964,13 @@ private struct AdjustmentButton: View {
             .padding(.vertical, 12)
             .background(
                 isSelected
-                    ? OlasTheme.Colors.deepTeal.opacity(0.15)
+                    ? OlasTheme.Colors.accent.opacity(0.15)
                     : Color(white: 0.15)
             )
             .cornerRadius(12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? OlasTheme.Colors.deepTeal : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? OlasTheme.Colors.accent : Color.clear, lineWidth: 2)
             )
         }
     }

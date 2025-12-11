@@ -20,7 +20,7 @@ public struct CreateAccountView: View {
                 VStack(spacing: 12) {
                     Image(systemName: "person.badge.plus")
                         .font(.system(size: 60))
-                        .foregroundStyle(OlasTheme.Colors.deepTeal)
+                        .foregroundStyle(OlasTheme.Colors.accent)
 
                     Text("Welcome to Olas")
                         .font(.title2.weight(.bold))
@@ -38,21 +38,21 @@ public struct CreateAccountView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 12) {
                         Image(systemName: "key.fill")
-                            .foregroundStyle(OlasTheme.Colors.oceanBlue)
+                            .foregroundStyle(OlasTheme.Colors.accent)
                         Text("A unique cryptographic key pair will be generated")
                             .font(.caption)
                     }
 
                     HStack(spacing: 12) {
                         Image(systemName: "lock.shield.fill")
-                            .foregroundStyle(OlasTheme.Colors.oceanBlue)
+                            .foregroundStyle(OlasTheme.Colors.accent)
                         Text("Your private key never leaves your device")
                             .font(.caption)
                     }
 
                     HStack(spacing: 12) {
                         Image(systemName: "globe")
-                            .foregroundStyle(OlasTheme.Colors.oceanBlue)
+                            .foregroundStyle(OlasTheme.Colors.accent)
                         Text("You can use this identity across all Nostr apps")
                             .font(.caption)
                     }
@@ -87,7 +87,7 @@ public struct CreateAccountView: View {
                 }
                 .background(
                     LinearGradient(
-                        colors: [OlasTheme.Colors.deepTeal, OlasTheme.Colors.oceanBlue],
+                        colors: [OlasTheme.Colors.accent, OlasTheme.Colors.accent],
                         startPoint: .leading,
                         endPoint: .trailing
                     )

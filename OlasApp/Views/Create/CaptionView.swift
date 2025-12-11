@@ -91,7 +91,7 @@ struct CaptionView: View {
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(
                         isCaptionFocused
-                            ? OlasTheme.Colors.deepTeal
+                            ? OlasTheme.Colors.accent
                             : Color.white.opacity(0.1),
                         lineWidth: 1
                     )
@@ -182,13 +182,7 @@ struct CaptionView: View {
                 .font(.system(size: 17, weight: .semibold))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
-                .background(
-                    LinearGradient(
-                        colors: [OlasTheme.Colors.deepTeal, OlasTheme.Colors.oceanBlue],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
+                .background(OlasTheme.Colors.accent)
                 .foregroundStyle(.white)
                 .cornerRadius(14)
         }

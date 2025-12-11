@@ -173,7 +173,7 @@ public struct VideoPostCard: View {
             .aspectRatio(video.primaryAspectRatio ?? (9.0 / 16.0), contentMode: .fit)
             .overlay(
                 ProgressView()
-                    .tint(OlasTheme.Colors.deepTeal)
+                    .tint(OlasTheme.Colors.accent)
             )
     }
 

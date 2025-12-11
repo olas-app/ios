@@ -99,7 +99,7 @@ public struct SparkWalletView: View {
 
             Text(formatSats(walletManager.balance))
                 .font(.system(size: 48, weight: .bold, design: .rounded))
-                .foregroundStyle(OlasTheme.Colors.deepTeal)
+                .foregroundStyle(OlasTheme.Colors.accent)
 
             if let address = walletManager.lightningAddress {
                 HStack {
@@ -138,8 +138,8 @@ public struct SparkWalletView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(OlasTheme.Colors.deepTeal.opacity(0.1))
-                .foregroundStyle(OlasTheme.Colors.deepTeal)
+                .background(OlasTheme.Colors.accent.opacity(0.1))
+                .foregroundStyle(OlasTheme.Colors.accent)
                 .cornerRadius(16)
             }
 
@@ -236,7 +236,7 @@ public struct SparkWalletView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(OlasTheme.Colors.deepTeal)
+                    .background(OlasTheme.Colors.accent)
                     .foregroundStyle(.white)
                     .cornerRadius(12)
                 }
@@ -616,7 +616,7 @@ struct ReceiveView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(OlasTheme.Colors.deepTeal)
+                        .background(OlasTheme.Colors.accent)
                         .foregroundStyle(.white)
                         .cornerRadius(12)
                     }
@@ -679,7 +679,7 @@ struct ReceiveView: View {
         VStack(spacing: 20) {
             Image(systemName: "doc.text.fill")
                 .font(.system(size: 48))
-                .foregroundStyle(OlasTheme.Colors.deepTeal)
+                .foregroundStyle(OlasTheme.Colors.accent)
 
             Text("Create Invoice")
                 .font(.title2.bold())
@@ -717,7 +717,7 @@ struct ReceiveView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(OlasTheme.Colors.deepTeal)
+                .background(OlasTheme.Colors.accent)
                 .foregroundStyle(.white)
                 .cornerRadius(12)
             }
@@ -752,7 +752,7 @@ struct ReceiveView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(OlasTheme.Colors.deepTeal)
+                    .background(OlasTheme.Colors.accent)
                     .foregroundStyle(.white)
                     .cornerRadius(12)
                 }
@@ -773,7 +773,7 @@ struct ReceiveView: View {
             Button("Generate New Invoice") {
                 self.invoice = nil
             }
-            .foregroundStyle(OlasTheme.Colors.deepTeal)
+            .foregroundStyle(OlasTheme.Colors.accent)
 
             Spacer()
         }
@@ -1198,7 +1198,7 @@ struct SparkSendView: View {
                 Text("Done")
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(OlasTheme.Colors.deepTeal)
+                    .background(OlasTheme.Colors.accent)
                     .foregroundStyle(.white)
                     .cornerRadius(12)
             }

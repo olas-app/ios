@@ -158,7 +158,7 @@ public struct SparkWalletSettingsView: View {
             } label: {
                 HStack {
                     Image(systemName: "plus.circle.fill")
-                        .foregroundStyle(OlasTheme.Colors.deepTeal)
+                        .foregroundStyle(OlasTheme.Colors.accent)
                     Text("Create New Wallet")
                 }
             }
@@ -237,7 +237,7 @@ struct CreateSparkWalletView: View {
         VStack(spacing: 20) {
             Image(systemName: "key.fill")
                 .font(.system(size: 60))
-                .foregroundStyle(OlasTheme.Colors.deepTeal)
+                .foregroundStyle(OlasTheme.Colors.accent)
 
             Text("Create Your Wallet")
                 .font(.title2.bold())
@@ -265,7 +265,7 @@ struct CreateSparkWalletView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(OlasTheme.Colors.deepTeal)
+                .background(OlasTheme.Colors.accent)
                 .foregroundStyle(.white)
                 .cornerRadius(12)
             }
@@ -319,7 +319,7 @@ struct CreateSparkWalletView: View {
                 Text("I've Written It Down")
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(OlasTheme.Colors.deepTeal)
+                    .background(OlasTheme.Colors.accent)
                     .foregroundStyle(.white)
                     .cornerRadius(12)
             }
@@ -340,7 +340,7 @@ struct CreateSparkWalletView: View {
         return VStack(spacing: 20) {
             Image(systemName: "checkmark.shield")
                 .font(.system(size: 60))
-                .foregroundStyle(OlasTheme.Colors.deepTeal)
+                .foregroundStyle(OlasTheme.Colors.accent)
 
             Text("Verify Your Phrase")
                 .font(.title2.bold())
@@ -380,7 +380,7 @@ struct CreateSparkWalletView: View {
                 Text("Verify & Complete")
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(allFieldsFilled ? OlasTheme.Colors.deepTeal : .gray)
+                    .background(allFieldsFilled ? OlasTheme.Colors.accent : .gray)
                     .foregroundStyle(.white)
                     .cornerRadius(12)
             }
@@ -390,7 +390,7 @@ struct CreateSparkWalletView: View {
                 step = .showMnemonic(mnemonic)
             } label: {
                 Text("Go Back")
-                    .foregroundStyle(OlasTheme.Colors.deepTeal)
+                    .foregroundStyle(OlasTheme.Colors.accent)
             }
         }
     }

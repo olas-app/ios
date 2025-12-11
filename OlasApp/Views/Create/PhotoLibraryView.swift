@@ -35,13 +35,7 @@ struct PhotoLibraryView: View {
                     onNext()
                 }
                 .fontWeight(.semibold)
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [OlasTheme.Colors.deepTeal, OlasTheme.Colors.oceanBlue],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
+                .foregroundStyle(OlasTheme.Colors.accent)
                 .disabled(selectedImage == nil)
             }
         }
@@ -221,7 +215,7 @@ private struct PhotoGridItem: View {
 
                 if isSelected {
                     Rectangle()
-                        .stroke(OlasTheme.Colors.deepTeal, lineWidth: 3)
+                        .stroke(OlasTheme.Colors.accent, lineWidth: 3)
 
                     VStack {
                         HStack {
@@ -230,13 +224,7 @@ private struct PhotoGridItem: View {
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundStyle(.white)
                                 .frame(width: 22, height: 22)
-                                .background(
-                                    LinearGradient(
-                                        colors: [OlasTheme.Colors.deepTeal, OlasTheme.Colors.oceanBlue],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
+                                .background(OlasTheme.Colors.accent)
                                 .clipShape(Circle())
                                 .padding(6)
                         }

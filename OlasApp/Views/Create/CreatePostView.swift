@@ -106,13 +106,7 @@ public struct CreatePostView: View {
             if showSuccess {
                 // Success state
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [OlasTheme.Colors.deepTeal, OlasTheme.Colors.oceanBlue],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(OlasTheme.Colors.accent)
                     .frame(width: 80, height: 80)
                     .overlay {
                         Image(systemName: "checkmark")
@@ -137,11 +131,7 @@ public struct CreatePostView: View {
                     Circle()
                         .trim(from: 0, to: publishingProgress)
                         .stroke(
-                            LinearGradient(
-                                colors: [OlasTheme.Colors.deepTeal, OlasTheme.Colors.oceanBlue],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
+                            OlasTheme.Colors.accent,
                             style: StrokeStyle(lineWidth: 4, lineCap: .round)
                         )
                         .frame(width: 80, height: 80)
