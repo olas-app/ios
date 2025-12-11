@@ -5,46 +5,31 @@ import UnifiedBlurHash
 
 public struct CreatePostView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(PublishingState.self) private var publishingState
     let ndk: NDK
 
     @State private var selectedImage: UIImage?
     @State private var editedImage: UIImage?
     @State private var caption = ""
-    @State private var isPublishing = false
-    @State private var publishingProgress: Double = 0
-    @State private var publishingStatus: String = ""
-    @State private var showSuccess = false
     @State private var error: Error?
     @State private var showError = false
 
     @State private var step: PostCreationStep = .selectPhoto
-    @State private var blossomManager: NDKBlossomServerManager
 
     enum PostCreationStep {
         case selectPhoto
         case editPhoto
         case addCaption
-        case publishing
     }
 
     public init(ndk: NDK) {
         self.ndk = ndk
-        let manager = NDKBlossomServerManager(ndk: ndk)
-
-        // Initialize with default servers if none configured
-        if manager.userServers.isEmpty {
-            for server in OlasConstants.blossomServers {
-                manager.addUserServer(server)
-            }
-        }
-
-        self._blossomManager = State(wrappedValue: manager)
     }
 
     public var body: some View {
         NavigationStack {
             ZStack {
-                Color(.systemBackground).ignoresSafeArea()
+                Color.black.ignoresSafeArea()
 
                 Group {
                     switch step {
@@ -81,7 +66,6 @@ public struct CreatePostView: View {
                                 image: image,
                                 caption: $caption,
                                 onShare: {
-                                    step = .publishing
                                     Task {
                                         await publishPost()
                                     }
@@ -91,9 +75,6 @@ public struct CreatePostView: View {
                                 }
                             )
                         }
-
-                    case .publishing:
-                        publishingView
                     }
                 }
             }
@@ -105,146 +86,43 @@ public struct CreatePostView: View {
                 Text(error?.localizedDescription ?? "Unknown error")
             }
         }
-    }
-
-    private var publishingView: some View {
-        VStack(spacing: 24) {
-            Spacer()
-
-            if showSuccess {
-                // Success state
-                Circle()
-                    .fill(OlasTheme.Colors.accent)
-                    .frame(width: 80, height: 80)
-                    .overlay {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 36, weight: .bold))
-                            .foregroundStyle(.primary)
-                    }
-                    .transition(.scale.combined(with: .opacity))
-
-                Text("Posted!")
-                    .font(.system(size: 20, weight: .semibold))
-
-                Text("Your post is now live")
-                    .font(.system(size: 15))
-                    .foregroundStyle(.secondary)
-            } else {
-                // Progress state
-                ZStack {
-                    Circle()
-                        .stroke(Color(.systemGray5), lineWidth: 4)
-                        .frame(width: 80, height: 80)
-
-                    Circle()
-                        .trim(from: 0, to: publishingProgress)
-                        .stroke(
-                            OlasTheme.Colors.accent,
-                            style: StrokeStyle(lineWidth: 4, lineCap: .round)
-                        )
-                        .frame(width: 80, height: 80)
-                        .rotationEffect(.degrees(-90))
-                        .animation(.easeInOut(duration: 0.3), value: publishingProgress)
-                }
-
-                Text(publishingStatus.isEmpty ? "Uploading..." : publishingStatus)
-                    .font(.system(size: 17, weight: .semibold))
-
-                Text("Preparing your image")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-        }
-        .frame(maxWidth: .infinity)
+        .preferredColorScheme(.dark)
     }
 
     private func publishPost() async {
         guard let image = editedImage ?? selectedImage else { return }
 
-        isPublishing = true
-        publishingProgress = 0.1
-        publishingStatus = "Uploading..."
+        let service = PostPublishingService(ndk: ndk)
 
-        do {
-            // Upload image
-            publishingProgress = 0.3
-            let imageUrl = try await uploadImage(image)
+        // Start background publishing
+        Task {
+            publishingState.isPublishing = true
+            publishingState.error = nil
 
-            publishingProgress = 0.6
-            publishingStatus = "Publishing..."
-
-            // Get image dimensions
-            let dimensions = "\(Int(image.size.width))x\(Int(image.size.height))"
-
-            // Generate blurhash (NIP-68)
-            publishingProgress = 0.8
-            let blurhash = await UnifiedBlurHash.getBlurHashString(from: image)
-
-            // Publish kind 20 event
-            _ = try await ndk.publish { builder in
-                builder
-                    .kind(EventKind.image)
-                    .content(caption)
-                    .imetaTag(url: imageUrl) { imeta in
-                        imeta.dim = dimensions
-                        imeta.m = "image/jpeg"
-                        imeta.blurhash = blurhash
+            do {
+                let eventId = try await service.publish(
+                    image: image,
+                    caption: caption,
+                    onProgress: { status, progress in
+                        publishingState.publishingStatus = status
+                        publishingState.publishingProgress = progress
                     }
+                )
+
+                publishingState.lastPublishedEventId = eventId
+
+                // Auto-hide after 2 seconds
+                try? await Task.sleep(for: .seconds(2))
+                publishingState.reset()
+            } catch {
+                publishingState.error = error
+                publishingState.publishingStatus = "Failed: \(error.localizedDescription)"
             }
-
-            publishingProgress = 1.0
-            publishingStatus = "Done!"
-
-            // Show success
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                showSuccess = true
-            }
-
-            // Dismiss after delay
-            try? await Task.sleep(for: .seconds(1.5))
-
-            await MainActor.run {
-                dismiss()
-            }
-        } catch {
-            self.error = error
-            showError = true
-            isPublishing = false
-        }
-    }
-
-    private func uploadImage(_ image: UIImage) async throws -> String {
-        // Compress image
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-            throw PostError.imageCompressionFailed
         }
 
-        // Upload to Blossom server
-        do {
-            let blob = try await blossomManager.uploadToUserServers(data: imageData, mimeType: "image/jpeg")
-            return blob.url
-        } catch {
-            print("Upload failed: \(error)")
-            throw PostError.uploadFailed
-        }
-    }
-}
-
-enum PostError: LocalizedError {
-    case imageCompressionFailed
-    case uploadFailed
-    case invalidUploadResponse
-
-    var errorDescription: String? {
-        switch self {
-        case .imageCompressionFailed:
-            return "Failed to compress image"
-        case .uploadFailed:
-            return "Failed to upload image"
-        case .invalidUploadResponse:
-            return "Invalid response from upload server"
+        // Immediately dismiss the view
+        await MainActor.run {
+            dismiss()
         }
     }
 }

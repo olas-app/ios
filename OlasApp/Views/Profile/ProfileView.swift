@@ -12,10 +12,15 @@ public struct ProfileView: View {
     @Environment(SettingsManager.self) private var settings
     @State private var profile: NDKUserMetadata?
     @State private var posts: [NDKEvent] = []
+    @State private var likedMetaSubscription: NDKMetaSubscription?
     @State private var followingCount = 0
     @State private var showEditProfile = false
     @State private var selectedTab: ProfileTab = .posts
     @State private var selectedPost: NDKEvent?
+
+    private var currentPosts: [NDKEvent] {
+        selectedTab == .posts ? posts : (likedMetaSubscription?.events ?? [])
+    }
 
     private var isOwnProfile: Bool {
         guard let currentUserPubkey else { return false }
@@ -36,35 +41,38 @@ public struct ProfileView: View {
     public var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                ZStack(alignment: .bottomLeading) {
-                    // Banner
-                    ProfileBannerView(profile: profile)
+                // Banner
+                ProfileBannerView(profile: profile)
 
-                    // Avatar overlapping banner
+                // Profile header - avatar and name side by side
+                HStack(alignment: .center, spacing: 16) {
                     ProfileAvatarView(profile: profile)
                         .padding(.leading, 20)
-                        .padding(.bottom, -48)
-                }
+                        .offset(y: -48)
 
-                // Profile content
-                VStack(alignment: .leading, spacing: 16) {
-                    // Name
-                    Text(profile?.name ?? "Unknown")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(.primary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(profile?.name ?? "Unknown")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(.primary)
 
-                    // Bio
-                    if let about = profile?.about, !about.isEmpty {
-                        Text(about)
-                            .font(.system(size: 15))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(3)
+                        if let about = profile?.about, !about.isEmpty {
+                            Text(about)
+                                .font(.system(size: 15))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
                     }
+                    .padding(.trailing, 20)
 
-                    // Stats
+                    Spacer()
+                }
+                .padding(.top, 8)
+
+                // Stats and action button
+                VStack(alignment: .leading, spacing: 16) {
                     HStack(spacing: 32) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("\(posts.count)")
+                            Text("\(currentPosts.count)")
                                 .font(.system(size: 18, weight: .bold))
                                 .foregroundStyle(.primary)
                             Text("Posts")
@@ -82,7 +90,6 @@ public struct ProfileView: View {
                         }
                     }
 
-                    // Action button
                     Button(action: isOwnProfile ? { showEditProfile = true } : { Task { await toggleMute() } }) {
                         Text(isOwnProfile ? "Edit Profile" : (isMuted ? "Unmute" : "Mute"))
                             .font(.system(size: 15, weight: .semibold))
@@ -95,19 +102,13 @@ public struct ProfileView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
-                .padding(.top, 56)
                 .padding(.bottom, 20)
-
-                // Collections
-                if isOwnProfile {
-                    ProfileCollectionsSection()
-                }
 
                 // Tabs
                 ProfileTabsBar(selectedTab: $selectedTab)
 
                 // Content grid
-                PostsGridView(posts: posts) { post in
+                PostsGridView(posts: currentPosts) { post in
                     selectedPost = post
                 }
             }
@@ -118,6 +119,7 @@ public struct ProfileView: View {
         .task {
             await loadProfile()
             await loadPosts()
+            await loadLikedPosts()
             await loadFollowing()
         }
         .sheet(isPresented: $showEditProfile) {
@@ -181,9 +183,36 @@ public struct ProfileView: View {
         }
     }
 
+    private func loadLikedPosts() async {
+        await MainActor.run {
+            // Use metaSubscribe to get posts the user has liked (reacted to)
+            let likeFilter = NDKFilter(
+                authors: [pubkey],
+                kinds: [Kind(7)],
+                limit: 100
+            )
+
+            likedMetaSubscription = ndk.metaSubscribe(
+                filter: likeFilter,
+                sort: .tagTime
+            )
+        }
+    }
+
     private func loadFollowing() async {
-        // Skip loading follows for now - API changed
-        followingCount = 0
+        let user = NDKUser(pubkey: pubkey)
+        await user.setNdk(ndk)
+
+        do {
+            let follows = try await user.follows()
+            await MainActor.run {
+                self.followingCount = follows.count
+            }
+        } catch {
+            await MainActor.run {
+                self.followingCount = 0
+            }
+        }
     }
 
     private func toggleMute() async {
@@ -266,43 +295,6 @@ private struct ProfileAvatarView: View {
                 .stroke(Color(.systemBackground), lineWidth: 4)
         )
         .shadow(color: Color(.label).opacity(0.3), radius: 8, y: 4)
-    }
-}
-
-private struct ProfileCollectionsSection: View {
-    let collections = [
-        ("📚", "Reading"),
-        ("💻", "Dev"),
-        ("🎨", "Design"),
-        ("🚀", "Startup"),
-        ("🎵", "Music"),
-        ("📷", "Photos")
-    ]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(collections, id: \.1) { icon, name in
-                        VStack(spacing: 6) {
-                            Circle()
-                                .fill(Color(.systemGray5))
-                                .frame(width: 64, height: 64)
-                                .overlay(
-                                    Text(icon)
-                                        .font(.system(size: 26))
-                                )
-
-                            Text(name)
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-                .padding(.horizontal, 20)
-            }
-        }
-        .padding(.vertical, 16)
     }
 }
 

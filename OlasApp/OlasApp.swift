@@ -8,6 +8,7 @@ struct OlasApp: App {
     @State private var settings = SettingsManager()
     @State private var relayCache = RelayMetadataCache()
     @State private var imageCache = ImageCache()
+    @State private var publishingState = PublishingState()
     @State private var ndk: NDK?
     @State private var sparkWalletManager: SparkWalletManager?
     @State private var isInitialized = false
@@ -28,6 +29,7 @@ struct OlasApp: App {
                         .environment(settings)
                         .environment(relayCache)
                         .environment(imageCache)
+                        .environment(publishingState)
                 }
             }
             .environment(settings)

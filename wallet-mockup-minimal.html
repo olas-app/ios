@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet - Minimal Clean</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+            background: #1a1a1a;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .phone {
+            width: 100%;
+            max-width: 390px;
+            height: 844px;
+            background: #000;
+            border-radius: 50px;
+            padding: 20px;
+            box-shadow: 0 50px 100px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 30px;
+            background: #000;
+            border-radius: 0 0 20px 20px;
+            z-index: 10;
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            border-radius: 40px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .header {
+            padding: 50px 24px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .wallet-title {
+            font-size: 32px;
+            font-weight: 800;
+            color: #000;
+        }
+
+        .settings-icon {
+            width: 40px;
+            height: 40px;
+            background: #f5f5f5;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .balance-card {
+            margin: 0 24px 30px;
+            padding: 32px 24px;
+            background: #000;
+            border-radius: 24px;
+            text-align: center;
+        }
+
+        .balance-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .balance-amount {
+            font-size: 56px;
+            font-weight: 300;
+            color: #fff;
+            letter-spacing: -2px;
+            margin-bottom: 8px;
+        }
+
+        .balance-fiat {
+            font-size: 18px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .lightning-address-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 100px;
+            cursor: pointer;
+        }
+
+        .lightning-icon {
+            color: #ffd700;
+            font-size: 16px;
+        }
+
+        .lightning-text {
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            padding: 0 24px 30px;
+        }
+
+        .action-btn {
+            padding: 18px;
+            background: #000;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn:active {
+            transform: scale(0.97);
+        }
+
+        .action-btn-icon {
+            font-size: 22px;
+            color: #fff;
+        }
+
+        .action-btn-text {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .divider {
+            height: 1px;
+            background: #f0f0f0;
+            margin: 0 24px 24px;
+        }
+
+        .activity-header {
+            padding: 0 24px 16px;
+        }
+
+        .activity-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #000;
+        }
+
+        .transaction-list {
+            padding: 0 24px 30px;
+        }
+
+        .transaction-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 0;
+            border-bottom: 1px solid #f5f5f5;
+            cursor: pointer;
+        }
+
+        .transaction-item:last-child {
+            border-bottom: none;
+        }
+
+        .tx-icon-wrapper {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .tx-icon-wrapper.receive {
+            background: #e8f5e9;
+            color: #4caf50;
+        }
+
+        .tx-icon-wrapper.send {
+            background: #fff3e0;
+            color: #ff9800;
+        }
+
+        .tx-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .tx-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 2px;
+        }
+
+        .tx-time {
+            font-size: 14px;
+            font-weight: 500;
+            color: #999;
+        }
+
+        .tx-amount-wrapper {
+            text-align: right;
+        }
+
+        .tx-amount {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .tx-amount.receive {
+            color: #4caf50;
+        }
+
+        .tx-amount.send {
+            color: #000;
+        }
+
+        .tx-fiat {
+            font-size: 13px;
+            font-weight: 500;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+            <div class="header">
+                <div class="wallet-title">Wallet</div>
+                <div class="settings-icon">⚙</div>
+            </div>
+
+            <div class="balance-card">
+                <div class="balance-label">Total Balance</div>
+                <div class="balance-amount">$542.18</div>
+                <div class="balance-fiat">21,687 sats</div>
+                <div class="lightning-address-row">
+                    <span class="lightning-icon">⚡</span>
+                    <span class="lightning-text">pablo@olas.io</span>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <div class="action-btn">
+                    <span class="action-btn-icon">↓</span>
+                    <span class="action-btn-text">Receive</span>
+                </div>
+                <div class="action-btn">
+                    <span class="action-btn-icon">↑</span>
+                    <span class="action-btn-text">Send</span>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="activity-header">
+                <div class="activity-title">Recent Activity</div>
+            </div>
+
+            <div class="transaction-list">
+                <div class="transaction-item">
+                    <div class="tx-icon-wrapper receive">↓</div>
+                    <div class="tx-info">
+                        <div class="tx-title">Payment Received</div>
+                        <div class="tx-time">2 hours ago</div>
+                    </div>
+                    <div class="tx-amount-wrapper">
+                        <div class="tx-amount receive">+$50.00</div>
+                        <div class="tx-fiat">2,000 sats</div>
+                    </div>
+                </div>
+
+                <div class="transaction-item">
+                    <div class="tx-icon-wrapper send">↑</div>
+                    <div class="tx-info">
+                        <div class="tx-title">Payment Sent</div>
+                        <div class="tx-time">Yesterday</div>
+                    </div>
+                    <div class="tx-amount-wrapper">
+                        <div class="tx-amount send">-$25.00</div>
+                        <div class="tx-fiat">1,000 sats</div>
+                    </div>
+                </div>
+
+                <div class="transaction-item">
+                    <div class="tx-icon-wrapper receive">↓</div>
+                    <div class="tx-info">
+                        <div class="tx-title">Payment Received</div>
+                        <div class="tx-time">3 days ago</div>
+                    </div>
+                    <div class="tx-amount-wrapper">
+                        <div class="tx-amount receive">+$100.00</div>
+                        <div class="tx-fiat">4,000 sats</div>
+                    </div>
+                </div>
+
+                <div class="transaction-item">
+                    <div class="tx-icon-wrapper send">↑</div>
+                    <div class="tx-info">
+                        <div class="tx-title">Payment Sent</div>
+                        <div class="tx-time">1 week ago</div>
+                    </div>
+                    <div class="tx-amount-wrapper">
+                        <div class="tx-amount send">-$15.50</div>
+                        <div class="tx-fiat">620 sats</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
