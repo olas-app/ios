@@ -131,16 +131,12 @@ struct DeveloperToolsView: View {
             stats = cache.getStats()
             databaseSize = cache.getDatabaseSize()
             cachePath = cache.getCachePath()
-<<<<<<< HEAD
-        }
-=======
         } else {
             stats = nil
             databaseSize = 0
             cachePath = nil
         }
 
->>>>>>> origin/pr-10
         relayCount = ndk.relays.count
         if let signer = ndk.signer {
             signerPubkey = try? await signer.pubkey
