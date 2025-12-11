@@ -1,0 +1,150 @@
+appId: com.olas.app
+name: Olas Media Publishing Test
+
+---
+# Test: Publish media with image cropping
+# This test validates the complete media publishing flow including image selection, cropping, and posting
+# Prerequisites: Simulator must have at least one photo in the library
+# To add test photos: xcrun simctl addmedia booted ~/path/to/test/image.jpg
+
+# Close any open sheets/modals first (if present)
+- tapOn:
+    text: "Close"
+    optional: true
+
+# Wait for home screen
+- extendedWaitUntil:
+    visible:
+      text: "Home"
+    timeout: 15000
+
+- takeScreenshot: "01_app_loaded_home"
+
+# Tap the create post button (center + tab)
+- tapOn:
+    point: "50%,95%"
+
+- extendedWaitUntil:
+    visible:
+      text: "New Post"
+    timeout: 5000
+
+- takeScreenshot: "02_photo_library_opened"
+
+# Verify photo library loaded
+- assertVisible:
+    text: "Recents"
+
+# The first photo should be auto-selected
+# Wait a moment for it to load
+- extendedWaitUntil:
+    visible:
+      text: "Next"
+    timeout: 3000
+
+- takeScreenshot: "03_photo_auto_selected"
+
+# Tap Next to go to image editor
+- tapOn:
+    text: "Next"
+
+- extendedWaitUntil:
+    visible:
+      text: "Edit"
+    timeout: 5000
+
+- takeScreenshot: "04_image_editor_opened"
+
+# Verify Filters panel is open by default
+- assertVisible:
+    text: "Filters"
+
+- assertVisible:
+    text: "Original"
+
+# Test filter application - tap Clarendon filter
+- tapOn:
+    text: "Clarendon"
+
+- takeScreenshot: "05_clarendon_filter_applied"
+
+# Open Crop panel
+- tapOn:
+    text: "Crop"
+
+- extendedWaitUntil:
+    visible:
+      text: "1:1"
+    timeout: 2000
+
+- takeScreenshot: "06_crop_panel_opened"
+
+# Test aspect ratio selection - select square (1:1)
+- tapOn:
+    text: "1:1"
+
+- takeScreenshot: "07_square_crop_selected"
+
+# Test portrait aspect ratio (4:5)
+- tapOn:
+    text: "4:5"
+
+- takeScreenshot: "08_portrait_crop_selected"
+
+# Tap Next to go to caption screen
+- tapOn:
+    text: "Next"
+
+- extendedWaitUntil:
+    visible:
+      text: "New Post"
+    timeout: 5000
+
+- takeScreenshot: "09_caption_view"
+
+# Verify image preview is visible
+- assertVisible:
+    text: "Write a caption..."
+
+# Add a test caption
+- tapOn:
+    text: "Write a caption..."
+
+- inputText: "Test post from Maestro automation 🚀 #testing"
+
+- takeScreenshot: "10_caption_entered"
+
+# Verify Share button is visible
+- assertVisible:
+    text: "Share"
+
+# Tap Share to publish
+- tapOn:
+    text: "Share"
+
+- extendedWaitUntil:
+    visible:
+      text: "Uploading..."
+    timeout: 5000
+
+- takeScreenshot: "11_publishing_in_progress"
+
+# Wait for publishing to complete
+- extendedWaitUntil:
+    visible:
+      text: "Posted!"
+    timeout: 30000
+
+- takeScreenshot: "12_publish_success"
+
+# Wait for auto-dismiss back to home feed
+- extendedWaitUntil:
+    visible:
+      text: "Home"
+    timeout: 10000
+
+- takeScreenshot: "13_back_to_home"
+
+# Success - media publishing flow completed
+# Note: Verifying the post in feed requires relay propagation time
+# and may be inconsistent in automated tests

@@ -29,7 +29,16 @@ public struct CreatePostView: View {
 
     public init(ndk: NDK) {
         self.ndk = ndk
-        self._blossomManager = State(wrappedValue: NDKBlossomServerManager(ndk: ndk))
+        let manager = NDKBlossomServerManager(ndk: ndk)
+
+        // Initialize with default servers if none configured
+        if manager.userServers.isEmpty {
+            for server in OlasConstants.blossomServers {
+                manager.addUserServer(server)
+            }
+        }
+
+        self._blossomManager = State(wrappedValue: manager)
     }
 
     public var body: some View {
