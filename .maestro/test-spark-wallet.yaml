@@ -1,0 +1,47 @@
+appId: com.olas.app
+---
+# Test Spark Wallet - Generate wallet and test deposit
+
+- launchApp
+
+# Wait for app to load
+- waitForAnimationToEnd
+
+# Dismiss any iOS system dialogs (like "Shared with You")
+- tapOn:
+    text: "OK"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Navigate to Wallet tab (Spark wallet is default)
+- tapOn:
+    text: "Wallet"
+
+- waitForAnimationToEnd
+
+# Tap Receive button to open receive sheet
+- tapOn:
+    text: "Receive"
+
+- waitForAnimationToEnd
+
+# Switch to Invoice tab (defaults to Lightning Address)
+- tapOn:
+    text: "Invoice"
+
+- waitForAnimationToEnd
+
+# Enter amount in the text field
+- inputText: "1000"
+
+- waitForAnimationToEnd
+
+# Generate the invoice
+- tapOn:
+    text: "Generate Invoice"
+
+- waitForAnimationToEnd
+
+# Take a screenshot of the result
+- takeScreenshot: spark-wallet-invoice
