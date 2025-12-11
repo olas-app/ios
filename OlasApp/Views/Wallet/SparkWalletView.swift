@@ -801,33 +801,50 @@ struct SparkSendView: View {
     @Environment(\.dismiss) private var dismiss
 
     enum SendState {
-        case input
+        case scanning
+        case manualInput
+        case parsing
         case parsed(InputType)
+        case preparing
         case confirm(PrepareSendPaymentResponse)
         case sending
         case success
+        case error(String)
     }
 
-    @State private var state: SendState = .input
+    @State private var state: SendState = .scanning
     @State private var inputText: String = ""
     @State private var customAmount: String = ""
-    @State private var error: String?
     @State private var showScanner = false
+
+    private func transitionTo(_ newState: SendState) {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+            state = newState
+        }
+    }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
                 switch state {
-                case .input:
+                case .scanning:
+                    scanningView
+                case .manualInput:
                     inputView
+                case .parsing:
+                    parsingView
                 case .parsed(let parsed):
                     parsedView(parsed)
+                case .preparing:
+                    preparingView
                 case .confirm(let prepared):
                     confirmView(prepared)
                 case .sending:
                     sendingView
                 case .success:
                     successView
+                case .error(let errorMessage):
+                    errorView(errorMessage)
                 }
             }
             .padding()
@@ -900,12 +917,6 @@ struct SparkSendView: View {
                 }
             }
 
-            if let error = error {
-                Text(error)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
-
             Button {
                 Task { await parseInput() }
             } label: {
@@ -967,16 +978,9 @@ struct SparkSendView: View {
                 }
             }
 
-            if let error = error {
-                Text(error)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
-
             HStack(spacing: 12) {
                 Button {
-                    state = .input
-                    error = nil
+                    transitionTo(.manualInput)
                 } label: {
                     Text("Back")
                         .frame(maxWidth: .infinity)
@@ -1106,16 +1110,9 @@ struct SparkSendView: View {
                 .cornerRadius(12)
             }
 
-            if let error = error {
-                Text(error)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
-
             HStack(spacing: 12) {
                 Button {
-                    state = .input
-                    error = nil
+                    transitionTo(.scanning)
                 } label: {
                     Text("Cancel")
                         .frame(maxWidth: .infinity)
@@ -1207,27 +1204,147 @@ struct SparkSendView: View {
         }
     }
 
+    // MARK: - Scanning View
+
+    private var scanningView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+
+            Image(systemName: "qrcode.viewfinder")
+                .font(.system(size: 60))
+                .foregroundStyle(OlasTheme.Colors.zapGold)
+
+            Text("Scanner Opening...")
+                .font(.title2.bold())
+
+            Text("Point your camera at a QR code")
+                .font(.body)
+                .foregroundStyle(.secondary)
+
+            Button {
+                transitionTo(.manualInput)
+            } label: {
+                Text("Enter Manually")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color(.systemGray5))
+                    .foregroundStyle(.primary)
+                    .cornerRadius(12)
+            }
+
+            Spacer()
+        }
+    }
+
+    // MARK: - Parsing View
+
+    private var parsingView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            ProgressView()
+                .scaleEffect(1.5)
+
+            Text("Validating Payment...")
+                .font(.title2.bold())
+
+            Text("Please wait while we parse your input.")
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            Spacer()
+        }
+    }
+
+    // MARK: - Preparing View
+
+    private var preparingView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            ProgressView()
+                .scaleEffect(1.5)
+
+            Text("Preparing Payment...")
+                .font(.title2.bold())
+
+            Text("Please wait while we prepare your payment.")
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            Spacer()
+        }
+    }
+
+    // MARK: - Error View
+
+    private func errorView(_ errorMessage: String) -> some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 60))
+                .foregroundStyle(.red)
+
+            Text("Error")
+                .font(.title2.bold())
+
+            Text(errorMessage)
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+
+            HStack(spacing: 12) {
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Cancel")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color(.systemGray5))
+                        .foregroundStyle(.primary)
+                        .cornerRadius(12)
+                }
+
+                Button {
+                    transitionTo(.scanning)
+                } label: {
+                    Text("Try Again")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(OlasTheme.Colors.zapGold)
+                        .foregroundStyle(.white)
+                        .cornerRadius(12)
+                }
+            }
+
+            Spacer()
+        }
+    }
+
     // MARK: - Actions
 
     private func parseInput() async {
-        error = nil
+        transitionTo(.parsing)
+
         let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
 
         do {
             let parsed = try await walletManager.parseInput(trimmed)
-            state = .parsed(parsed)
+            transitionTo(.parsed(parsed))
         } catch {
-            self.error = "Could not parse input: \(error.localizedDescription)"
+            transitionTo(.error("Could not parse input: \(error.localizedDescription)"))
         }
     }
 
     private func preparePayment(_ parsed: InputType) async {
-        error = nil
-
         let amount: UInt64?
         if parsed.requiresAmount {
             guard let parsedAmount = UInt64(customAmount), parsedAmount > 0 else {
-                error = "Please enter a valid amount"
+                transitionTo(.error("Please enter a valid amount"))
                 return
             }
             amount = parsedAmount
@@ -1235,24 +1352,24 @@ struct SparkSendView: View {
             amount = parsed.embeddedAmountSats
         }
 
+        transitionTo(.preparing)
+
         do {
             let prepared = try await walletManager.preparePayment(input: inputText.trimmingCharacters(in: .whitespacesAndNewlines), amount: amount)
-            state = .confirm(prepared)
+            transitionTo(.confirm(prepared))
         } catch {
-            self.error = error.localizedDescription
+            transitionTo(.error(error.localizedDescription))
         }
     }
 
     private func sendPayment(_ prepared: PrepareSendPaymentResponse) async {
-        state = .sending
-        error = nil
+        transitionTo(.sending)
 
         do {
             try await walletManager.sendPreparedPayment(prepared)
-            state = .success
+            transitionTo(.success)
         } catch {
-            self.error = error.localizedDescription
-            state = .confirm(prepared)
+            transitionTo(.error(error.localizedDescription))
         }
     }
 
