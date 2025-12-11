@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Olas - Onboarding Mockup v3</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .phone-frame {
+            width: 390px;
+            height: 844px;
+            background: #000;
+            border-radius: 50px;
+            padding: 4px;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #0A1929 0%, #001E3C 100%);
+            border-radius: 46px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Bright cyan/turquoise from actual logo */
+        :root {
+            --olas-blue: #33B8FF;
+            --olas-blue-light: #5AC8FA;
+            --olas-blue-glow: rgba(51, 184, 255, 0.5);
+        }
+
+        /* Wave Intro Animation */
+        .wave-intro {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            animation: fadeOut 0.8s ease-in-out 2.5s forwards;
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                visibility: hidden;
+            }
+        }
+
+        .wave-container {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .wave {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 200%;
+            height: 200%;
+            transform: translateX(-50%);
+        }
+
+        .wave-1 {
+            background: radial-gradient(ellipse at center, var(--olas-blue-glow) 0%, transparent 70%);
+            animation: wave1 3s ease-in-out infinite, rise1 2.5s ease-out forwards;
+        }
+
+        .wave-2 {
+            background: radial-gradient(ellipse at center, rgba(51, 184, 255, 0.35) 0%, transparent 70%);
+            animation: wave2 4s ease-in-out infinite 0.5s, rise2 2.5s ease-out forwards;
+        }
+
+        .wave-3 {
+            background: radial-gradient(ellipse at center, rgba(51, 184, 255, 0.25) 0%, transparent 70%);
+            animation: wave3 5s ease-in-out infinite 1s, rise3 2.5s ease-out forwards;
+        }
+
+        @keyframes wave1 {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.1); }
+        }
+
+        @keyframes wave2 {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.15); }
+        }
+
+        @keyframes wave3 {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.2); }
+        }
+
+        @keyframes rise1 {
+            from { bottom: -100%; }
+            to { bottom: -20%; }
+        }
+
+        @keyframes rise2 {
+            from { bottom: -100%; }
+            to { bottom: -30%; }
+        }
+
+        @keyframes rise3 {
+            from { bottom: -100%; }
+            to { bottom: -40%; }
+        }
+
+        .logo-intro {
+            position: relative;
+            z-index: 10;
+            animation: logoAppear 1s ease-out 0.5s backwards;
+        }
+
+        @keyframes logoAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.8) translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .logo-intro .wave-logo {
+            width: 140px;
+            height: 140px;
+            filter: drop-shadow(0 15px 40px var(--olas-blue-glow));
+        }
+
+        /* Main Content */
+        .main-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            animation: contentFadeIn 0.8s ease-out 2.8s forwards;
+        }
+
+        @keyframes contentFadeIn {
+            to { opacity: 1; }
+        }
+
+        /* Animated background waves (subtle) */
+        .bg-waves {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            opacity: 0.2;
+        }
+
+        .bg-wave {
+            position: absolute;
+            width: 200%;
+            height: 200px;
+            background: linear-gradient(180deg, transparent, rgba(51, 184, 255, 0.15));
+        }
+
+        .bg-wave:nth-child(1) {
+            top: 20%;
+            left: -50%;
+            animation: drift1 20s ease-in-out infinite;
+        }
+
+        .bg-wave:nth-child(2) {
+            top: 50%;
+            left: -50%;
+            animation: drift2 25s ease-in-out infinite;
+        }
+
+        .bg-wave:nth-child(3) {
+            top: 80%;
+            left: -50%;
+            animation: drift3 30s ease-in-out infinite;
+        }
+
+        @keyframes drift1 {
+            0%, 100% { transform: translateX(0) rotate(-5deg); }
+            50% { transform: translateX(30%) rotate(5deg); }
+        }
+
+        @keyframes drift2 {
+            0%, 100% { transform: translateX(0) rotate(3deg); }
+            50% { transform: translateX(-20%) rotate(-3deg); }
+        }
+
+        @keyframes drift3 {
+            0%, 100% { transform: translateX(0) rotate(-3deg); }
+            50% { transform: translateX(25%) rotate(3deg); }
+        }
+
+        /* Content sections */
+        .content {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 60px 32px 50px;
+        }
+
+        .top-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 32px;
+        }
+
+        .logo .wave-logo {
+            width: 110px;
+            height: 110px;
+            filter: drop-shadow(0 10px 30px var(--olas-blue-glow));
+        }
+
+        .brand-name {
+            font-size: 72px;
+            font-weight: 400;
+            color: var(--olas-blue);
+            letter-spacing: -1px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+        }
+
+        .tagline {
+            font-size: 17px;
+            color: rgba(255, 255, 255, 0.65);
+            text-align: center;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+            max-width: 300px;
+            line-height: 1.5;
+        }
+
+        /* Particle effects */
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--olas-blue-light);
+            border-radius: 50%;
+            animation: particleFloat 6s ease-in-out infinite;
+            box-shadow: 0 0 8px var(--olas-blue-light);
+        }
+
+        @keyframes particleFloat {
+            0% {
+                transform: translateY(100vh) translateX(0) scale(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-20px) translateX(100px) scale(1);
+                opacity: 0;
+            }
+        }
+
+        .particle:nth-child(1) { left: 10%; animation-delay: 0s; animation-duration: 7s; }
+        .particle:nth-child(2) { left: 25%; animation-delay: 1.5s; animation-duration: 8s; }
+        .particle:nth-child(3) { left: 40%; animation-delay: 3s; animation-duration: 6s; }
+        .particle:nth-child(4) { left: 60%; animation-delay: 2s; animation-duration: 9s; }
+        .particle:nth-child(5) { left: 75%; animation-delay: 4s; animation-duration: 7s; }
+        .particle:nth-child(6) { left: 85%; animation-delay: 0.5s; animation-duration: 8s; }
+
+        /* Buttons */
+        .button-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .btn {
+            padding: 18px 32px;
+            border-radius: 16px;
+            font-size: 17px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.15), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+        }
+
+        .btn:hover::before {
+            transform: translateX(100%);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--olas-blue) 0%, #1E9FE0 100%);
+            color: white;
+            box-shadow: 0 8px 24px var(--olas-blue-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(51, 184, 255, 0.6);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: white;
+            border: 1.5px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary:active {
+            transform: translateY(0);
+        }
+
+        /* Ripple effect */
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(0);
+            animation: rippleEffect 0.6s ease-out;
+            pointer-events: none;
+        }
+
+        @keyframes rippleEffect {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        /* Status bar */
+        .status-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 1000;
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 30px;
+            background: #000;
+            border-radius: 0 0 20px 20px;
+        }
+
+        /* Wave Logo - slow subtle rotation */
+        .wave-logo {
+            animation: gentleRotate 30s linear infinite;
+        }
+
+        @keyframes gentleRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 420px) {
+            .phone-frame {
+                width: 100vw;
+                height: 100vh;
+                border-radius: 0;
+                padding: 0;
+            }
+
+            .screen {
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="screen">
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <span>9:41</span>
+                <span style="font-size: 12px;">●●●●</span>
+            </div>
+
+            <!-- Dynamic Notch -->
+            <div class="notch"></div>
+
+            <!-- Wave Intro (plays once, then fades out) -->
+            <div class="wave-intro">
+                <div class="wave-container">
+                    <div class="wave wave-1"></div>
+                    <div class="wave wave-2"></div>
+                    <div class="wave wave-3"></div>
+                </div>
+                <div class="logo-intro">
+                    <!-- Actual Olas Wave Logo -->
+                    <svg class="wave-logo" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Outer circle border -->
+                        <circle cx="100" cy="100" r="96" stroke="var(--olas-blue)" stroke-width="2" fill="none" opacity="0.3"/>
+
+                        <!-- Wave segments spiraling outward (8 wave petals) -->
+                        <!-- Wave 1 -->
+                        <path d="M100 100 Q120 80 140 85 Q145 95 135 105 Q120 110 100 100"
+                              fill="var(--olas-blue)" opacity="0.95"/>
+
+                        <!-- Wave 2 -->
+                        <path d="M100 100 Q120 120 140 115 Q145 105 135 95 Q120 90 100 100"
+                              fill="var(--olas-blue)" opacity="0.9" transform="rotate(45 100 100)"/>
+
+                        <!-- Wave 3 -->
+                        <path d="M100 100 Q120 80 140 85 Q145 95 135 105 Q120 110 100 100"
+                              fill="var(--olas-blue)" opacity="0.85" transform="rotate(90 100 100)"/>
+
+                        <!-- Wave 4 -->
+                        <path d="M100 100 Q120 80 140 85 Q145 95 135 105 Q120 110 100 100"
+                              fill="var(--olas-blue)" opacity="0.8" transform="rotate(135 100 100)"/>
+
+                        <!-- Wave 5 -->
+                        <path d="M100 100 Q120 80 140 85 Q145 95 135 105 Q120 110 100 100"
+                              fill="var(--olas-blue)" opacity="0.75" transform="rotate(180 100 100)"/>
+
+                        <!-- Wave 6 -->
+                        <path d="M100 100 Q120 80 140 85 Q145 95 135 105 Q120 110 100 100"
+                              fill="var(--olas-blue)" opacity="0.7" transform="rotate(225 100 100)"/>
+
+                        <!-- Wave 7 -->
+                        <path d="M100 100 Q120 80 140 85 Q145 95 135 105 Q120 110 100 100"
+                              fill="var(--olas-blue)" opacity="0.65" transform="rotate(270 100 100)"/>
+
+                        <!-- Wave 8 -->
+                        <path d="M100 100 Q120 80 140 85 Q145 95 135 105 Q120 110 100 100"
+                              fill="var(--olas-blue)" opacity="0.6" transform="rotate(315 100 100)"/>
+
+                        <!-- Center circle with wave -->
+                        <circle cx="100" cy="100" r="35" fill="var(--olas-blue)" opacity="0.3"/>
+                        <path d="M100 75 Q110 85 100 95 Q90 105 80 95 Q75 85 85 75 Q95 70 100 75"
+                              fill="white" opacity="0.8"/>
+                        <circle cx="100" cy="100" r="15" fill="var(--olas-blue-light)">
+                            <animate attributeName="r" values="15;17;15" dur="2s" repeatCount="indefinite"/>
+                        </circle>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Main Content (fades in after intro) -->
+            <div class="main-content">
+                <!-- Animated background -->
+                <div class="bg-waves">
+                    <div class="bg-wave"></div>
+                    <div class="bg-wave"></div>
+                    <div class="bg-wave"></div>
+                </div>
+
+                <!-- Floating particles -->
+                <div class="particles">
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                </div>
+
+                <div class="content">
+                    <div class="top-section">
+                        <div class="logo">
+                            <!-- Same Wave Logo (no bouncing, just subtle rotation) -->
+                            <svg class="wave-logo" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="100" cy="100" r="96" stroke="var(--olas-blue)" stroke-width="2" fill="none" opacity="0.3"/>
+                                <path d="M100 100 Q120 80 140 85 Q145 95 135 105 Q120 110 100 100"
+                                      fill="var(--olas-blue)" opacity="0.95"/>
+                                <path d="M100 100 Q120 80 140 85 Q145 95 135 105 Q120 110 100 100"
+                                      fill="var(--olas-blue)" opacity="0.9" transform="rotate(45 100 100)"/>
+                                <path d="M100 100 Q120 80 140 85 Q145 95 135 105 Q120 110 100 100"
+                                      fill="var(--olas-blue)" opacity="0.85" transform="rotate(90 100 100)"/>
+                                <path d="M100 100 Q120 80 140 85 Q145 95 135 105 Q120 110 100 100"
+                                      fill="var(--olas-blue)" opacity="0.8" transform="rotate(135 100 100)"/>
+                                <path d="M100 100 Q120 80 140 85 Q145 95 135 105 Q120 110 100 100"
+                                      fill="var(--olas-blue)" opacity="0.75" transform="rotate(180 100 100)"/>
+                                <path d="M100 100 Q120 80 140 85 Q145 95 135 105 Q120 110 100 100"
+                                      fill="var(--olas-blue)" opacity="0.7" transform="rotate(225 100 100)"/>
+                                <path d="M100 100 Q120 80 140 85 Q145 95 135 105 Q120 110 100 100"
+                                      fill="var(--olas-blue)" opacity="0.65" transform="rotate(270 100 100)"/>
+                                <path d="M100 100 Q120 80 140 85 Q145 95 135 105 Q120 110 100 100"
+                                      fill="var(--olas-blue)" opacity="0.6" transform="rotate(315 100 100)"/>
+                                <circle cx="100" cy="100" r="35" fill="var(--olas-blue)" opacity="0.3"/>
+                                <path d="M100 75 Q110 85 100 95 Q90 105 80 95 Q75 85 85 75 Q95 70 100 75"
+                                      fill="white" opacity="0.8"/>
+                                <circle cx="100" cy="100" r="15" fill="var(--olas-blue-light)">
+                                    <animate attributeName="r" values="15;17;15" dur="2s" repeatCount="indefinite"/>
+                                </circle>
+                            </svg>
+                        </div>
+
+                        <h1 class="brand-name">Olas</h1>
+
+                        <p class="tagline">Share moments. Make waves. Connect with what matters.</p>
+                    </div>
+
+                    <div class="button-section">
+                        <button class="btn btn-primary" onclick="createRipple(event, this)">
+                            Create Account
+                        </button>
+                        <button class="btn btn-secondary" onclick="createRipple(event, this)">
+                            I have a Nostr account
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function createRipple(event, button) {
+            const rect = button.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+
+            button.appendChild(ripple);
+
+            setTimeout(() => ripple.remove(), 600);
+        }
+
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                this.style.transform = 'scale(0.97)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 100);
+            });
+        });
+    </script>
+</body>
+</html>

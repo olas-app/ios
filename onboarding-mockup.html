@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Olas - Onboarding Mockup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .phone-frame {
+            width: 390px;
+            height: 844px;
+            background: #000;
+            border-radius: 50px;
+            padding: 4px;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #0A1929 0%, #001E3C 100%);
+            border-radius: 46px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Wave Intro Animation */
+        .wave-intro {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            animation: fadeOut 0.8s ease-in-out 2.5s forwards;
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                visibility: hidden;
+            }
+        }
+
+        .wave-container {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .wave {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 200%;
+            height: 200%;
+            transform: translateX(-50%);
+        }
+
+        .wave-1 {
+            background: radial-gradient(ellipse at center, rgba(0, 122, 255, 0.4) 0%, transparent 70%);
+            animation: wave1 3s ease-in-out infinite, rise1 2.5s ease-out forwards;
+        }
+
+        .wave-2 {
+            background: radial-gradient(ellipse at center, rgba(0, 122, 255, 0.3) 0%, transparent 70%);
+            animation: wave2 4s ease-in-out infinite 0.5s, rise2 2.5s ease-out forwards;
+        }
+
+        .wave-3 {
+            background: radial-gradient(ellipse at center, rgba(0, 122, 255, 0.2) 0%, transparent 70%);
+            animation: wave3 5s ease-in-out infinite 1s, rise3 2.5s ease-out forwards;
+        }
+
+        @keyframes wave1 {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.1); }
+        }
+
+        @keyframes wave2 {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.15); }
+        }
+
+        @keyframes wave3 {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.2); }
+        }
+
+        @keyframes rise1 {
+            from { bottom: -100%; }
+            to { bottom: -20%; }
+        }
+
+        @keyframes rise2 {
+            from { bottom: -100%; }
+            to { bottom: -30%; }
+        }
+
+        @keyframes rise3 {
+            from { bottom: -100%; }
+            to { bottom: -40%; }
+        }
+
+        .logo-intro {
+            position: relative;
+            z-index: 10;
+            animation: logoAppear 1s ease-out 0.5s backwards;
+        }
+
+        @keyframes logoAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.8) translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .logo-intro svg {
+            width: 120px;
+            height: 120px;
+            filter: drop-shadow(0 10px 30px rgba(0, 122, 255, 0.5));
+        }
+
+        /* Main Content */
+        .main-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            animation: contentFadeIn 0.8s ease-out 2.8s forwards;
+        }
+
+        @keyframes contentFadeIn {
+            to { opacity: 1; }
+        }
+
+        /* Animated background waves (subtle) */
+        .bg-waves {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            opacity: 0.3;
+        }
+
+        .bg-wave {
+            position: absolute;
+            width: 200%;
+            height: 200px;
+            background: linear-gradient(180deg, transparent, rgba(0, 122, 255, 0.1));
+        }
+
+        .bg-wave:nth-child(1) {
+            top: 20%;
+            left: -50%;
+            animation: drift1 20s ease-in-out infinite;
+        }
+
+        .bg-wave:nth-child(2) {
+            top: 50%;
+            left: -50%;
+            animation: drift2 25s ease-in-out infinite;
+        }
+
+        .bg-wave:nth-child(3) {
+            top: 80%;
+            left: -50%;
+            animation: drift3 30s ease-in-out infinite;
+        }
+
+        @keyframes drift1 {
+            0%, 100% { transform: translateX(0) rotate(-5deg); }
+            50% { transform: translateX(30%) rotate(5deg); }
+        }
+
+        @keyframes drift2 {
+            0%, 100% { transform: translateX(0) rotate(3deg); }
+            50% { transform: translateX(-20%) rotate(-3deg); }
+        }
+
+        @keyframes drift3 {
+            0%, 100% { transform: translateX(0) rotate(-3deg); }
+            50% { transform: translateX(25%) rotate(3deg); }
+        }
+
+        /* Content sections */
+        .content {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 60px 32px 50px;
+        }
+
+        .top-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+        }
+
+        .logo {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .logo svg {
+            width: 100px;
+            height: 100px;
+            filter: drop-shadow(0 8px 24px rgba(0, 122, 255, 0.4));
+        }
+
+        .brand-name {
+            font-size: 56px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -1px;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.2); }
+        }
+
+        .tagline {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            max-width: 280px;
+            line-height: 1.5;
+        }
+
+        /* Particle effects */
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(90, 200, 250, 0.6);
+            border-radius: 50%;
+            animation: particleFloat 6s ease-in-out infinite;
+        }
+
+        @keyframes particleFloat {
+            0% {
+                transform: translateY(100vh) translateX(0) scale(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-20px) translateX(100px) scale(1);
+                opacity: 0;
+            }
+        }
+
+        .particle:nth-child(1) { left: 10%; animation-delay: 0s; animation-duration: 7s; }
+        .particle:nth-child(2) { left: 25%; animation-delay: 1.5s; animation-duration: 8s; }
+        .particle:nth-child(3) { left: 40%; animation-delay: 3s; animation-duration: 6s; }
+        .particle:nth-child(4) { left: 60%; animation-delay: 2s; animation-duration: 9s; }
+        .particle:nth-child(5) { left: 75%; animation-delay: 4s; animation-duration: 7s; }
+        .particle:nth-child(6) { left: 85%; animation-delay: 0.5s; animation-duration: 8s; }
+
+        /* Buttons */
+        .button-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .btn {
+            padding: 18px 32px;
+            border-radius: 16px;
+            font-size: 17px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+        }
+
+        .btn:hover::before {
+            transform: translateX(100%);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
+            color: white;
+            box-shadow: 0 8px 24px rgba(0, 122, 255, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(0, 122, 255, 0.5);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary:active {
+            transform: translateY(0);
+        }
+
+        /* Ripple effect */
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(0);
+            animation: rippleEffect 0.6s ease-out;
+            pointer-events: none;
+        }
+
+        @keyframes rippleEffect {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        /* Status bar */
+        .status-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 1000;
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 30px;
+            background: #000;
+            border-radius: 0 0 20px 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 420px) {
+            .phone-frame {
+                width: 100vw;
+                height: 100vh;
+                border-radius: 0;
+                padding: 0;
+            }
+
+            .screen {
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="screen">
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <span>9:41</span>
+                <span style="font-size: 12px;">●●●●</span>
+            </div>
+
+            <!-- Dynamic Notch -->
+            <div class="notch"></div>
+
+            <!-- Wave Intro (plays once, then fades out) -->
+            <div class="wave-intro">
+                <div class="wave-container">
+                    <div class="wave wave-1"></div>
+                    <div class="wave wave-2"></div>
+                    <div class="wave wave-3"></div>
+                </div>
+                <div class="logo-intro">
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 60 Q 30 45, 40 60 T 60 60 T 80 60" stroke="#007AFF" stroke-width="8" fill="none" stroke-linecap="round">
+                            <animate attributeName="d"
+                                values="M20 60 Q 30 45, 40 60 T 60 60 T 80 60;
+                                        M20 60 Q 30 55, 40 60 T 60 60 T 80 60;
+                                        M20 60 Q 30 45, 40 60 T 60 60 T 80 60"
+                                dur="2s"
+                                repeatCount="indefinite"/>
+                        </path>
+                        <path d="M15 50 Q 25 35, 35 50 T 55 50 T 75 50 T 85 50" stroke="#5AC8FA" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.6">
+                            <animate attributeName="d"
+                                values="M15 50 Q 25 35, 35 50 T 55 50 T 75 50 T 85 50;
+                                        M15 50 Q 25 42, 35 50 T 55 50 T 75 50 T 85 50;
+                                        M15 50 Q 25 35, 35 50 T 55 50 T 75 50 T 85 50"
+                                dur="2.5s"
+                                repeatCount="indefinite"/>
+                        </path>
+                        <path d="M10 40 Q 20 28, 30 40 T 50 40 T 70 40 T 90 40" stroke="#00C7FF" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.4">
+                            <animate attributeName="d"
+                                values="M10 40 Q 20 28, 30 40 T 50 40 T 70 40 T 90 40;
+                                        M10 40 Q 20 34, 30 40 T 50 40 T 70 40 T 90 40;
+                                        M10 40 Q 20 28, 30 40 T 50 40 T 70 40 T 90 40"
+                                dur="3s"
+                                repeatCount="indefinite"/>
+                        </path>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Main Content (fades in after intro) -->
+            <div class="main-content">
+                <!-- Animated background -->
+                <div class="bg-waves">
+                    <div class="bg-wave"></div>
+                    <div class="bg-wave"></div>
+                    <div class="bg-wave"></div>
+                </div>
+
+                <!-- Floating particles -->
+                <div class="particles">
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                </div>
+
+                <div class="content">
+                    <div class="top-section">
+                        <div class="logo">
+                            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 60 Q 30 45, 40 60 T 60 60 T 80 60" stroke="#007AFF" stroke-width="8" fill="none" stroke-linecap="round">
+                                    <animate attributeName="d"
+                                        values="M20 60 Q 30 45, 40 60 T 60 60 T 80 60;
+                                                M20 60 Q 30 55, 40 60 T 60 60 T 80 60;
+                                                M20 60 Q 30 45, 40 60 T 60 60 T 80 60"
+                                        dur="2s"
+                                        repeatCount="indefinite"/>
+                                </path>
+                                <path d="M15 50 Q 25 35, 35 50 T 55 50 T 75 50 T 85 50" stroke="#5AC8FA" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.6">
+                                    <animate attributeName="d"
+                                        values="M15 50 Q 25 35, 35 50 T 55 50 T 75 50 T 85 50;
+                                                M15 50 Q 25 42, 35 50 T 55 50 T 75 50 T 85 50;
+                                                M15 50 Q 25 35, 35 50 T 55 50 T 75 50 T 85 50"
+                                        dur="2.5s"
+                                        repeatCount="indefinite"/>
+                                </path>
+                                <path d="M10 40 Q 20 28, 30 40 T 50 40 T 70 40 T 90 40" stroke="#00C7FF" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.4">
+                                    <animate attributeName="d"
+                                        values="M10 40 Q 20 28, 30 40 T 50 40 T 70 40 T 90 40;
+                                                M10 40 Q 20 34, 30 40 T 50 40 T 70 40 T 90 40;
+                                                M10 40 Q 20 28, 30 40 T 50 40 T 70 40 T 90 40"
+                                        dur="3s"
+                                        repeatCount="indefinite"/>
+                                </path>
+                            </svg>
+                        </div>
+
+                        <h1 class="brand-name">Olas</h1>
+
+                        <p class="tagline">Share moments. Make waves. Connect with what matters.</p>
+                    </div>
+
+                    <div class="button-section">
+                        <button class="btn btn-primary" onclick="createRipple(event, this)">
+                            Create Account
+                        </button>
+                        <button class="btn btn-secondary" onclick="createRipple(event, this)">
+                            I have a Nostr account
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function createRipple(event, button) {
+            const rect = button.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+
+            button.appendChild(ripple);
+
+            setTimeout(() => ripple.remove(), 600);
+        }
+
+        // Add subtle haptic feedback simulation (visual only)
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                this.style.transform = 'scale(0.97)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 100);
+            });
+        });
+    </script>
+</body>
+</html>
