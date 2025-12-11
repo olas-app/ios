@@ -46,7 +46,7 @@ struct DepositView: View {
                     } label: {
                         Text(currencyMode == .sats ? currencySymbol : "sats")
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.accent)
+                            .foregroundStyle(Color.accentColor)
                     }
                 }
             }

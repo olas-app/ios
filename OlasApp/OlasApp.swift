@@ -26,6 +26,7 @@ struct OlasApp: App {
                 } else if let ndk = ndk, let sparkWalletManager = sparkWalletManager {
                     MainTabView(ndk: ndk, sparkWalletManager: sparkWalletManager)
                         .environmentObject(authViewModel)
+                        .environment(\.ndk, ndk)
                         .environment(settings)
                         .environment(relayCache)
                         .environment(imageCache)

@@ -63,7 +63,7 @@ struct HeartButtonStyle: ButtonStyle {
 
 struct LikeButton: View {
     let event: NDKEvent
-    let ndk: NDK
+    @Environment(\.ndk) private var ndk
 
     @State private var isLiked = false
     @State private var likeCount = 0
@@ -120,6 +120,8 @@ struct LikeButton: View {
     }
 
     private func publishReaction() async {
+        guard let ndk else { return }
+
         do {
             _ = try await ndk.publish { builder in
                 builder
@@ -138,7 +140,8 @@ struct LikeButton: View {
     }
 
     private func loadReactionCount() async {
-        guard let currentUserPubkey = await ndk.activeUser?.pubkey else {
+        guard let ndk,
+              let currentUserPubkey = await ndk.activeUser?.pubkey else {
             return
         }
 
@@ -172,7 +175,7 @@ struct LikeButton: View {
 
 struct CommentButton: View {
     let event: NDKEvent
-    let ndk: NDK
+    @Environment(\.ndk) private var ndk
 
     @State private var commentCount = 0
     @State private var showComments = false
@@ -194,7 +197,9 @@ struct CommentButton: View {
         }
         .foregroundStyle(.primary)
         .sheet(isPresented: $showComments) {
-            CommentsSheet(event: event, ndk: ndk)
+            if let ndk {
+                CommentsSheet(event: event, ndk: ndk)
+            }
         }
         .task {
             await loadCommentCount()
@@ -202,6 +207,8 @@ struct CommentButton: View {
     }
 
     private func loadCommentCount() async {
+        guard let ndk else { return }
+
         let commentFilter = NDKFilter(
             kinds: [OlasConstants.EventKinds.comment],
             events: [event.id],

@@ -195,9 +195,9 @@ public struct PostCard: View, Equatable {
 
     private var postActions: some View {
         HStack(spacing: 20) {
-            LikeButton(event: event, ndk: ndk)
+            LikeButton(event: event)
 
-            CommentButton(event: event, ndk: ndk)
+            CommentButton(event: event)
 
             ZapButton(event: event, ndk: ndk)
 
