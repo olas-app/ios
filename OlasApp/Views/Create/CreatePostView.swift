@@ -18,6 +18,7 @@ public struct CreatePostView: View {
     @State private var showError = false
 
     @State private var step: PostCreationStep = .selectPhoto
+    @State private var blossomManager: NDKBlossomServerManager
 
     enum PostCreationStep {
         case selectPhoto
@@ -28,6 +29,7 @@ public struct CreatePostView: View {
 
     public init(ndk: NDK) {
         self.ndk = ndk
+        self._blossomManager = State(wrappedValue: NDKBlossomServerManager(ndk: ndk))
     }
 
     public var body: some View {
@@ -222,40 +224,14 @@ public struct CreatePostView: View {
             throw PostError.imageCompressionFailed
         }
 
-        // Upload to Blossom server (using nostr.build as fallback)
-        let uploadUrl = URL(string: "https://nostr.build/api/v2/upload/files")!
-        var request = URLRequest(url: uploadUrl)
-        request.httpMethod = "POST"
-
-        let boundary = UUID().uuidString
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-
-        var body = Data()
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"image.jpg\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
-        body.append(imageData)
-        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
-
-        request.httpBody = body
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
+        // Upload to Blossom server
+        do {
+            let blob = try await blossomManager.uploadToUserServers(data: imageData, mimeType: "image/jpeg")
+            return blob.url
+        } catch {
+            print("Upload failed: \(error)")
             throw PostError.uploadFailed
         }
-
-        // Parse response to get URL
-        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        guard let status = json?["status"] as? String, status == "success",
-              let dataArray = json?["data"] as? [[String: Any]],
-              let firstItem = dataArray.first,
-              let url = firstItem["url"] as? String else {
-            throw PostError.invalidUploadResponse
-        }
-
-        return url
     }
 }
 
