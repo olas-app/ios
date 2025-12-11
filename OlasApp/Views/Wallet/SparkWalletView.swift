@@ -1118,8 +1118,7 @@ struct SparkSendView: View {
     @ViewBuilder
     private func parsedInvoiceInfo(_ invoice: some Any) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            if let invoiceData = invoice as? (any Any & AnyObject),
-               let amountMsat = (invoiceData as AnyObject).value(forKey: "amountMsat") as? UInt64 {
+            if let amountMsat = (invoice as AnyObject).value(forKey: "amountMsat") as? UInt64 {
                 HStack {
                     Text("Amount:")
                         .foregroundStyle(.secondary)
@@ -1128,7 +1127,7 @@ struct SparkSendView: View {
                         .font(.headline)
                 }
 
-                if let description = (invoiceData as AnyObject).value(forKey: "description") as? String,
+                if let description = (invoice as AnyObject).value(forKey: "description") as? String,
                    !description.isEmpty {
                     HStack(alignment: .top) {
                         Text("Description:")
@@ -1151,8 +1150,7 @@ struct SparkSendView: View {
     @ViewBuilder
     private func parsedAddressInfo(_ address: some Any) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            if let addressData = address as? (any Any & AnyObject),
-               let addressString = (addressData as AnyObject).value(forKey: "lightningAddress") as? String {
+            if let addressString = (address as AnyObject).value(forKey: "lightningAddress") as? String {
                 HStack {
                     Text("Address:")
                         .foregroundStyle(.secondary)
@@ -1553,7 +1551,7 @@ struct SparkSendView: View {
         if let sendError = error as? SparkSendError {
             return sendError.errorDescription ?? "Unknown error"
         }
-        if let timeoutError = error as? TimeoutError {
+        if error is TimeoutError {
             return "Operation timed out. Please check your connection and try again."
         }
         return error.localizedDescription
