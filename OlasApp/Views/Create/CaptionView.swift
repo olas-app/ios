@@ -42,7 +42,7 @@ struct CaptionView: View {
             // Share button
             shareButton
         }
-        .background(Color.black)
+        .background(Color(.systemBackground))
         .navigationTitle("New Post")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -85,14 +85,14 @@ struct CaptionView: View {
                     .scrollContentBackground(.hidden)
                     .background(Color.clear)
             }
-            .background(Color(white: 0.1))
+            .background(Color(.systemGray6))
             .cornerRadius(16)
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(
                         isCaptionFocused
                             ? OlasTheme.Colors.accent
-                            : Color.white.opacity(0.1),
+                            : Color(.systemGray4).opacity(0.3),
                         lineWidth: 1
                     )
             )
@@ -133,10 +133,10 @@ struct CaptionView: View {
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 8)
-                            .background(Color(white: 0.15))
+                            .background(Color(.systemGray6))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 20)
-                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                    .stroke(Color(.systemGray4).opacity(0.3), lineWidth: 1)
                             )
                             .cornerRadius(20)
                     }
@@ -157,7 +157,7 @@ struct CaptionView: View {
                 if let location {
                     Text(location)
                         .font(.system(size: 15))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.primary)
                 } else {
                     Text("Add location")
                         .font(.system(size: 15))
@@ -171,7 +171,7 @@ struct CaptionView: View {
                     .foregroundStyle(.tertiary)
             }
             .padding(14)
-            .background(Color(white: 0.1))
+            .background(Color(.systemGray6))
             .cornerRadius(14)
         }
     }
@@ -191,7 +191,7 @@ struct CaptionView: View {
         .padding(.bottom, 16)
         .disabled(caption.count > maxCharacters)
         .opacity(caption.count > maxCharacters ? 0.5 : 1)
-        .background(Color.black)
+        .background(Color(.systemBackground))
     }
 
     private func addHashtag(_ hashtag: String) {

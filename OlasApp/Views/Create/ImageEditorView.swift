@@ -134,7 +134,7 @@ struct ImageEditorView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Color(.systemBackground).ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // Image preview
@@ -223,12 +223,12 @@ struct ImageEditorView: View {
                         Text(panel.rawValue)
                             .font(.system(size: 11, weight: .medium))
                     }
-                    .foregroundStyle(activePanel == panel ? .white : .secondary)
+                    .foregroundStyle(activePanel == panel ? .primary : .secondary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                     .background(
                         activePanel == panel
-                            ? Color(white: 0.15)
+                            ? Color(.systemGray5)
                             : Color.clear
                     )
                     .cornerRadius(12)
@@ -237,9 +237,9 @@ struct ImageEditorView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(Color.black)
+        .background(Color(.systemBackground))
         .overlay(alignment: .top) {
-            Divider().background(Color.white.opacity(0.1))
+            Divider()
         }
     }
 
@@ -248,7 +248,7 @@ struct ImageEditorView: View {
         VStack(spacing: 0) {
             // Handle
             RoundedRectangle(cornerRadius: 3)
-                .fill(Color.white.opacity(0.3))
+                .fill(Color(.systemGray3))
                 .frame(width: 36, height: 5)
                 .padding(.top, 10)
                 .padding(.bottom, 8)
@@ -262,7 +262,7 @@ struct ImageEditorView: View {
                 adjustPanel
             }
         }
-        .background(Color(white: 0.1))
+        .background(Color(.systemGray6))
         .cornerRadius(20, corners: [.topLeft, .topRight])
     }
 
@@ -296,7 +296,7 @@ struct ImageEditorView: View {
                         .font(.system(size: 15))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(Color(white: 0.15))
+                        .background(Color(.systemGray5))
                         .cornerRadius(12)
                 }
 
@@ -309,11 +309,11 @@ struct ImageEditorView: View {
                         .font(.system(size: 15))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(Color(white: 0.15))
+                        .background(Color(.systemGray5))
                         .cornerRadius(12)
                 }
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(.primary)
             .padding(.horizontal, 16)
             .padding(.bottom, 34)
         }
@@ -350,7 +350,7 @@ struct ImageEditorView: View {
                         Spacer()
                         Text("\(Int(filterIntensity * 100))")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.primary)
                     }
 
                     Slider(value: $filterIntensity, in: 0...1)
@@ -392,7 +392,7 @@ struct ImageEditorView: View {
                     Spacer()
                     Text(formatAdjustmentValue(selectedAdjustment))
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.primary)
                 }
 
                 Slider(
@@ -764,14 +764,14 @@ private struct AspectRatioButton: View {
 
                 Text(ratio.rawValue)
                     .font(.system(size: 12))
-                    .foregroundStyle(isSelected ? .white : .secondary)
+                    .foregroundStyle(isSelected ? .primary : .secondary)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
             .background(
                 isSelected
                     ? OlasTheme.Colors.accent.opacity(0.15)
-                    : Color(white: 0.15)
+                    : Color(.systemGray5)
             )
             .cornerRadius(12)
             .overlay(
@@ -820,7 +820,7 @@ private struct FilterThumbnail: View {
                             .frame(width: 72, height: 72)
                             .clipped()
                     } else {
-                        Color(white: 0.15)
+                        Color(.systemGray5)
                             .frame(width: 72, height: 72)
                     }
                 }
@@ -832,7 +832,7 @@ private struct FilterThumbnail: View {
 
                 Text(filter.rawValue)
                     .font(.system(size: 12))
-                    .foregroundStyle(isSelected ? .white : .secondary)
+                    .foregroundStyle(isSelected ? .primary : .secondary)
             }
         }
         .task {
@@ -957,7 +957,7 @@ private struct AdjustmentButton: View {
 
                 Text(adjustment.rawValue)
                     .font(.system(size: 10))
-                    .foregroundStyle(isSelected ? .white : .secondary)
+                    .foregroundStyle(isSelected ? .primary : .secondary)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity)
@@ -965,7 +965,7 @@ private struct AdjustmentButton: View {
             .background(
                 isSelected
                     ? OlasTheme.Colors.accent.opacity(0.15)
-                    : Color(white: 0.15)
+                    : Color(.systemGray5)
             )
             .cornerRadius(12)
             .overlay(

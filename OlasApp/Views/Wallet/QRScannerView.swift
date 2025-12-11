@@ -42,16 +42,15 @@ struct QRScannerView: View {
 
                 case .undetermined:
                     ProgressView("Requesting camera access...")
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.primary)
                 }
             }
-            .background(Color.black)
+            .background(Color(.systemBackground))
             .navigationTitle("Scan QR Code")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
-                        .foregroundStyle(.white)
                 }
             }
             .task {
@@ -64,15 +63,15 @@ struct QRScannerView: View {
         VStack(spacing: 20) {
             Image(systemName: "camera.fill")
                 .font(.system(size: 60))
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(.secondary)
 
             Text("Camera Access Required")
                 .font(.title2.bold())
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
 
             Text("Please enable camera access in Settings to scan QR codes.")
                 .font(.body)
-                .foregroundStyle(.white.opacity(0.8))
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 

@@ -281,7 +281,6 @@ struct WalletSetupView: View {
                 } label: {
                     if isSettingUp {
                         ProgressView()
-                            .tint(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                     } else {

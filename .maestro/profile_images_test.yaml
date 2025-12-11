@@ -1,0 +1,33 @@
+appId: com.olas.app
+name: Profile Images Test
+
+---
+# Just wait a bit for app to load
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- takeScreenshot: "01_initial_state"
+
+# Tap on Profile tab - try by text
+- tapOn:
+    text: "Profile"
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- takeScreenshot: "02_after_profile_tap"
+
+# Wait for Edit Profile button
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- takeScreenshot: "03_profile_view"
+
+# Scroll to see more
+- scroll
+
+- takeScreenshot: "04_scrolled_once"
+
+- scroll
+
+- takeScreenshot: "05_scrolled_twice"

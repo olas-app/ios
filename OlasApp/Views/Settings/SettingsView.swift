@@ -55,6 +55,9 @@ public struct SettingsView: View {
                 NavigationLink(destination: BlossomSettingsView(manager: blossomManager)) {
                     SettingsRow(icon: "externaldrive.badge.icloud", title: "Media Servers", color: .teal)
                 }
+                NavigationLink(destination: DeveloperToolsView(ndk: ndk)) {
+                    SettingsRow(icon: "wrench.and.screwdriver", title: "Developer Tools", color: .gray)
+                }
             }
 
             Section("Privacy & Security") {

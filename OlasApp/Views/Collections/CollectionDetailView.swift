@@ -34,7 +34,6 @@ struct CollectionDetailView: View {
                 }
             }
         }
-        .background(Color.black)
         .navigationTitle(collection.title ?? "Collection")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -88,7 +87,7 @@ struct CollectionDetailView: View {
                         .resizable()
                         .scaledToFill()
                 } placeholder: {
-                    Rectangle().fill(Color(white: 0.1))
+                    Rectangle().fill(Color(.systemGray6))
                 }
                 .frame(height: 200)
                 .clipped()
@@ -218,13 +217,13 @@ private struct PictureGridCell: View {
                         .scaledToFill()
                 } placeholder: {
                     Rectangle()
-                        .fill(Color(white: 0.1))
+                        .fill(Color(.systemGray6))
                 }
                 .frame(width: geo.size.width, height: geo.size.width)
                 .clipped()
             } else {
                 Rectangle()
-                    .fill(Color(white: 0.1))
+                    .fill(Color(.systemGray6))
                     .overlay(
                         Image(systemName: "photo")
                             .foregroundStyle(.secondary)
@@ -267,7 +266,6 @@ private struct CoverPickerSheet: View {
                 }
                 .padding()
             }
-            .background(Color.black)
             .navigationTitle("Choose Cover")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

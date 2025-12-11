@@ -23,7 +23,6 @@ struct PhotoLibraryView: View {
                 photoGrid(cellSize: cellSize)
             }
         }
-        .background(Color.black)
         .navigationTitle("New Post")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -49,7 +48,7 @@ struct PhotoLibraryView: View {
 
     private var previewArea: some View {
         ZStack {
-            Color(white: 0.1)
+            Color(.systemGray6)
 
             if let image = selectedImage {
                 Image(uiImage: image)
@@ -57,7 +56,7 @@ struct PhotoLibraryView: View {
                     .scaledToFit()
             } else if isLoading {
                 ProgressView()
-                    .tint(.white)
+                    .tint(.primary)
             }
         }
         .frame(height: 360)
@@ -75,7 +74,7 @@ struct PhotoLibraryView: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
             }
 
             Spacer()
@@ -88,7 +87,7 @@ struct PhotoLibraryView: View {
                         .font(.system(size: 16))
                         .foregroundStyle(.secondary)
                         .frame(width: 32, height: 32)
-                        .background(Color(white: 0.15))
+                        .background(Color(.systemGray5))
                         .clipShape(Circle())
                 }
 
@@ -99,16 +98,15 @@ struct PhotoLibraryView: View {
                         .font(.system(size: 16))
                         .foregroundStyle(.secondary)
                         .frame(width: 32, height: 32)
-                        .background(Color(white: 0.15))
+                        .background(Color(.systemGray5))
                         .clipShape(Circle())
                 }
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color.black)
         .overlay(alignment: .bottom) {
-            Divider().background(Color.white.opacity(0.1))
+            Divider().background(Color(.separator))
         }
     }
 
@@ -135,7 +133,6 @@ struct PhotoLibraryView: View {
                 }
             }
         }
-        .background(Color.black)
     }
 
     private func loadPhotos() async {
@@ -203,7 +200,7 @@ private struct PhotoGridItem: View {
     var body: some View {
         Button(action: onTap) {
             ZStack {
-                Color(white: 0.1)
+                Color(.systemGray6)
 
                 if let thumbnail {
                     Image(uiImage: thumbnail)
@@ -222,7 +219,7 @@ private struct PhotoGridItem: View {
                             Spacer()
                             Image(systemName: "checkmark")
                                 .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(.primary)
                                 .frame(width: 22, height: 22)
                                 .background(OlasTheme.Colors.accent)
                                 .clipShape(Circle())

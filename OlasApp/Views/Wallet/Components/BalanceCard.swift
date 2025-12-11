@@ -89,7 +89,7 @@ struct BalanceCard: View {
         .background(
             RoundedRectangle(cornerRadius: 24)
                 .fill(Color.secondary.opacity(0.1))
-                .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
+                .shadow(color: Color(.systemGray).opacity(0.3), radius: 10, y: 5)
         )
     }
 

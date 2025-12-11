@@ -124,11 +124,11 @@ struct DeveloperToolsView: View {
     private func refreshStats() async {
         isLoading = true
         if let cache = ndk.cache as? NDKNostrDBCache {
-            stats = await cache.getStats()
-            databaseSize = await cache.getDatabaseSize()
-            cachePath = await cache.getCachePath()
+            stats = cache.getStats()
+            databaseSize = cache.getDatabaseSize()
+            cachePath = cache.getCachePath()
         }
-        relayCount = await ndk.relays.count
+        relayCount = ndk.relays.count
         if let signer = ndk.signer {
             signerPubkey = try? await signer.pubkey
         }

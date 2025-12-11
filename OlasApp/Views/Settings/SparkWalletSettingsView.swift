@@ -19,6 +19,7 @@ public struct SparkWalletSettingsView: View {
 
             if walletManager.connectionStatus == .connected {
                 balanceSection
+                currencySection
                 addressSection
                 actionsSection
             } else {
@@ -85,9 +86,35 @@ public struct SparkWalletSettingsView: View {
                     .foregroundStyle(.secondary)
                 Text(formatSats(walletManager.balance))
                     .font(.title.bold())
+                if let fiatAmount = walletManager.formatFiat(walletManager.balance) {
+                    Text(fiatAmount)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
             .padding(.vertical, 8)
         }
+    }
+
+    private var currencySection: some View {
+        Section {
+            Picker("Preferred Currency", selection: Bindable(walletManager).preferredCurrency) {
+                ForEach(availableCurrencies, id: \.self) { currency in
+                    Text(currency).tag(currency)
+                }
+            }
+        } header: {
+            Text("Display Settings")
+        } footer: {
+            Text("Choose the currency for displaying fiat equivalents")
+        }
+    }
+
+    private var availableCurrencies: [String] {
+        if walletManager.fiatRates.isEmpty {
+            return ["USD"]
+        }
+        return walletManager.fiatRates.map { $0.coin }.sorted()
     }
 
     private var addressSection: some View {
@@ -259,14 +286,14 @@ struct CreateSparkWalletView: View {
                 HStack {
                     if isCreating {
                         ProgressView()
-                            .tint(.white)
+                            .tint(Color(.systemBackground))
                     }
                     Text("Generate Wallet")
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(OlasTheme.Colors.accent)
-                .foregroundStyle(.white)
+                .foregroundStyle(Color(.systemBackground))
                 .cornerRadius(12)
             }
             .disabled(isCreating)
@@ -320,7 +347,7 @@ struct CreateSparkWalletView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(OlasTheme.Colors.accent)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color(.systemBackground))
                     .cornerRadius(12)
             }
 
@@ -380,8 +407,8 @@ struct CreateSparkWalletView: View {
                 Text("Verify & Complete")
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(allFieldsFilled ? OlasTheme.Colors.accent : .gray)
-                    .foregroundStyle(.white)
+                    .background(allFieldsFilled ? OlasTheme.Colors.accent : Color(.systemGray))
+                    .foregroundStyle(Color(.systemBackground))
                     .cornerRadius(12)
             }
             .disabled(!allFieldsFilled)
@@ -476,14 +503,14 @@ struct ImportSparkWalletView: View {
                     HStack {
                         if isImporting {
                             ProgressView()
-                                .tint(.white)
+                                .tint(Color(.systemBackground))
                         }
                         Text("Import Wallet")
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(isValidMnemonic ? .blue : .gray)
-                    .foregroundStyle(.white)
+                    .background(isValidMnemonic ? .blue : Color(.systemGray))
+                    .foregroundStyle(Color(.systemBackground))
                     .cornerRadius(12)
                 }
                 .disabled(!isValidMnemonic || isImporting)
@@ -577,14 +604,14 @@ struct LightningAddressSetupView: View {
                     HStack {
                         if isRegistering {
                             ProgressView()
-                                .tint(.white)
+                                .tint(Color(.systemBackground))
                         }
                         Text("Register Address")
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(isValidUsername ? OlasTheme.Colors.zapGold : .gray)
-                    .foregroundStyle(.white)
+                    .background(isValidUsername ? OlasTheme.Colors.zapGold : Color(.systemGray))
+                    .foregroundStyle(Color(.systemBackground))
                     .cornerRadius(12)
                 }
                 .disabled(!isValidUsername || isRegistering)
@@ -638,7 +665,7 @@ struct BackupWalletView: View {
                 if !isRevealed {
                     Image(systemName: "lock.shield")
                         .font(.system(size: 60))
-                        .foregroundStyle(OlasTheme.Colors.deepTeal)
+                        .foregroundStyle(OlasTheme.Colors.accent)
 
                     Text("Show Recovery Phrase")
                         .font(.title2.bold())
@@ -660,8 +687,8 @@ struct BackupWalletView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(OlasTheme.Colors.deepTeal)
-                        .foregroundStyle(.white)
+                        .background(OlasTheme.Colors.accent)
+                        .foregroundStyle(Color(.systemBackground))
                         .cornerRadius(12)
                     }
                     .padding(.horizontal)

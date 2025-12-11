@@ -98,10 +98,10 @@ struct NostrDBStatsView: View {
     private func loadStats() async {
         isLoading = true
         if let cache = ndk.cache as? NDKNostrDBCache {
-            stats = await cache.getStats()
-            databaseSize = await cache.getDatabaseSize()
-            cachePath = await cache.getCachePath()
-            inMemoryCount = await cache.inMemoryEventCount
+            stats = cache.getStats()
+            databaseSize = cache.getDatabaseSize()
+            cachePath = cache.getCachePath()
+            inMemoryCount = cache.inMemoryEventCount
         }
         isLoading = false
     }

@@ -101,7 +101,6 @@ struct SendView: View {
             } label: {
                 if isSending {
                     ProgressView()
-                        .tint(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                 } else {

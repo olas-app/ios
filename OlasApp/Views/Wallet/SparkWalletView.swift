@@ -43,7 +43,7 @@ public struct SparkWalletView: View {
                 ImportSparkWalletView(walletManager: walletManager)
             }
             .sheet(isPresented: $showReceive) {
-                ReceiveView(walletManager: walletManager)
+                ModernReceiveView(walletManager: walletManager)
             }
             .sheet(isPresented: $showSend) {
                 SparkSendView(walletManager: walletManager)
@@ -66,11 +66,11 @@ public struct SparkWalletView: View {
 
             ScrollView {
                 VStack(spacing: 32) {
-                    balanceCard
-                    actionButtons
-                    recentTransactions
+                    modernBalanceSection
+                    modernActionButtons
+                    modernTransactionsContainer
                 }
-                .padding()
+                .padding(.top, 40)
             }
             .refreshable {
                 await walletManager.sync()
@@ -181,7 +181,7 @@ public struct SparkWalletView: View {
             } else {
                 LazyVStack(spacing: 0) {
                     ForEach(walletManager.payments, id: \.id) { payment in
-                        PaymentRow(payment: payment)
+                        PaymentRow(payment: payment, walletManager: walletManager)
                         if payment.id != walletManager.payments.last?.id {
                             Divider()
                                 .padding(.leading, 48)
@@ -269,12 +269,213 @@ public struct SparkWalletView: View {
         let formatted = formatter.string(from: NSNumber(value: amount)) ?? "\(amount)"
         return "\(formatted) sats"
     }
+
+    private func formatFiat(_ amount: UInt64) -> String {
+        walletManager.formatFiat(amount) ?? "$0.00"
+    }
+
+    // MARK: - Modern Components
+
+    private var modernBalanceSection: some View {
+        VStack(spacing: 16) {
+            // Fiat amount (large)
+            Text(formatFiat(walletManager.balance))
+                .font(.system(size: 56, weight: .light, design: .rounded))
+                .foregroundStyle(.primary)
+
+            // Sats amount (smaller)
+            Text(formatSats(walletManager.balance))
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(.secondary)
+
+            if let address = walletManager.lightningAddress {
+                HStack(spacing: 6) {
+                    Image(systemName: "bolt.fill")
+                        .font(.caption)
+                        .foregroundStyle(OlasTheme.Colors.zapGold)
+                    Text(address)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if walletManager.isLoading {
+                ProgressView()
+                    .tint(.primary)
+                    .padding(.top, 8)
+            }
+        }
+        .padding(.vertical, 20)
+    }
+
+    private var modernActionButtons: some View {
+        HStack(spacing: 16) {
+            Button {
+                showReceive = true
+            } label: {
+                VStack(spacing: 12) {
+                    Image(systemName: "arrow.down")
+                        .font(.system(size: 24, weight: .medium))
+                    Text("Receive")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundStyle(.primary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+                .background(Color(.systemGray5))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+
+            Button {
+                showSend = true
+            } label: {
+                VStack(spacing: 12) {
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 24, weight: .medium))
+                    Text("Send")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundStyle(.primary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+                .background(Color(.systemGray5))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            .disabled(walletManager.networkStatus.isOffline)
+            .opacity(walletManager.networkStatus.isOffline ? 0.5 : 1.0)
+        }
+        .padding(.horizontal, 20)
+    }
+
+    private var modernTransactionsContainer: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            Text("Activity")
+                .font(.system(size: 22, weight: .bold))
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 20)
+                .padding(.top, 24)
+                .padding(.bottom, 16)
+
+            // Transactions list
+            if walletManager.payments.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "arrow.up.arrow.down")
+                        .font(.system(size: 40))
+                        .foregroundStyle(.secondary)
+                    Text("No transactions yet")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 60)
+            } else {
+                LazyVStack(spacing: 0) {
+                    ForEach(walletManager.payments, id: \.id) { payment in
+                        ModernPaymentRow(payment: payment, walletManager: walletManager)
+                        if payment.id != walletManager.payments.last?.id {
+                            Divider()
+                                .padding(.leading, 68)
+                        }
+                    }
+                }
+                .padding(.bottom, 20)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 32))
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+    }
+}
+
+// MARK: - Modern Payment Row
+
+struct ModernPaymentRow: View {
+    let payment: Payment
+    let walletManager: SparkWalletManager
+
+    @State private var showDetails = false
+
+    var body: some View {
+        Button {
+            showDetails = true
+        } label: {
+            HStack(spacing: 16) {
+                // Icon
+                Circle()
+                    .fill(iconBackground)
+                    .frame(width: 48, height: 48)
+                    .overlay {
+                        Image(systemName: payment.paymentType == .receive ? "arrow.down" : "arrow.up")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(iconColor)
+                    }
+
+                // Info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(paymentDescription)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.primary)
+
+                    Text(Date(timeIntervalSince1970: TimeInterval(payment.timestamp)).formatted(.relative(presentation: .named)))
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                // Amount
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("\(payment.paymentType == .receive ? "+" : "-")\(formatFiat(payment.amount))")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(payment.paymentType == .receive ? iconColor : .primary)
+
+                    Text(formatSatsPlain(payment.amount))
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showDetails) {
+            PaymentDetailView(payment: payment)
+        }
+    }
+
+    private var iconColor: Color {
+        payment.paymentType == .receive ? OlasTheme.Colors.accent : .orange
+    }
+
+    private var iconBackground: Color {
+        payment.paymentType == .receive ? OlasTheme.Colors.accent.opacity(0.1) : .orange.opacity(0.1)
+    }
+
+    private var paymentDescription: String {
+        payment.paymentType == .receive ? "Received" : "Sent"
+    }
+
+    private func formatFiat(_ amount: U128) -> String {
+        guard let sats = UInt64(amount.description) else {
+            return "$0.00"
+        }
+        return walletManager.formatFiat(sats) ?? "$0.00"
+    }
+
+    private func formatSatsPlain(_ amount: U128) -> String {
+        return amount.formattedSats
+    }
 }
 
 // MARK: - Payment Row
 
 struct PaymentRow: View {
     let payment: Payment
+    let walletManager: SparkWalletManager
 
     @State private var showDetails = false
 

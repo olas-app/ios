@@ -163,6 +163,14 @@ public final class SparkWalletManager {
     public var error: String?
     public private(set) var networkStatus: NetworkStatus = .unknown
 
+    // Fiat conversion
+    public private(set) var fiatRates: [Rate] = []
+    public var preferredCurrency: String = UserDefaults.standard.string(forKey: "preferred_fiat_currency") ?? "USD" {
+        didSet {
+            UserDefaults.standard.set(preferredCurrency, forKey: "preferred_fiat_currency")
+        }
+    }
+
     private var sdk: BreezSdk?
     @ObservationIgnored private var eventListenerId: String?
     private let pathMonitor = NWPathMonitor()
@@ -331,9 +339,41 @@ public final class SparkWalletManager {
             // Fetch recent payments
             let response = try await sdk.listPayments(request: ListPaymentsRequest())
             payments = response.payments
+
+            // Fetch fiat rates
+            await fetchFiatRates()
         } catch {
             self.error = handleError(error)
         }
+    }
+
+    /// Fetch latest fiat exchange rates
+    public func fetchFiatRates() async {
+        guard let sdk = sdk else { return }
+
+        do {
+            let response = try await sdk.listFiatRates()
+            fiatRates = response.rates
+        } catch {
+            // Don't show error to user for fiat rates failure - just log it
+            print("[Spark] Failed to fetch fiat rates: \(error)")
+        }
+    }
+
+    /// Convert sats to fiat using current rates
+    public func satsToFiat(_ sats: UInt64) -> Double? {
+        guard let rate = fiatRates.first(where: { $0.coin == preferredCurrency }) else {
+            return nil
+        }
+        return SatsConverter.satsToFiat(Int64(sats), btcRate: rate.value)
+    }
+
+    /// Convert sats amount to formatted fiat string
+    public func formatFiat(_ sats: UInt64) -> String? {
+        guard let fiatValue = satsToFiat(sats) else {
+            return nil
+        }
+        return SatsConverter.formatFiat(fiatValue, currencyCode: preferredCurrency)
     }
 
     /// Parse a payment input (invoice, address, etc.)

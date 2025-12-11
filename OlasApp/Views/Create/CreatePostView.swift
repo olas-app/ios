@@ -44,7 +44,7 @@ public struct CreatePostView: View {
     public var body: some View {
         NavigationStack {
             ZStack {
-                Color.black.ignoresSafeArea()
+                Color(.systemBackground).ignoresSafeArea()
 
                 Group {
                     switch step {
@@ -105,7 +105,6 @@ public struct CreatePostView: View {
                 Text(error?.localizedDescription ?? "Unknown error")
             }
         }
-        .preferredColorScheme(.dark)
     }
 
     private var publishingView: some View {
@@ -120,7 +119,7 @@ public struct CreatePostView: View {
                     .overlay {
                         Image(systemName: "checkmark")
                             .font(.system(size: 36, weight: .bold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.primary)
                     }
                     .transition(.scale.combined(with: .opacity))
 
@@ -134,7 +133,7 @@ public struct CreatePostView: View {
                 // Progress state
                 ZStack {
                     Circle()
-                        .stroke(Color(white: 0.2), lineWidth: 4)
+                        .stroke(Color(.systemGray5), lineWidth: 4)
                         .frame(width: 80, height: 80)
 
                     Circle()
@@ -159,7 +158,6 @@ public struct CreatePostView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity)
-        .background(Color.black)
     }
 
     private func publishPost() async {

@@ -3,6 +3,8 @@ import SwiftUI
 
 public enum OlasTheme {
     // MARK: - Colors
+    // Use iOS system colors for backgrounds (Color(.systemBackground), Color(.systemGray5), etc.)
+    // These accent colors are for highlights, feedback, and branding only
     public enum Colors {
         // Primary accent - native blue
         public static let accent = Color.blue
@@ -11,18 +13,6 @@ public enum OlasTheme {
         public static let zapGold = Color(hex: "FFB800")
         public static let heartRed = Color(hex: "FF4757")
         public static let success = Color(hex: "2ED573")
-
-        // Light mode
-        public static let backgroundLight = Color(hex: "F8FFFE")
-        public static let cardLight = Color.white.opacity(0.7)
-        public static let textLight = Color(hex: "1A2B32")
-        public static let secondaryLight = Color(hex: "6B8187")
-
-        // Dark mode
-        public static let backgroundDark = Color(hex: "0A1215")
-        public static let cardDark = Color(hex: "142125").opacity(0.7)
-        public static let textDark = Color(hex: "E8F4F5")
-        public static let secondaryDark = Color(hex: "7B9BA1")
     }
 
     // MARK: - Glassmorphism
