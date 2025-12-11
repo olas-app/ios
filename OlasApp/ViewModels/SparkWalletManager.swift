@@ -432,6 +432,12 @@ public final class SparkWalletManager: ObservableObject {
         loadMnemonicFromKeychain() != nil
     }
 
+    /// Retrieve the stored mnemonic from keychain
+    /// Warning: This returns the sensitive recovery phrase. Handle with care.
+    public func retrieveMnemonic() -> String? {
+        loadMnemonicFromKeychain()
+    }
+
     // MARK: - Private Helpers
 
     private func handleError(_ error: Error) -> String {
