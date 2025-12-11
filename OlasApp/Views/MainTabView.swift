@@ -7,6 +7,7 @@ public struct MainTabView: View {
     @StateObject private var walletViewModel: WalletViewModel
     @StateObject private var muteListManager: MuteListManager
     @Environment(SettingsManager.self) private var settings
+    @Environment(PostManager.self) private var postManager
     @State private var selectedTab = 0
     @State private var showCreatePost = false
 
@@ -85,5 +86,45 @@ public struct MainTabView: View {
         .environmentObject(walletViewModel)
         .environmentObject(muteListManager)
         .environment(sparkWalletManager)
+        .overlay(alignment: .top) {
+            if postManager.isPublishing || postManager.error != nil {
+                HStack(spacing: 12) {
+                    if postManager.error != nil {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                    } else {
+                        ProgressView()
+                            .tint(.white)
+                    }
+
+                    Text(postManager.publishingStatus)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.white)
+
+                    Spacer()
+
+                    if postManager.error != nil {
+                        Button {
+                            postManager.dismissError()
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(.white.opacity(0.8))
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background {
+                    Capsule()
+                        .fill(Color.black.opacity(0.9))
+                        .shadow(radius: 4)
+                }
+                .padding(.top, 8)
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: postManager.isPublishing)
+                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: postManager.error != nil)
+            }
+        }
     }
 }

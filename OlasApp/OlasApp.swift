@@ -8,6 +8,7 @@ struct OlasApp: App {
     @State private var settings = SettingsManager()
     @State private var relayCache = RelayMetadataCache()
     @State private var imageCache = ImageCache()
+    @State private var postManager: PostManager?
     @State private var ndk: NDK?
     @State private var sparkWalletManager: SparkWalletManager?
     @State private var isInitialized = false
@@ -22,12 +23,13 @@ struct OlasApp: App {
                         }
                 } else if !authViewModel.isLoggedIn {
                     OnboardingView(authViewModel: authViewModel)
-                } else if let ndk = ndk, let sparkWalletManager = sparkWalletManager {
+                } else if let ndk = ndk, let sparkWalletManager = sparkWalletManager, let postManager = postManager {
                     MainTabView(ndk: ndk, sparkWalletManager: sparkWalletManager)
                         .environmentObject(authViewModel)
                         .environment(settings)
                         .environment(relayCache)
                         .environment(imageCache)
+                        .environment(postManager)
                 }
             }
             .environment(settings)
@@ -78,6 +80,7 @@ struct OlasApp: App {
 
         await MainActor.run {
             self.ndk = newNDK
+            self.postManager = PostManager(ndk: newNDK)
             self.sparkWalletManager = walletManager
             self.isInitialized = true
         }
