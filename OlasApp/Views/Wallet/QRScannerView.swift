@@ -127,7 +127,7 @@ struct QRScannerView: View {
 
 // MARK: - Camera View
 
-private struct QRCameraView: UIViewControllerRepresentable {
+struct QRCameraView: UIViewControllerRepresentable {
     let onScan: (String) -> Void
 
     func makeUIViewController(context: Context) -> CameraViewController {
@@ -142,7 +142,7 @@ private struct QRCameraView: UIViewControllerRepresentable {
 
 // MARK: - Camera View Controller
 
-private class CameraViewController: UIViewController {
+class CameraViewController: UIViewController {
     var onScan: ((String) -> Void)?
 
     private var captureSession: AVCaptureSession?

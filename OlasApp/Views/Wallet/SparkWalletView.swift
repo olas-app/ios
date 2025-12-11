@@ -815,7 +815,6 @@ struct SparkSendView: View {
     @State private var state: SendState = .scanning
     @State private var inputText: String = ""
     @State private var customAmount: String = ""
-    @State private var showScanner = false
 
     private func transitionTo(_ newState: SendState) {
         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
@@ -855,13 +854,6 @@ struct SparkSendView: View {
                     Button("Close") { dismiss() }
                 }
             }
-            .sheet(isPresented: $showScanner) {
-                QRScannerView { scannedCode in
-                    inputText = scannedCode
-                    showScanner = false
-                    Task { await parseInput() }
-                }
-            }
         }
     }
 
@@ -893,7 +885,7 @@ struct SparkSendView: View {
 
                     VStack(spacing: 8) {
                         Button {
-                            showScanner = true
+                            transitionTo(.scanning)
                         } label: {
                             Image(systemName: "qrcode.viewfinder")
                                 .font(.title2)
@@ -1023,7 +1015,7 @@ struct SparkSendView: View {
                         .multilineTextAlignment(.center)
                 }
             }
-        case .lnurlPay(let details):
+        case .lnurlPay:
             VStack(spacing: 12) {
                 // lnAddress property removed from LnurlPayRequestDetails
                 HStack {
@@ -1143,11 +1135,11 @@ struct SparkSendView: View {
         case .bolt11Invoice:
             // Fee calculation changed in new BreezSDK
             return "Fee varies"
-        case .sparkAddress(let address, let fee, _):
+        case .sparkAddress(_, let fee, _):
             return "\(fee)"
-        case .sparkInvoice(let details, let fee, _):
+        case .sparkInvoice(_, let fee, _):
             return "\(fee)"
-        case .bitcoinAddress(let address, let feeQuote):
+        case .bitcoinAddress:
             // satPerVbyte property removed from SendOnchainFeeQuote
             return "Bitcoin fee"
         default:
@@ -1207,33 +1199,35 @@ struct SparkSendView: View {
     // MARK: - Scanning View
 
     private var scanningView: some View {
-        VStack(spacing: 20) {
-            Spacer()
+        ZStack {
+            // Full-screen QR scanner
+            QRCameraView(onScan: handleScan)
+                .ignoresSafeArea()
 
-            Image(systemName: "qrcode.viewfinder")
-                .font(.system(size: 60))
-                .foregroundStyle(OlasTheme.Colors.zapGold)
+            // Overlay with "Enter Manually" button at bottom
+            VStack {
+                Spacer()
 
-            Text("Scanner Opening...")
-                .font(.title2.bold())
-
-            Text("Point your camera at a QR code")
-                .font(.body)
-                .foregroundStyle(.secondary)
-
-            Button {
-                transitionTo(.manualInput)
-            } label: {
-                Text("Enter Manually")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color(.systemGray5))
-                    .foregroundStyle(.primary)
-                    .cornerRadius(12)
+                Button {
+                    transitionTo(.manualInput)
+                } label: {
+                    Text("Enter Manually")
+                        .font(.body.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .foregroundStyle(.primary)
+                        .cornerRadius(12)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
             }
-
-            Spacer()
         }
+    }
+
+    private func handleScan(_ code: String) {
+        inputText = code
+        Task { await parseInput() }
     }
 
     // MARK: - Parsing View
@@ -1310,6 +1304,7 @@ struct SparkSendView: View {
                 }
 
                 Button {
+                    inputText = ""
                     transitionTo(.scanning)
                 } label: {
                     Text("Try Again")
