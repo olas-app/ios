@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 
 public struct RelayMetadata: Codable {
     public let name: String?
@@ -20,14 +21,16 @@ public struct RelayMetadata: Codable {
     }
 }
 
+@Observable
 @MainActor
-public final class RelayMetadataCache: ObservableObject {
-    public static let shared = RelayMetadataCache()
+public final class RelayMetadataCache {
+    // Shared instance removed
+    // public static let shared = RelayMetadataCache()
 
-    @Published public private(set) var metadata: [String: RelayMetadata] = [:]
-    @Published public private(set) var loading: Set<String> = []
+    public private(set) var metadata: [String: RelayMetadata] = [:]
+    public private(set) var loading: Set<String> = []
 
-    private init() {}
+    public init() {}
 
     public func fetchMetadata(for relayURL: String) async {
         guard metadata[relayURL] == nil, !loading.contains(relayURL) else { return }

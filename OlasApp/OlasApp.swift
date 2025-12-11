@@ -5,6 +5,8 @@ import NDKSwiftNostrDB
 @main
 struct OlasApp: App {
     @StateObject private var authViewModel = AuthViewModel()
+    @State private var settings = SettingsManager()
+    @State private var relayCache = RelayMetadataCache()
     @State private var ndk: NDK?
     @State private var sparkWalletManager: SparkWalletManager?
     @State private var isInitialized = false
@@ -22,8 +24,12 @@ struct OlasApp: App {
                 } else if let ndk = ndk, let sparkWalletManager = sparkWalletManager {
                     MainTabView(ndk: ndk, sparkWalletManager: sparkWalletManager)
                         .environmentObject(authViewModel)
+                        .environment(settings)
+                        .environment(relayCache)
                 }
             }
+            .environment(settings)
+            .environment(relayCache)
             .onChange(of: authViewModel.isLoggedIn) { _, isLoggedIn in
                 if isLoggedIn {
                     ndk?.signer = authViewModel.signer
