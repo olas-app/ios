@@ -1,6 +1,6 @@
-import SwiftUI
 import NDKSwiftCore
 import NDKSwiftUI
+import SwiftUI
 
 public struct ProfileView: View {
     let ndk: NDK
@@ -267,7 +267,7 @@ private struct LikedPostsGrid: View {
     private let columns = [
         GridItem(.flexible(), spacing: 1),
         GridItem(.flexible(), spacing: 1),
-        GridItem(.flexible(), spacing: 1)
+        GridItem(.flexible(), spacing: 1),
     ]
 
     var body: some View {

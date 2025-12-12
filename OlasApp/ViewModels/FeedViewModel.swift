@@ -1,6 +1,6 @@
 import Foundation
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 @MainActor
 @Observable
@@ -47,7 +47,7 @@ public final class FeedViewModel {
                 cachePolicy: .cacheWithNetwork
             )
 
-        case .relay(let url):
+        case let .relay(url):
             subscription = ndk.subscribe(
                 filter: filter,
                 cachePolicy: .networkOnly,

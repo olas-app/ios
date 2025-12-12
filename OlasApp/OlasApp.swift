@@ -1,6 +1,6 @@
-import SwiftUI
 import NDKSwiftCore
 import NDKSwiftNostrDB
+import SwiftUI
 
 @main
 struct OlasApp: App {

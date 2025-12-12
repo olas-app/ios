@@ -1,6 +1,6 @@
 // WalletView.swift
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 public struct WalletView: View {
     let ndk: NDK

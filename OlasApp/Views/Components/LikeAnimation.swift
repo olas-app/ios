@@ -1,5 +1,5 @@
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 struct LikeAnimation: View {
     @Binding var isAnimating: Bool
@@ -141,7 +141,8 @@ struct LikeButton: View {
 
     private func loadReactionCount() async {
         guard let ndk,
-              let currentUserPubkey = await ndk.activeUser?.pubkey else {
+              let currentUserPubkey = await ndk.activeUser?.pubkey
+        else {
             return
         }
 
@@ -326,7 +327,7 @@ struct ZapButton: View {
                     // Amount buttons
                     LazyVGrid(columns: [
                         GridItem(.flexible()),
-                        GridItem(.flexible())
+                        GridItem(.flexible()),
                     ], spacing: 12) {
                         ForEach(zapAmounts, id: \.self) { amount in
                             Button {
@@ -345,8 +346,8 @@ struct ZapButton: View {
                                 .background(
                                     RoundedRectangle(cornerRadius: 12)
                                         .fill(selectedAmount == amount
-                                              ? OlasTheme.Colors.zapGold
-                                              : Color.secondary.opacity(0.1))
+                                            ? OlasTheme.Colors.zapGold
+                                            : Color.secondary.opacity(0.1))
                                 )
                                 .foregroundStyle(selectedAmount == amount ? .white : .primary)
                             }
@@ -455,8 +456,8 @@ struct ZapButton: View {
     }
 
     private func formatSats(_ amount: Int) -> String {
-        if amount >= 1000000 {
-            return String(format: "%.1fM", Double(amount) / 1000000)
+        if amount >= 1_000_000 {
+            return String(format: "%.1fM", Double(amount) / 1_000_000)
         } else if amount >= 1000 {
             return String(format: "%.1fK", Double(amount) / 1000)
         }

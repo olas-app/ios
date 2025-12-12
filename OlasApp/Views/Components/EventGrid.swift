@@ -1,5 +1,5 @@
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 public struct EventGrid: View {
     let ndk: NDK
@@ -11,7 +11,7 @@ public struct EventGrid: View {
     private let columns = [
         GridItem(.flexible(), spacing: 1),
         GridItem(.flexible(), spacing: 1),
-        GridItem(.flexible(), spacing: 1)
+        GridItem(.flexible(), spacing: 1),
     ]
 
     public init(ndk: NDK, filter: NDKFilter, onTap: @escaping (NDKEvent) -> Void) {

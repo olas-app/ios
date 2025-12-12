@@ -1,5 +1,5 @@
-import SwiftUI
 import AVFoundation
+import SwiftUI
 
 // MARK: - QR Scanner View
 
@@ -129,14 +129,13 @@ struct QRScannerView: View {
 struct QRCameraView: UIViewControllerRepresentable {
     let onScan: (String) -> Void
 
-    func makeUIViewController(context: Context) -> CameraViewController {
+    func makeUIViewController(context _: Context) -> CameraViewController {
         let controller = CameraViewController()
         controller.onScan = onScan
         return controller
     }
 
-    func updateUIViewController(_ uiViewController: CameraViewController, context: Context) {
-    }
+    func updateUIViewController(_: CameraViewController, context _: Context) {}
 }
 
 // MARK: - Camera View Controller
@@ -205,7 +204,7 @@ class CameraViewController: UIViewController {
         previewLayer.videoGravity = .resizeAspectFill
         view.layer.addSublayer(previewLayer)
 
-        self.captureSession = session
+        captureSession = session
         self.previewLayer = previewLayer
     }
 
@@ -235,12 +234,13 @@ class CameraViewController: UIViewController {
 // MARK: - Metadata Output Delegate
 
 extension CameraViewController: AVCaptureMetadataOutputObjectsDelegate {
-    func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
+    func metadataOutput(_: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from _: AVCaptureConnection) {
         guard !hasScannedCode else { return }
 
         if let metadataObject = metadataObjects.first,
            let readableObject = metadataObject as? AVMetadataMachineReadableCodeObject,
-           let stringValue = readableObject.stringValue {
+           let stringValue = readableObject.stringValue
+        {
             hasScannedCode = true
             stopSession()
             onScan?(stringValue)

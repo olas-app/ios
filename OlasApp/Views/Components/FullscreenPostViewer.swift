@@ -1,7 +1,7 @@
-import SwiftUI
 import AVKit
 import NDKSwiftCore
 import NDKSwiftUI
+import SwiftUI
 
 struct FullscreenPostViewer: View {
     let event: NDKEvent
@@ -28,7 +28,7 @@ struct FullscreenPostViewer: View {
     }
 
     var body: some View {
-        GeometryReader { geometry in
+        GeometryReader { _ in
             ZStack {
                 Color.black.ignoresSafeArea()
 
@@ -260,9 +260,9 @@ struct FullscreenPostViewer: View {
 
         let playerItem = AVPlayerItem(url: videoURL)
         let avPlayer = AVPlayer(playerItem: playerItem)
-        avPlayer.isMuted = false  // Start with sound ON in fullscreen
-        self.isMuted = false
-        self.player = avPlayer
+        avPlayer.isMuted = false // Start with sound ON in fullscreen
+        isMuted = false
+        player = avPlayer
 
         // Loop video
         NotificationCenter.default.addObserver(

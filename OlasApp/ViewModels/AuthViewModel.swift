@@ -1,7 +1,7 @@
 import Foundation
-import SwiftUI
 import NDKSwiftCore
 import Security
+import SwiftUI
 
 @MainActor
 public final class AuthViewModel: ObservableObject {
@@ -125,7 +125,7 @@ public final class AuthViewModel: ObservableObject {
             kSecAttrService as String: keychainService,
             kSecAttrAccount as String: account,
             kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
         ]
 
         // Delete existing item first
@@ -142,7 +142,7 @@ public final class AuthViewModel: ObservableObject {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: keychainService,
             kSecAttrAccount as String: account,
-            kSecReturnData as String: true
+            kSecReturnData as String: true,
         ]
 
         var result: AnyObject?
@@ -150,7 +150,8 @@ public final class AuthViewModel: ObservableObject {
 
         guard status == errSecSuccess,
               let data = result as? Data,
-              let nsec = String(data: data, encoding: .utf8) else {
+              let nsec = String(data: data, encoding: .utf8)
+        else {
             return nil
         }
 
@@ -161,7 +162,7 @@ public final class AuthViewModel: ObservableObject {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: account
+            kSecAttrAccount as String: account,
         ]
 
         SecItemDelete(query as CFDictionary)
@@ -184,7 +185,7 @@ public enum AuthError: LocalizedError, Equatable {
             return "Invalid bunker URI. Must start with 'bunker://' or 'nostrconnect://'"
         case .ndkNotInitialized:
             return "NDK not initialized. Please try again."
-        case .keychainError(let status):
+        case let .keychainError(status):
             return "Keychain error: \(status)"
         }
     }

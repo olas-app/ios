@@ -36,28 +36,28 @@ public struct SparkWalletSettingsView: View {
         }
         .navigationTitle("Spark Wallet")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
         #endif
-        .sheet(isPresented: $showCreateWallet) {
-            CreateSparkWalletView(walletManager: walletManager)
-        }
-        .sheet(isPresented: $showImportWallet) {
-            ImportSparkWalletView(walletManager: walletManager)
-        }
-        .sheet(isPresented: $showLightningAddressSetup) {
-            LightningAddressSetupView(walletManager: walletManager)
-        }
-        .sheet(isPresented: $showBackupWallet) {
-            BackupWalletView(walletManager: walletManager)
-        }
-        .alert("Disconnect Wallet", isPresented: $showDisconnectAlert) {
-            Button("Cancel", role: .cancel) {}
-            Button("Disconnect", role: .destructive) {
-                Task { await walletManager.disconnect(clearMnemonic: true) }
+            .sheet(isPresented: $showCreateWallet) {
+                CreateSparkWalletView(walletManager: walletManager)
             }
-        } message: {
-            Text("This will disconnect your Spark wallet. You can reconnect later using your mnemonic.")
-        }
+            .sheet(isPresented: $showImportWallet) {
+                ImportSparkWalletView(walletManager: walletManager)
+            }
+            .sheet(isPresented: $showLightningAddressSetup) {
+                LightningAddressSetupView(walletManager: walletManager)
+            }
+            .sheet(isPresented: $showBackupWallet) {
+                BackupWalletView(walletManager: walletManager)
+            }
+            .alert("Disconnect Wallet", isPresented: $showDisconnectAlert) {
+                Button("Cancel", role: .cancel) {}
+                Button("Disconnect", role: .destructive) {
+                    Task { await walletManager.disconnect(clearMnemonic: true) }
+                }
+            } message: {
+                Text("This will disconnect your Spark wallet. You can reconnect later using your mnemonic.")
+            }
     }
 
     // MARK: - Sections
@@ -130,7 +130,7 @@ public struct SparkWalletSettingsView: View {
                         Spacer()
                         Button {
                             #if os(iOS)
-                            UIPasteboard.general.string = address
+                                UIPasteboard.general.string = address
                             #endif
                         } label: {
                             Image(systemName: "doc.on.doc")
@@ -329,9 +329,9 @@ struct ImportSparkWalletView: View {
                     .background(Color(.systemGray6))
                     .cornerRadius(12)
                     .autocorrectionDisabled()
-                    #if os(iOS)
+                #if os(iOS)
                     .textInputAutocapitalization(.never)
-                    #endif
+                #endif
 
                 if let error = error {
                     Text(error)
@@ -362,13 +362,13 @@ struct ImportSparkWalletView: View {
             .padding()
             .navigationTitle("Import Wallet")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(.inline)
             #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { dismiss() }
+                    }
                 }
-            }
         }
     }
 
@@ -428,9 +428,9 @@ struct LightningAddressSetupView: View {
                     TextField("username", text: $username)
                         .textFieldStyle(.roundedBorder)
                         .autocorrectionDisabled()
-                        #if os(iOS)
+                    #if os(iOS)
                         .textInputAutocapitalization(.never)
-                        #endif
+                    #endif
                 }
                 .padding(.horizontal)
 
@@ -463,13 +463,13 @@ struct LightningAddressSetupView: View {
             .padding()
             .navigationTitle("Lightning Address")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(.inline)
             #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { dismiss() }
+                    }
                 }
-            }
         }
     }
 
@@ -551,7 +551,7 @@ struct BackupWalletView: View {
 
     private func revealMnemonic() {
         if let key = walletManager.retrieveMnemonic() {
-            self.mnemonic = key
+            mnemonic = key
             withAnimation {
                 isRevealed = true
             }
@@ -596,7 +596,7 @@ struct BackupWalletView: View {
 
                 Button {
                     #if os(iOS)
-                    UIPasteboard.general.string = mnemonic
+                        UIPasteboard.general.string = mnemonic
                     #endif
                 } label: {
                     HStack {

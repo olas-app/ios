@@ -1,6 +1,6 @@
-import SwiftUI
 import NDKSwiftCore
 import NDKSwiftUI
+import SwiftUI
 
 struct CommentsSheet: View {
     let event: NDKEvent
@@ -59,7 +59,7 @@ struct CommentsSheet: View {
     private var commentInput: some View {
         HStack(spacing: 12) {
             TextField("Add a comment...", text: $newComment, axis: .vertical)
-                .lineLimit(1...4)
+                .lineLimit(1 ... 4)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
                 .background(.ultraThinMaterial)

@@ -1,6 +1,6 @@
 // MainTabView.swift
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 public struct MainTabView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
@@ -16,8 +16,8 @@ public struct MainTabView: View {
 
     public init(ndk: NDK, sparkWalletManager: SparkWalletManager) {
         self.ndk = ndk
-        self._walletViewModel = StateObject(wrappedValue: WalletViewModel(ndk: ndk))
-        self._muteListManager = StateObject(wrappedValue: MuteListManager(ndk: ndk))
+        _walletViewModel = StateObject(wrappedValue: WalletViewModel(ndk: ndk))
+        _muteListManager = StateObject(wrappedValue: MuteListManager(ndk: ndk))
         self.sparkWalletManager = sparkWalletManager
     }
 

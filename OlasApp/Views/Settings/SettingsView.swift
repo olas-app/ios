@@ -1,5 +1,5 @@
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 public struct SettingsView: View {
     let ndk: NDK
@@ -10,7 +10,7 @@ public struct SettingsView: View {
 
     public init(ndk: NDK, sparkWalletManager: SparkWalletManager) {
         self.ndk = ndk
-        self._blossomManager = State(wrappedValue: NDKBlossomServerManager(ndk: ndk))
+        _blossomManager = State(wrappedValue: NDKBlossomServerManager(ndk: ndk))
         self.sparkWalletManager = sparkWalletManager
     }
 
@@ -79,7 +79,7 @@ public struct SettingsView: View {
         }
         .navigationTitle("Settings")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
         #endif
     }
 }

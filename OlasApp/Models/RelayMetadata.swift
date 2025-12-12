@@ -40,7 +40,8 @@ public final class RelayMetadataCache {
         guard let httpURL = relayURL
             .replacingOccurrences(of: "wss://", with: "https://")
             .replacingOccurrences(of: "ws://", with: "http://") as String?,
-              let url = URL(string: httpURL) else {
+            let url = URL(string: httpURL)
+        else {
             loading.remove(relayURL)
             return
         }

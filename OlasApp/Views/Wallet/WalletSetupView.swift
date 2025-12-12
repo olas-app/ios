@@ -1,6 +1,6 @@
 // WalletSetupView.swift
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 struct WalletSetupView: View {
     let ndk: NDK
@@ -21,7 +21,7 @@ struct WalletSetupView: View {
     init(ndk: NDK, walletViewModel: WalletViewModel) {
         self.ndk = ndk
         self.walletViewModel = walletViewModel
-        self._mintDiscovery = StateObject(wrappedValue: MintDiscoveryViewModel(ndk: ndk))
+        _mintDiscovery = StateObject(wrappedValue: MintDiscoveryViewModel(ndk: ndk))
     }
 
     var body: some View {
@@ -211,8 +211,9 @@ struct WalletSetupView: View {
     private func isValidMintURL(_ urlString: String) -> Bool {
         guard let url = URL(string: urlString),
               let scheme = url.scheme,
-              (scheme == "https" || scheme == "http"),
-              url.host != nil else {
+              scheme == "https" || scheme == "http",
+              url.host != nil
+        else {
             return false
         }
         return true

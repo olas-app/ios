@@ -1,7 +1,7 @@
+import Observation
 import SwiftUI
 import UIKit
 import UnifiedBlurHash
-import Observation
 
 /// Thread-safe image cache using NSCache
 @Observable
@@ -148,7 +148,7 @@ struct CachedAsyncImage<Content: View, Placeholder: View>: View {
         guard let url else { return }
 
         if let loadedImage = await imageCache.loadImage(from: url) {
-            self.image = loadedImage
+            image = loadedImage
         }
     }
 }

@@ -1,7 +1,7 @@
 // SendView.swift - Cashu Wallet Send (Dual Lightning/Ecash)
-import SwiftUI
 import NDKSwiftCore
 import NDKSwiftUI
+import SwiftUI
 
 struct SendView: View {
     let ndk: NDK
@@ -317,7 +317,8 @@ struct SendView: View {
                 paymentResult = result
             } else {
                 guard let amountValue = Int64(amount),
-                      let mintURL = walletViewModel.configuredMints.first.flatMap({ URL(string: $0) }) else {
+                      let mintURL = walletViewModel.configuredMints.first.flatMap({ URL(string: $0) })
+                else {
                     throw SendError.invalidAmount
                 }
 
@@ -396,9 +397,9 @@ struct SendView: View {
         let msatsMultiplier: Int
         switch multiplier {
         case "m": msatsMultiplier = 100_000_000 // milli-bitcoin = 100k sats
-        case "u": msatsMultiplier = 100_000     // micro-bitcoin = 100 sats
-        case "n": msatsMultiplier = 100         // nano-bitcoin = 0.1 sats (we'll round)
-        case "p": msatsMultiplier = 1           // pico-bitcoin = 0.0001 sats
+        case "u": msatsMultiplier = 100_000 // micro-bitcoin = 100 sats
+        case "n": msatsMultiplier = 100 // nano-bitcoin = 0.1 sats (we'll round)
+        case "p": msatsMultiplier = 1 // pico-bitcoin = 0.0001 sats
         default: msatsMultiplier = 100_000_000_000 // No multiplier = full bitcoin
         }
 

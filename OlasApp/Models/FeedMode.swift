@@ -14,8 +14,8 @@ public enum FeedMode: Equatable, Hashable {
     }
 }
 
-public struct DiscoveryRelays {
+public enum DiscoveryRelays {
     public static let relays = [
-        "wss://relay.divine.video"
+        "wss://relay.divine.video",
     ]
 }

@@ -3,6 +3,7 @@ import SwiftUI
 
 public enum OlasTheme {
     // MARK: - Colors
+
     // Use iOS system colors for backgrounds (Color(.systemBackground), Color(.systemGray5), etc.)
     // These accent colors are for highlights, feedback, and branding only
     public enum Colors {
@@ -16,6 +17,7 @@ public enum OlasTheme {
     }
 
     // MARK: - Glassmorphism
+
     public enum Glass {
         public static let cornerRadius: CGFloat = 20
         public static let shadowRadius: CGFloat = 20
@@ -23,6 +25,7 @@ public enum OlasTheme {
     }
 
     // MARK: - Spacing
+
     public enum Spacing {
         public static let small: CGFloat = 8
         public static let medium: CGFloat = 16
@@ -31,6 +34,7 @@ public enum OlasTheme {
 }
 
 // MARK: - Color Extension
+
 extension Color {
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
@@ -56,6 +60,7 @@ extension Color {
 }
 
 // MARK: - View Modifiers
+
 public struct GlassBackground: ViewModifier {
     @Environment(\.colorScheme) var colorScheme
 
@@ -71,8 +76,8 @@ public struct GlassBackground: ViewModifier {
     }
 }
 
-extension View {
-    public func glassBackground() -> some View {
+public extension View {
+    func glassBackground() -> some View {
         modifier(GlassBackground())
     }
 }

@@ -1,5 +1,5 @@
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 struct CreateCollectionSheet: View {
     @Environment(CollectionsManager.self) private var collectionsManager
@@ -18,7 +18,7 @@ struct CreateCollectionSheet: View {
                         .textInputAutocapitalization(.words)
 
                     TextField("Description (optional)", text: $description, axis: .vertical)
-                        .lineLimit(3...6)
+                        .lineLimit(3 ... 6)
                 } header: {
                     Text("Details")
                 } footer: {

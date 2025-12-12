@@ -1,5 +1,5 @@
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 struct LogViewerView: View {
     @State private var entries: [NDKLogEntry] = []
@@ -138,53 +138,53 @@ struct LogViewerView: View {
         }
         .navigationTitle("Log Viewer")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
         #endif
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
-                    Button {
-                        toggleLogLevel()
-                    } label: {
-                        Label("Log Level: \(NDKLogger.logLevel.description)", systemImage: "slider.horizontal.3")
-                    }
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Button {
+                            toggleLogLevel()
+                        } label: {
+                            Label("Log Level: \(NDKLogger.logLevel.description)", systemImage: "slider.horizontal.3")
+                        }
 
-                    Divider()
+                        Divider()
 
-                    Button {
-                        copyLogs()
-                    } label: {
-                        Label("Copy Logs", systemImage: "doc.on.doc")
-                    }
+                        Button {
+                            copyLogs()
+                        } label: {
+                            Label("Copy Logs", systemImage: "doc.on.doc")
+                        }
 
-                    Button(role: .destructive) {
-                        Task {
-                            await NDKLogBuffer.shared.clearLogs()
-                            await loadEntries()
+                        Button(role: .destructive) {
+                            Task {
+                                await NDKLogBuffer.shared.clearLogs()
+                                await loadEntries()
+                            }
+                        } label: {
+                            Label("Clear Logs", systemImage: "trash")
                         }
                     } label: {
-                        Label("Clear Logs", systemImage: "trash")
+                        Image(systemName: "ellipsis.circle")
                     }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
                 }
             }
-        }
-        .task {
-            await loadEntries()
-            isLoading = false
-        }
-        .task(id: isLive) {
-            guard isLive else { return }
-            // Poll for updates when live mode is enabled
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(1))
+            .task {
+                await loadEntries()
+                isLoading = false
+            }
+            .task(id: isLive) {
+                guard isLive else { return }
+                // Poll for updates when live mode is enabled
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(1))
+                    await loadEntries()
+                }
+            }
+            .refreshable {
                 await loadEntries()
             }
-        }
-        .refreshable {
-            await loadEntries()
-        }
     }
 
     private var filteredEntries: [NDKLogEntry] {

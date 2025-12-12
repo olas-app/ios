@@ -1,5 +1,5 @@
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 public struct GridItemView: View {
     let event: NDKEvent

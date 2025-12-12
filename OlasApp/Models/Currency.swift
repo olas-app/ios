@@ -19,7 +19,7 @@ public enum Currency: String, CaseIterable {
 
     public var quickAmounts: [Int] {
         switch self {
-        case .sat: return [1000, 5000, 10000, 21000, 50000, 100000]
+        case .sat: return [1000, 5000, 10000, 21000, 50000, 100_000]
         case .usd: return [1, 5, 10, 20, 50, 100]
         case .eur: return [1, 5, 10, 20, 50, 100]
         case .gbp: return [1, 5, 10, 20, 50, 100]

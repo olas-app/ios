@@ -8,7 +8,7 @@ struct CaptionView: View {
 
     @State private var suggestedHashtags: [String] = [
         "#photography", "#nature", "#travel", "#art", "#nostr",
-        "#bitcoin", "#landscape", "#portrait", "#street", "#urban"
+        "#bitcoin", "#landscape", "#portrait", "#street", "#urban",
     ]
     @State private var usedHashtags: Set<String> = []
     @State private var location: String?
@@ -212,17 +212,17 @@ struct CaptionView: View {
 struct FlowLayout: Layout {
     var spacing: CGFloat = 8
 
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
         let result = FlowResult(in: proposal.width ?? 0, subviews: subviews, spacing: spacing)
         return result.size
     }
 
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+    func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
         let result = FlowResult(in: bounds.width, subviews: subviews, spacing: spacing)
 
         for (index, subview) in subviews.enumerated() {
             subview.place(at: CGPoint(x: bounds.minX + result.positions[index].x,
-                                       y: bounds.minY + result.positions[index].y),
+                                      y: bounds.minY + result.positions[index].y),
                           proposal: .unspecified)
         }
     }

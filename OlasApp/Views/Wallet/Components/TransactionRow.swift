@@ -1,7 +1,7 @@
 // TransactionRow.swift
-import SwiftUI
-import NDKSwiftCore
 import NDKSwiftCashu
+import NDKSwiftCore
+import SwiftUI
 
 struct TransactionRow: View {
     let transaction: WalletTransaction

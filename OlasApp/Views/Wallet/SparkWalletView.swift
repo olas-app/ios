@@ -1,6 +1,6 @@
-import SwiftUI
 import BreezSdkSpark
 import CoreImage.CIFilterBuiltins
+import SwiftUI
 
 public struct SparkWalletView: View {
     var walletManager: SparkWalletManager
@@ -1038,13 +1038,13 @@ struct SparkSendView: View {
                  (.preparing, .preparing),
                  (.sending, .sending):
                 return true
-            case (.parsed(let a), .parsed(let b)):
+            case let (.parsed(a), .parsed(b)):
                 return type(of: a) == type(of: b)
             case (.confirm, .confirm):
                 return true
             case (.success, .success):
                 return true
-            case (.error(let a), .error(let b)):
+            case let (.error(a), .error(b)):
                 return a == b
             default:
                 return false
@@ -1069,17 +1069,17 @@ struct SparkSendView: View {
                     manualInputView
                 case .parsing:
                     parsingView
-                case .parsed(let inputType):
+                case let .parsed(inputType):
                     parsedView(inputType: inputType)
                 case .preparing:
                     preparingView
-                case .confirm(let prepared):
+                case let .confirm(prepared):
                     confirmView(prepared: prepared)
                 case .sending:
                     sendingView
-                case .success(let hash, let fee):
+                case let .success(hash, fee):
                     successView(paymentHash: hash, feePaid: fee)
-                case .error(let message):
+                case let .error(message):
                     errorView(message: message)
                 }
             }
@@ -1287,9 +1287,9 @@ struct SparkSendView: View {
                 // Show parsed info
                 VStack(spacing: 16) {
                     switch inputType {
-                    case .bolt11Invoice(let invoice):
+                    case let .bolt11Invoice(invoice):
                         parsedInvoiceInfo(invoice)
-                    case .lightningAddress(let address):
+                    case let .lightningAddress(address):
                         parsedAddressInfo(address)
                     default:
                         Text("Unsupported payment type")
@@ -1335,7 +1335,7 @@ struct SparkSendView: View {
     }
 
     @ViewBuilder
-    private func parsedInvoiceInfo(_ invoice: some Any) -> some View {
+    private func parsedInvoiceInfo(_: some Any) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Lightning Invoice")
                 .font(.headline)
@@ -1349,7 +1349,7 @@ struct SparkSendView: View {
     }
 
     @ViewBuilder
-    private func parsedAddressInfo(_ address: some Any) -> some View {
+    private func parsedAddressInfo(_: some Any) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Lightning Address")
                 .font(.headline)
@@ -1494,7 +1494,7 @@ struct SparkSendView: View {
 
     // MARK: - Success View
 
-    private func successView(paymentHash: String?, feePaid: UInt64?) -> some View {
+    private func successView(paymentHash _: String?, feePaid: UInt64?) -> some View {
         VStack(spacing: 32) {
             // Multi-phase bounce animation
             Image(systemName: "checkmark.circle.fill")
@@ -1733,7 +1733,7 @@ struct SparkSendView: View {
         }
     }
 
-    private func getInputString(_ inputType: InputType) -> String {
+    private func getInputString(_: InputType) -> String {
         // Return the original input string that was parsed
         return originalInput
     }
@@ -1843,7 +1843,7 @@ private struct ScanningLineView: View {
                 colors: [
                     OlasTheme.Colors.zapGold.opacity(0),
                     OlasTheme.Colors.zapGold,
-                    OlasTheme.Colors.zapGold.opacity(0)
+                    OlasTheme.Colors.zapGold.opacity(0),
                 ],
                 startPoint: .top,
                 endPoint: .bottom

@@ -1,5 +1,5 @@
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 struct NetworkTrafficView: View {
     @State private var messages: [NDKNetworkMessage] = []
@@ -148,28 +148,28 @@ struct NetworkTrafficView: View {
         }
         .navigationTitle("Network Traffic")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
         #endif
-        .task {
-            await loadMessages()
-            isLoading = false
-        }
-        .task(id: isLive) {
-            guard isLive else { return }
-            // Poll for updates when live mode is enabled
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(500))
+            .task {
+                await loadMessages()
+                isLoading = false
+            }
+            .task(id: isLive) {
+                guard isLive else { return }
+                // Poll for updates when live mode is enabled
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .milliseconds(500))
+                    await loadMessages()
+                }
+            }
+            .refreshable {
                 await loadMessages()
             }
-        }
-        .refreshable {
-            await loadMessages()
-        }
-        .sheet(item: $selectedMessage) { message in
-            NavigationStack {
-                NetworkMessageDetailView(message: message)
+            .sheet(item: $selectedMessage) { message in
+                NavigationStack {
+                    NetworkMessageDetailView(message: message)
+                }
             }
-        }
     }
 
     private var filteredMessages: [NDKNetworkMessage] {
@@ -343,15 +343,15 @@ private struct NetworkMessageDetailView: View {
         }
         .navigationTitle("Message Details")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
         #endif
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Done") {
-                    dismiss()
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
                 }
             }
-        }
     }
 
     private func formatFullTimestamp(_ date: Date) -> String {
@@ -365,7 +365,8 @@ private struct NetworkMessageDetailView: View {
         guard let data = raw.data(using: .utf8),
               let object = try? JSONSerialization.jsonObject(with: data),
               let prettyData = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys]),
-              let pretty = String(data: prettyData, encoding: .utf8) else {
+              let pretty = String(data: prettyData, encoding: .utf8)
+        else {
             return nil
         }
         return pretty

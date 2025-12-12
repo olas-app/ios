@@ -1,5 +1,5 @@
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 struct RelayMonitorView: View {
     let ndk: NDK
@@ -76,42 +76,42 @@ struct RelayMonitorView: View {
         }
         .navigationTitle("Relay Monitor")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
         #endif
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    Task {
-                        await reconnectAll()
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        Task {
+                            await reconnectAll()
+                        }
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
                     }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
                 }
             }
-        }
-        .task {
-            await loadRelayStates()
-            isLoading = false
+            .task {
+                await loadRelayStates()
+                isLoading = false
 
-            // Subscribe to state updates for each relay
-            for relay in relays {
-                Task {
-                    for await state in relay.stateStream {
-                        await MainActor.run {
-                            relayStates[relay.url] = state
+                // Subscribe to state updates for each relay
+                for relay in relays {
+                    Task {
+                        for await state in relay.stateStream {
+                            await MainActor.run {
+                                relayStates[relay.url] = state
+                            }
                         }
                     }
                 }
             }
-        }
-        .refreshable {
-            await loadRelayStates()
-        }
-        .sheet(item: $selectedRelay) { relay in
-            NavigationStack {
-                RelayDetailView(relay: relay, state: relayStates[relay.url])
+            .refreshable {
+                await loadRelayStates()
             }
-        }
+            .sheet(item: $selectedRelay) { relay in
+                NavigationStack {
+                    RelayDetailView(relay: relay, state: relayStates[relay.url])
+                }
+            }
     }
 
     private var sortedRelays: [NDKRelay] {
@@ -444,15 +444,15 @@ private struct RelayDetailView: View {
         }
         .navigationTitle("Relay Details")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
         #endif
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Done") {
-                    dismiss()
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
                 }
             }
-        }
     }
 
     private var statusColor: Color {
@@ -494,7 +494,7 @@ private struct RelayDetailView: View {
             return "Disconnecting..."
         case .authRequired:
             return "Auth Required"
-        case .failed(let message):
+        case let .failed(message):
             return "Failed: \(message)"
         }
     }

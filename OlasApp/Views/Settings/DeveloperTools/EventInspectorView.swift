@@ -1,6 +1,6 @@
-import SwiftUI
 import NDKSwiftCore
 import NDKSwiftNostrDB
+import SwiftUI
 
 struct EventInspectorView: View {
     let ndk: NDK
@@ -113,29 +113,29 @@ struct EventInspectorView: View {
         }
         .navigationTitle("Event Inspector")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
         #endif
-        .onChange(of: searchText) { _, newValue in
-            guard !newValue.isEmpty else {
-                events = []
-                return
-            }
-            Task {
-                await performSearch()
-            }
-        }
-        .onChange(of: searchType) { _, _ in
-            if !searchText.isEmpty {
+            .onChange(of: searchText) { _, newValue in
+                guard !newValue.isEmpty else {
+                    events = []
+                    return
+                }
                 Task {
                     await performSearch()
                 }
             }
-        }
-        .sheet(item: $selectedEvent) { event in
-            NavigationStack {
-                EventDetailView(event: event, ndk: ndk)
+            .onChange(of: searchType) { _, _ in
+                if !searchText.isEmpty {
+                    Task {
+                        await performSearch()
+                    }
+                }
             }
-        }
+            .sheet(item: $selectedEvent) { event in
+                NavigationStack {
+                    EventDetailView(event: event, ndk: ndk)
+                }
+            }
     }
 
     private var placeholderText: String {
@@ -381,20 +381,20 @@ private struct EventDetailView: View {
         }
         .navigationTitle("Event Details")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
         #endif
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Done") {
-                    dismiss()
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
                 }
             }
-        }
-        .sheet(isPresented: $showingRawJSON) {
-            NavigationStack {
-                RawJSONView(event: event)
+            .sheet(isPresented: $showingRawJSON) {
+                NavigationStack {
+                    RawJSONView(event: event)
+                }
             }
-        }
     }
 
     private func formatFullDate(_ timestamp: Timestamp) -> String {
@@ -426,23 +426,23 @@ private struct RawJSONView: View {
         }
         .navigationTitle("Raw JSON")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
         #endif
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Done") {
-                    dismiss()
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
                 }
-            }
 
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    UIPasteboard.general.string = prettyJSON
-                } label: {
-                    Image(systemName: "doc.on.doc")
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        UIPasteboard.general.string = prettyJSON
+                    } label: {
+                        Image(systemName: "doc.on.doc")
+                    }
                 }
             }
-        }
     }
 
     private var prettyJSON: String {
@@ -450,7 +450,8 @@ private struct RawJSONView: View {
               let data = json.data(using: .utf8),
               let object = try? JSONSerialization.jsonObject(with: data),
               let prettyData = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys]),
-              let pretty = String(data: prettyData, encoding: .utf8) else {
+              let pretty = String(data: prettyData, encoding: .utf8)
+        else {
             return (try? event.toJSON()) ?? "{}"
         }
         return pretty

@@ -1,6 +1,6 @@
-import SwiftUI
 import CoreImage
 import CoreImage.CIFilterBuiltins
+import SwiftUI
 
 // MARK: - Filter Definitions
 
@@ -48,14 +48,14 @@ enum ImageAdjustment: String, CaseIterable, Identifiable {
 
     var range: ClosedRange<Double> {
         switch self {
-        case .brightness: return -1.0...1.0
-        case .contrast: return 0.5...2.0
-        case .saturation: return 0.0...2.0
-        case .warmth: return -1.0...1.0
-        case .shadows: return -1.0...1.0
-        case .highlights: return -1.0...1.0
-        case .vignette: return 0.0...2.0
-        case .sharpen: return 0.0...2.0
+        case .brightness: return -1.0 ... 1.0
+        case .contrast: return 0.5 ... 2.0
+        case .saturation: return 0.0 ... 2.0
+        case .warmth: return -1.0 ... 1.0
+        case .shadows: return -1.0 ... 1.0
+        case .highlights: return -1.0 ... 1.0
+        case .vignette: return 0.0 ... 2.0
+        case .sharpen: return 0.0 ... 2.0
         }
     }
 
@@ -127,7 +127,7 @@ struct ImageEditorView: View {
     private let context = CIContext(options: [.useSoftwareRenderer: false])
 
     init(image: Binding<UIImage>, onComplete: @escaping (UIImage) -> Void, onBack: @escaping () -> Void) {
-        self._image = image
+        _image = image
         self.onComplete = onComplete
         self.onBack = onBack
     }
@@ -195,7 +195,7 @@ struct ImageEditorView: View {
     }
 
     private var imagePreview: some View {
-        GeometryReader { geometry in
+        GeometryReader { _ in
             let displayImage = processedImage ?? image
             Image(uiImage: displayImage)
                 .resizable()
@@ -353,7 +353,7 @@ struct ImageEditorView: View {
                             .foregroundStyle(.primary)
                     }
 
-                    Slider(value: $filterIntensity, in: 0...1)
+                    Slider(value: $filterIntensity, in: 0 ... 1)
                         .tint(OlasTheme.Colors.accent)
                 }
                 .padding(.horizontal, 16)
@@ -924,7 +924,8 @@ private struct FilterThumbnail: View {
             }
 
             guard let output = filtered,
-                  let cgImage = context.createCGImage(output, from: output.extent) else {
+                  let cgImage = context.createCGImage(output, from: output.extent)
+            else {
                 return smallImage
             }
 

@@ -1,5 +1,5 @@
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 struct RelaySettingsView: View {
     let ndk: NDK
@@ -135,7 +135,7 @@ struct AddRelayView: View {
         "wss://relay.primal.net",
         "wss://nos.lol",
         "wss://relay.nostr.band",
-        "wss://relay.snort.social"
+        "wss://relay.snort.social",
     ]
 
     var body: some View {

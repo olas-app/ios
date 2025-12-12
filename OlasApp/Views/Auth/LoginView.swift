@@ -1,8 +1,8 @@
 import SwiftUI
 #if canImport(UIKit)
-import UIKit
+    import UIKit
 #elseif canImport(AppKit)
-import AppKit
+    import AppKit
 #endif
 
 public struct LoginView: View {
@@ -51,18 +51,18 @@ public struct LoginView: View {
             .padding(.vertical, 24)
             .navigationTitle("Connect Account")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(.inline)
             #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { dismiss() }
+                    }
                 }
-            }
-            .alert("Login Failed", isPresented: $showError) {
-                Button("OK") {}
-            } message: {
-                Text(errorMessage)
-            }
+                .alert("Login Failed", isPresented: $showError) {
+                    Button("OK") {}
+                } message: {
+                    Text(errorMessage)
+                }
         }
     }
 
@@ -75,9 +75,9 @@ public struct LoginView: View {
                 .textFieldStyle(.roundedBorder)
                 .autocorrectionDisabled()
                 .padding(.horizontal, 24)
-                #if os(iOS)
+            #if os(iOS)
                 .textInputAutocapitalization(.never)
-                #endif
+            #endif
 
             HStack {
                 Image(systemName: "lock.fill")
@@ -140,12 +140,12 @@ public struct LoginView: View {
             TextField("bunker:// or nostrconnect://", text: $bunkerUri, axis: .vertical)
                 .textFieldStyle(.roundedBorder)
                 .autocorrectionDisabled()
-                .lineLimit(3...6)
+                .lineLimit(3 ... 6)
                 .padding(.horizontal, 24)
-                #if os(iOS)
+            #if os(iOS)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.URL)
-                #endif
+            #endif
 
             HStack {
                 Image(systemName: "network")
@@ -194,25 +194,25 @@ public struct LoginView: View {
 
     private func pasteFromClipboard() {
         #if os(iOS)
-        if let clipboardContent = UIPasteboard.general.string {
-            nsec = clipboardContent
-        }
+            if let clipboardContent = UIPasteboard.general.string {
+                nsec = clipboardContent
+            }
         #elseif os(macOS)
-        if let clipboardContent = NSPasteboard.general.string(forType: .string) {
-            nsec = clipboardContent
-        }
+            if let clipboardContent = NSPasteboard.general.string(forType: .string) {
+                nsec = clipboardContent
+            }
         #endif
     }
 
     private func pasteFromClipboardBunker() {
         #if os(iOS)
-        if let clipboardContent = UIPasteboard.general.string {
-            bunkerUri = clipboardContent
-        }
+            if let clipboardContent = UIPasteboard.general.string {
+                bunkerUri = clipboardContent
+            }
         #elseif os(macOS)
-        if let clipboardContent = NSPasteboard.general.string(forType: .string) {
-            bunkerUri = clipboardContent
-        }
+            if let clipboardContent = NSPasteboard.general.string(forType: .string) {
+                bunkerUri = clipboardContent
+            }
         #endif
     }
 }

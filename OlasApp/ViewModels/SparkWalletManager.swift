@@ -1,44 +1,44 @@
-import Foundation
-import SwiftUI
 import BreezSdkSpark
-import Security
-import Network
+import Foundation
 import MnemonicSwift
+import Network
 import Observation
+import Security
+import SwiftUI
 
 // MARK: - SDK Error Extension
 
 extension SdkError {
     var userFriendlyMessage: String {
         switch self {
-        case .SparkError(let message):
+        case let .SparkError(message):
             return parseSparkError(message)
 
-        case .InvalidUuid(let message):
+        case let .InvalidUuid(message):
             return "Invalid identifier: \(message)"
 
-        case .InvalidInput(let message):
+        case let .InvalidInput(message):
             return parseInvalidInputError(message)
 
-        case .NetworkError(let message):
+        case let .NetworkError(message):
             return parseNetworkError(message)
 
         case .StorageError:
             return "Storage error: Unable to save wallet data. Please check available storage space."
 
-        case .ChainServiceError(let message):
+        case let .ChainServiceError(message):
             return "Blockchain service error: \(message)"
 
-        case .MaxDepositClaimFeeExceeded(_, _, _, let requiredFeeSats, _):
+        case let .MaxDepositClaimFeeExceeded(_, _, _, requiredFeeSats, _):
             return "The deposit claim fee (\(requiredFeeSats) sats) is too high. Please try again later when network fees are lower."
 
         case .MissingUtxo:
             return "Unable to find transaction output. Transaction may not be confirmed yet."
 
-        case .LnurlError(let message):
+        case let .LnurlError(message):
             return parseLnurlError(message)
 
-        case .Generic(let message):
+        case let .Generic(message):
             return parseGenericError(message)
         }
     }
@@ -587,7 +587,7 @@ public final class SparkWalletManager {
         switch event {
         case .synced:
             await refreshInfo()
-        case .paymentSucceeded(let payment):
+        case let .paymentSucceeded(payment):
             await refreshInfo()
 
             // Notify any active monitors if this is a receive payment
@@ -603,14 +603,14 @@ public final class SparkWalletManager {
             }
 
             print("[Spark] Payment succeeded: \(payment.amount) sats")
-        case .paymentFailed(let payment):
+        case let .paymentFailed(payment):
             error = "Payment failed. Please check your balance and try again."
             print("[Spark] Payment failed: \(payment.id)")
-        case .paymentPending(let payment):
+        case let .paymentPending(payment):
             print("[Spark] Payment pending: \(payment.amount) sats")
-        case .unclaimedDeposits(let deposits):
+        case let .unclaimedDeposits(deposits):
             print("[Spark] Unclaimed deposits: \(deposits.count)")
-        case .claimedDeposits(let deposits):
+        case let .claimedDeposits(deposits):
             print("[Spark] Claimed deposits: \(deposits.count)")
             await refreshInfo()
         }
@@ -648,7 +648,7 @@ public final class SparkWalletManager {
             kSecAttrService as String: keychainService,
             kSecAttrAccount as String: mnemonicAccount,
             kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
         ]
 
         // Delete existing item first
@@ -665,7 +665,7 @@ public final class SparkWalletManager {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: keychainService,
             kSecAttrAccount as String: mnemonicAccount,
-            kSecReturnData as String: true
+            kSecReturnData as String: true,
         ]
 
         var result: AnyObject?
@@ -673,7 +673,8 @@ public final class SparkWalletManager {
 
         guard status == errSecSuccess,
               let data = result as? Data,
-              let mnemonic = String(data: data, encoding: .utf8) else {
+              let mnemonic = String(data: data, encoding: .utf8)
+        else {
             return nil
         }
 
@@ -684,7 +685,7 @@ public final class SparkWalletManager {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: mnemonicAccount
+            kSecAttrAccount as String: mnemonicAccount,
         ]
 
         SecItemDelete(query as CFDictionary)
@@ -736,7 +737,7 @@ public enum SparkConnectionStatus: Equatable {
         case .disconnected: return "Not Connected"
         case .connecting: return "Connecting..."
         case .connected: return "Connected"
-        case .error(let msg): return "Error: \(msg)"
+        case let .error(msg): return "Error: \(msg)"
         }
     }
 }
@@ -757,7 +758,7 @@ public enum SparkWalletError: LocalizedError {
             return "Wallet is not connected"
         case .invalidMnemonic:
             return "Invalid mnemonic phrase"
-        case .connectionFailed(let reason):
+        case let .connectionFailed(reason):
             return "Connection failed: \(reason)"
         }
     }

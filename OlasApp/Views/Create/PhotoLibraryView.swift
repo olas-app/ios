@@ -1,5 +1,5 @@
-import SwiftUI
 import Photos
+import SwiftUI
 
 struct PhotoLibraryView: View {
     @Binding var selectedImage: UIImage?
@@ -117,7 +117,7 @@ struct PhotoLibraryView: View {
                     GridItem(.fixed(cellSize), spacing: 2),
                     GridItem(.fixed(cellSize), spacing: 2),
                     GridItem(.fixed(cellSize), spacing: 2),
-                    GridItem(.fixed(cellSize), spacing: 2)
+                    GridItem(.fixed(cellSize), spacing: 2),
                 ],
                 spacing: 2
             ) {
@@ -270,7 +270,7 @@ struct CameraView: UIViewControllerRepresentable {
         return picker
     }
 
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    func updateUIViewController(_: UIImagePickerController, context _: Context) {}
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -283,14 +283,14 @@ struct CameraView: UIViewControllerRepresentable {
             self.parent = parent
         }
 
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+        func imagePickerController(_: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
             if let image = info[.originalImage] as? UIImage {
                 parent.image = image
             }
             parent.dismiss()
         }
 
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        func imagePickerControllerDidCancel(_: UIImagePickerController) {
             parent.dismiss()
         }
     }

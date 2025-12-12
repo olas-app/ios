@@ -1,5 +1,5 @@
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 struct BlossomSettingsView: View {
     @Bindable var manager: NDKBlossomServerManager
@@ -58,17 +58,17 @@ struct BlossomSettingsView: View {
         .environment(\.editMode, $editMode)
         .navigationTitle("Blossom Servers")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
         #endif
-        .sheet(isPresented: $showAddServer) {
-            AddBlossomServerSheet(
-                existingServers: manager.userServers,
-                onAdd: { url in
-                    manager.addUserServer(url)
-                    showAddServer = false
-                }
-            )
-        }
+            .sheet(isPresented: $showAddServer) {
+                AddBlossomServerSheet(
+                    existingServers: manager.userServers,
+                    onAdd: { url in
+                        manager.addUserServer(url)
+                        showAddServer = false
+                    }
+                )
+            }
     }
 }
 
@@ -142,7 +142,7 @@ struct AddBlossomServerSheet: View {
     private let suggestedServers = [
         "https://blossom.primal.net",
         "https://nostr.build",
-        "https://void.cat"
+        "https://void.cat",
     ]
 
     private var availableSuggestions: [String] {
