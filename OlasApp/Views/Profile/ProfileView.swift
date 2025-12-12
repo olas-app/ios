@@ -8,27 +8,15 @@ public struct ProfileView: View {
     let currentUserPubkey: String?
     var sparkWalletManager: SparkWalletManager?
 
-    @EnvironmentObject private var muteListManager: MuteListManager
     @Environment(SettingsManager.self) private var settings
     @State private var profile: NDKUserMetadata?
-    @State private var posts: [NDKEvent] = []
-    @State private var likedMetaSubscription: NDKMetaSubscription?
-    @State private var followingCount = 0
     @State private var showEditProfile = false
     @State private var selectedTab: ProfileTab = .posts
     @State private var selectedPost: NDKEvent?
 
-    private var currentPosts: [NDKEvent] {
-        selectedTab == .posts ? posts : (likedMetaSubscription?.events ?? [])
-    }
-
     private var isOwnProfile: Bool {
         guard let currentUserPubkey else { return false }
         return pubkey == currentUserPubkey
-    }
-
-    private var isMuted: Bool {
-        muteListManager.isMuted(pubkey)
     }
 
     public init(ndk: NDK, pubkey: String, currentUserPubkey: String? = nil, sparkWalletManager: SparkWalletManager? = nil) {
@@ -68,30 +56,10 @@ public struct ProfileView: View {
                 }
                 .padding(.top, 8)
 
-                // Stats and action button
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(spacing: 32) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("\(currentPosts.count)")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundStyle(.primary)
-                            Text("Posts")
-                                .font(.system(size: 13))
-                                .foregroundStyle(.secondary)
-                        }
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("\(followingCount)")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundStyle(.primary)
-                            Text("Following")
-                                .font(.system(size: 13))
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-
-                    Button(action: isOwnProfile ? { showEditProfile = true } : { Task { await toggleMute() } }) {
-                        Text(isOwnProfile ? "Edit Profile" : (isMuted ? "Unmute" : "Mute"))
+                // Action button
+                if isOwnProfile {
+                    Button(action: { showEditProfile = true }) {
+                        Text("Edit Profile")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(.primary)
                             .frame(maxWidth: .infinity)
@@ -99,17 +67,29 @@ public struct ProfileView: View {
                             .background(Color(.systemGray5))
                             .cornerRadius(10)
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
 
                 // Tabs
                 ProfileTabsBar(selectedTab: $selectedTab)
 
                 // Content grid
-                PostsGridView(posts: currentPosts) { post in
-                    selectedPost = post
+                switch selectedTab {
+                case .posts:
+                    EventGrid(
+                        ndk: ndk,
+                        filter: NDKFilter(
+                            authors: [pubkey],
+                            kinds: feedKinds,
+                            limit: 50
+                        ),
+                        onTap: { post in selectedPost = post }
+                    )
+                case .liked:
+                    LikedPostsGrid(ndk: ndk, pubkey: pubkey) { post in
+                        selectedPost = post
+                    }
                 }
             }
         }
@@ -117,13 +97,7 @@ public struct ProfileView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .task {
-            // Run infinite streams concurrently in separate Tasks
             Task { await loadProfile() }
-            Task { await loadPosts() }
-
-            // Run finite operations directly
-            await loadLikedPosts()
-            await loadFollowing()
         }
         .sheet(isPresented: $showEditProfile) {
             EditProfileView(ndk: ndk, currentProfile: profile) {
@@ -167,70 +141,6 @@ public struct ProfileView: View {
             kinds.append(OlasConstants.EventKinds.shortVideo)
         }
         return kinds
-    }
-
-    private func loadPosts() async {
-        let filter = NDKFilter(
-            authors: [pubkey],
-            kinds: feedKinds,
-            limit: 50
-        )
-
-        let subscription = ndk.subscribe(filter: filter)
-
-        // Stream posts as they arrive - insert sorted to maintain order
-        for await event in subscription.events {
-            // Insert in sorted position (newest first)
-            let insertIndex = posts.firstIndex { event.createdAt > $0.createdAt } ?? posts.endIndex
-            posts.insert(event, at: insertIndex)
-        }
-    }
-
-    private func loadLikedPosts() async {
-        await MainActor.run {
-            // Use metaSubscribe to get posts the user has liked (reacted to)
-            let likeFilter = NDKFilter(
-                authors: [pubkey],
-                kinds: [Kind(7)],
-                limit: 100
-            )
-
-            likedMetaSubscription = ndk.metaSubscribe(
-                filter: likeFilter,
-                sort: .tagTime
-            )
-        }
-    }
-
-    private func loadFollowing() async {
-        let user = NDKUser(pubkey: pubkey)
-        await user.setNdk(ndk)
-
-        do {
-            let follows = try await user.follows()
-            await MainActor.run {
-                self.followingCount = follows.count
-            }
-        } catch {
-            await MainActor.run {
-                self.followingCount = 0
-            }
-        }
-    }
-
-    private func toggleMute() async {
-        let impact = UIImpactFeedbackGenerator(style: .medium)
-        impact.impactOccurred()
-
-        do {
-            if isMuted {
-                try await muteListManager.unmute(pubkey)
-            } else {
-                try await muteListManager.mute(pubkey)
-            }
-        } catch {
-            // Mute/unmute failed silently
-        }
     }
 }
 
@@ -311,8 +221,8 @@ private struct ProfileTabsBar: View {
                     selectedTab = .posts
                 }
 
-                TabButton(title: "Liked", isSelected: selectedTab == .replies) {
-                    selectedTab = .replies
+                TabButton(title: "Liked", isSelected: selectedTab == .liked) {
+                    selectedTab = .liked
                 }
             }
 
@@ -345,9 +255,14 @@ private struct TabButton: View {
     }
 }
 
-private struct PostsGridView: View {
-    let posts: [NDKEvent]
+// MARK: - Liked Posts Grid Component
+
+private struct LikedPostsGrid: View {
+    let ndk: NDK
+    let pubkey: String
     let onTap: (NDKEvent) -> Void
+
+    @State private var likedMetaSubscription: NDKMetaSubscription?
 
     private let columns = [
         GridItem(.flexible(), spacing: 1),
@@ -357,45 +272,27 @@ private struct PostsGridView: View {
 
     var body: some View {
         LazyVGrid(columns: columns, spacing: 1) {
-            ForEach(posts) { post in
-                GridItemView(post: post, onTap: onTap)
+            ForEach(likedMetaSubscription?.events ?? []) { event in
+                GridItemView(event: event, onTap: onTap)
             }
         }
-    }
-}
-
-private struct GridItemView: View {
-    let post: NDKEvent
-    let onTap: (NDKEvent) -> Void
-
-    private var image: NDKImage {
-        NDKImage(event: post)
-    }
-
-    var body: some View {
-        Group {
-            if let imageURL = image.primaryImageURL, let url = URL(string: imageURL) {
-                CachedAsyncImage(
-                    url: url,
-                    blurhash: image.primaryBlurhash,
-                    aspectRatio: image.primaryAspectRatio
-                ) { loadedImage in
-                    loadedImage
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Rectangle()
-                        .fill(Color(.systemGray5))
-                }
-            } else {
-                Rectangle()
-                    .fill(Color(.systemGray5))
-            }
+        .task {
+            await loadLikedPosts()
         }
-        .aspectRatio(1, contentMode: .fill)
-        .clipped()
-        .onTapGesture {
-            onTap(post)
+    }
+
+    private func loadLikedPosts() async {
+        await MainActor.run {
+            let likeFilter = NDKFilter(
+                authors: [pubkey],
+                kinds: [Kind(7)],
+                limit: 100
+            )
+
+            likedMetaSubscription = ndk.metaSubscribe(
+                filter: likeFilter,
+                sort: .tagTime
+            )
         }
     }
 }
