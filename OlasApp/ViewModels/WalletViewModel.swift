@@ -1,8 +1,8 @@
 // WalletViewModel.swift
-import SwiftUI
-import NDKSwiftCore
-import NDKSwiftCashu
 import CashuSwift
+import NDKSwiftCashu
+import NDKSwiftCore
+import SwiftUI
 
 @MainActor
 public class WalletViewModel: ObservableObject {
@@ -46,7 +46,7 @@ public class WalletViewModel: ObservableObject {
 
         do {
             let newWallet = try NIP60Wallet(ndk: ndk)
-            self.wallet = newWallet
+            wallet = newWallet
 
             // Start listening for events before loading
             startEventObservation()
@@ -244,24 +244,24 @@ public class WalletViewModel: ObservableObject {
 
     private func handleWalletEvent(_ event: NIP60WalletEvent) {
         switch event.type {
-        case .balanceChanged(let newBalance):
+        case let .balanceChanged(newBalance):
             balance = newBalance
             Task {
                 balancesByMint = await wallet?.getBalancesByMint() ?? [:]
             }
 
-        case .configurationUpdated(let mints):
+        case let .configurationUpdated(mints):
             configuredMints = mints
             isSetup = !mints.isEmpty
 
-        case .mintsAdded(let added):
+        case let .mintsAdded(added):
             for mint in added {
                 if !configuredMints.contains(mint) {
                     configuredMints.append(mint)
                 }
             }
 
-        case .mintsRemoved(let removed):
+        case let .mintsRemoved(removed):
             configuredMints.removeAll { removed.contains($0) }
 
         case .blacklistUpdated:
@@ -316,7 +316,7 @@ public enum WalletError: LocalizedError {
             return "Insufficient balance"
         case .invalidMint:
             return "Invalid mint"
-        case .setupFailed(let reason):
+        case let .setupFailed(reason):
             return "Wallet setup failed: \(reason)"
         }
     }

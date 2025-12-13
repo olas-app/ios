@@ -1,5 +1,5 @@
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 @Observable
 @MainActor
@@ -163,7 +163,7 @@ final class CollectionsManager {
             // Copy existing tags except the one being removed
             for tag in collection.tags {
                 if tag.first == NostrConstants.TagName.identifier { continue }
-                if tag.first == NostrConstants.TagName.event && tag.count > 1 && tag[1] == pictureEventId {
+                if tag.first == NostrConstants.TagName.event, tag.count > 1, tag[1] == pictureEventId {
                     continue
                 }
                 b = b.tag(tag)

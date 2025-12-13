@@ -6,7 +6,7 @@ public struct TabBar<Tab: RawRepresentable & CaseIterable & Hashable>: View wher
     let tabs: [Tab]
 
     public init(selectedTab: Binding<Tab>, tabs: [Tab]? = nil) {
-        self._selectedTab = selectedTab
+        _selectedTab = selectedTab
         self.tabs = tabs ?? Array(Tab.allCases)
     }
 

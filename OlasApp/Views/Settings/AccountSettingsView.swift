@@ -1,6 +1,6 @@
-import SwiftUI
 import NDKSwiftCore
 import Security
+import SwiftUI
 
 struct AccountSettingsView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
@@ -168,7 +168,7 @@ struct AccountSettingsView: View {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: "com.olas.keychain",
             kSecAttrAccount as String: "user_bunker",
-            kSecReturnData as String: true
+            kSecReturnData as String: true,
         ]
 
         var result: AnyObject?
@@ -176,7 +176,8 @@ struct AccountSettingsView: View {
 
         guard status == errSecSuccess,
               let data = result as? Data,
-              let uri = String(data: data, encoding: .utf8) else {
+              let uri = String(data: data, encoding: .utf8)
+        else {
             return nil
         }
 

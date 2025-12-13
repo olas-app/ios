@@ -1,6 +1,6 @@
-import SwiftUI
 import NDKSwiftCore
 import NDKSwiftUI
+import SwiftUI
 
 /// ViewModel for ExploreView that handles search and content discovery
 @MainActor
@@ -92,7 +92,7 @@ class ExploreViewModel {
 
         // Extract suggested users
         for event in newPosts {
-            if !seenPubkeys.contains(event.pubkey) && suggestedUsers.count < 10 {
+            if !seenPubkeys.contains(event.pubkey), suggestedUsers.count < 10 {
                 seenPubkeys.insert(event.pubkey)
                 suggestedUsers.append(SuggestedUser(pubkey: event.pubkey))
             }
@@ -143,7 +143,8 @@ class ExploreViewModel {
             guard !Task.isCancelled else { break }
 
             if let metadata = parseUserMetadata(from: event.content),
-               metadata.matchesQuery(query) {
+               metadata.matchesQuery(query)
+            {
                 userResults.append(SearchUserResult(pubkey: event.pubkey))
             }
         }
@@ -185,7 +186,8 @@ class ExploreViewModel {
 
     private func parseUserMetadata(from jsonString: String) -> UserMetadata? {
         guard let data = jsonString.data(using: .utf8),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else {
             return nil
         }
 

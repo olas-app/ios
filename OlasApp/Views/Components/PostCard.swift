@@ -1,7 +1,7 @@
 // PostCard.swift
-import SwiftUI
 import NDKSwiftCore
 import NDKSwiftUI
+import SwiftUI
 
 public struct PostCard: View, Equatable {
     let event: NDKEvent
@@ -243,7 +243,6 @@ public struct PostCard: View, Equatable {
         }
     }
 
-
     private func muteAuthor() async {
         let impact = UIImpactFeedbackGenerator(style: .medium)
         impact.impactOccurred()
@@ -322,7 +321,7 @@ struct FullscreenImageViewer: View {
     @GestureState private var dragOffset: CGSize = .zero
 
     var body: some View {
-        GeometryReader { geometry in
+        GeometryReader { _ in
             ZStack {
                 Color.black.ignoresSafeArea()
 

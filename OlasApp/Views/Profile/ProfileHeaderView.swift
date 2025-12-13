@@ -1,5 +1,5 @@
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 /// Header section of the profile showing name and about
 struct ProfileHeaderView: View {

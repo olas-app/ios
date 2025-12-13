@@ -1,7 +1,7 @@
-import SwiftUI
 import AVKit
 import NDKSwiftCore
 import NDKSwiftUI
+import SwiftUI
 
 public struct VideoPostCard: View {
     let event: NDKEvent
@@ -136,7 +136,8 @@ public struct VideoPostCard: View {
     private var thumbnailView: some View {
         Group {
             if let thumbnailURLString = video.thumbnailURL,
-               let thumbnailURL = URL(string: thumbnailURLString) {
+               let thumbnailURL = URL(string: thumbnailURLString)
+            {
                 CachedAsyncImage(
                     url: thumbnailURL,
                     blurhash: video.primaryBlurhash,
@@ -237,7 +238,7 @@ public struct VideoPostCard: View {
         let playerItem = AVPlayerItem(url: videoURL)
         let avPlayer = AVPlayer(playerItem: playerItem)
         avPlayer.isMuted = true
-        self.player = avPlayer
+        player = avPlayer
 
         // Loop video
         NotificationCenter.default.addObserver(
@@ -281,7 +282,6 @@ public struct VideoPostCard: View {
             }
         }
     }
-
 
     private func muteAuthor() async {
         do {

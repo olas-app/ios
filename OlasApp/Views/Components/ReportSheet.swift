@@ -1,6 +1,6 @@
 // ReportSheet.swift
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 struct ReportSheet: View {
     let event: NDKEvent

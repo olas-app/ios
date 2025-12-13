@@ -1,5 +1,5 @@
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 struct CollectionDetailView: View {
     let collection: NDKPictureCurationSet
@@ -16,7 +16,7 @@ struct CollectionDetailView: View {
     private let columns = [
         GridItem(.flexible(), spacing: 1),
         GridItem(.flexible(), spacing: 1),
-        GridItem(.flexible(), spacing: 1)
+        GridItem(.flexible(), spacing: 1),
     ]
 
     var body: some View {
@@ -161,7 +161,7 @@ struct CollectionDetailView: View {
             guard !Task.isCancelled else { break }
             if !pictures.contains(where: { $0.id == event.id }) {
                 pictures.append(event)
-                isLoading = false  // Hide loading after first picture arrives
+                isLoading = false // Hide loading after first picture arrives
             }
         }
 
@@ -247,7 +247,7 @@ private struct CoverPickerSheet: View {
     private let columns = [
         GridItem(.flexible(), spacing: 4),
         GridItem(.flexible(), spacing: 4),
-        GridItem(.flexible(), spacing: 4)
+        GridItem(.flexible(), spacing: 4),
     ]
 
     var body: some View {

@@ -1,5 +1,5 @@
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 private struct NDKEnvironmentKey: EnvironmentKey {
     static let defaultValue: NDK? = nil

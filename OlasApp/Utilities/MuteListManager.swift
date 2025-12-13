@@ -1,7 +1,7 @@
 // MuteListManager.swift
-import SwiftUI
-import NDKSwiftCore
 import Combine
+import NDKSwiftCore
+import SwiftUI
 
 @MainActor
 public final class MuteListManager: ObservableObject {

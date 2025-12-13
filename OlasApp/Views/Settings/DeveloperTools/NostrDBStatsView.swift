@@ -1,6 +1,6 @@
-import SwiftUI
 import NDKSwiftCore
 import NDKSwiftNostrDB
+import SwiftUI
 
 struct NostrDBStatsView: View {
     let ndk: NDK
@@ -106,14 +106,14 @@ struct NostrDBStatsView: View {
         }
         .navigationTitle("NostrDB Stats")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
         #endif
-        .task {
-            await loadStats()
-        }
-        .refreshable {
-            await loadStats()
-        }
+            .task {
+                await loadStats()
+            }
+            .refreshable {
+                await loadStats()
+            }
     }
 
     private func loadStats() async {

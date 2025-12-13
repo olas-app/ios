@@ -1,6 +1,6 @@
 // FeedView.swift
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 public struct FeedView: View {
     @State private var viewModel: FeedViewModel
@@ -13,14 +13,14 @@ public struct FeedView: View {
 
     public init(ndk: NDK, settings: SettingsManager) {
         self.ndk = ndk
-        self.viewModel = FeedViewModel(ndk: ndk, settings: settings)
+        viewModel = FeedViewModel(ndk: ndk, settings: settings)
     }
 
     private var currentFeedDisplayName: String {
         switch viewModel.feedMode {
         case .following:
             return "Following"
-        case .relay(let url):
+        case let .relay(url):
             return relayMetadataCache.displayName(for: url)
         }
     }

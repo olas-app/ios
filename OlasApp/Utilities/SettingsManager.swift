@@ -1,9 +1,9 @@
-import SwiftUI
 import Observation
+import SwiftUI
 
 public enum WalletType: String, CaseIterable, Hashable {
-    case spark = "spark"
-    case cashu = "cashu"
+    case spark
+    case cashu
 
     var displayName: String {
         switch self {

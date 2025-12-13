@@ -1,5 +1,5 @@
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 public struct EditProfileView: View {
     @Environment(\.dismiss) private var dismiss
@@ -61,7 +61,7 @@ public struct EditProfileView: View {
                 Section("Basic Info") {
                     TextField("Display Name", text: $displayName)
                     TextField("About", text: $about, axis: .vertical)
-                        .lineLimit(3...6)
+                        .lineLimit(3 ... 6)
                 }
 
                 Section("Profile Images") {

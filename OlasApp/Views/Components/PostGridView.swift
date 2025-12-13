@@ -1,6 +1,6 @@
-import SwiftUI
 import NDKSwiftCore
 import NDKSwiftUI
+import SwiftUI
 
 /// Unified grid component for displaying posts in a 3-column grid layout
 /// Used by ProfileView and ExploreView for consistent styling
@@ -28,7 +28,7 @@ public struct PostGridView: View {
         [
             GridItem(.flexible(), spacing: spacing),
             GridItem(.flexible(), spacing: spacing),
-            GridItem(.flexible(), spacing: spacing)
+            GridItem(.flexible(), spacing: spacing),
         ]
     }
 
@@ -97,18 +97,18 @@ private struct MediaContent {
 
     init(event: NDKEvent) {
         let isVideo = event.kind == OlasConstants.EventKinds.shortVideo
-        self.type = isVideo ? .video : .image
+        type = isVideo ? .video : .image
 
         if isVideo {
             let video = NDKVideo(event: event)
-            self.thumbnailURL = Self.parseURL(from: video.thumbnailURL)
-            self.blurhash = video.primaryBlurhash
-            self.accessibilityLabel = video.primaryAlt ?? "Video"
+            thumbnailURL = Self.parseURL(from: video.thumbnailURL)
+            blurhash = video.primaryBlurhash
+            accessibilityLabel = video.primaryAlt ?? "Video"
         } else {
             let image = NDKImage(event: event)
-            self.thumbnailURL = Self.parseURL(from: image.primaryImageURL)
-            self.blurhash = image.primaryBlurhash
-            self.accessibilityLabel = image.primaryAlt ?? "Post image"
+            thumbnailURL = Self.parseURL(from: image.primaryImageURL)
+            blurhash = image.primaryBlurhash
+            accessibilityLabel = image.primaryAlt ?? "Post image"
         }
     }
 
@@ -208,7 +208,7 @@ private struct VideoPlaceholder: View {
         LinearGradient(
             colors: [
                 OlasTheme.Colors.accent.opacity(0.8),
-                OlasTheme.Colors.accent.opacity(0.8)
+                OlasTheme.Colors.accent.opacity(0.8),
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing

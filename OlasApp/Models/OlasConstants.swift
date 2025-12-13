@@ -6,17 +6,17 @@ public enum OlasConstants {
         "wss://relay.damus.io",
         "wss://relay.primal.net",
         "wss://nos.lol",
-        "wss://relay.nostr.band"
+        "wss://relay.nostr.band",
     ]
 
     public static let blossomServers: [String] = [
         "https://blossom.primal.net",
-        "https://nostr.build"
+        "https://nostr.build",
     ]
 
     public enum EventKinds {
         public static let image: NDKSwiftCore.Kind = 20
-        public static let shortVideo: NDKSwiftCore.Kind = 22  // NIP-71 short-form video
+        public static let shortVideo: NDKSwiftCore.Kind = 22 // NIP-71 short-form video
         public static let reaction: NDKSwiftCore.Kind = 7
         public static let comment: NDKSwiftCore.Kind = 1111
         public static let report: NDKSwiftCore.Kind = 1984

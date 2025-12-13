@@ -1,6 +1,6 @@
-import SwiftUI
 import NDKSwiftCore
 import NDKSwiftNostrDB
+import SwiftUI
 
 struct DeveloperToolsView: View {
     let ndk: NDK
@@ -113,15 +113,15 @@ struct DeveloperToolsView: View {
         }
         .navigationTitle("Developer Tools")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
         #endif
-        .task {
-            isNetworkLoggingEnabled = NDKLogger.logNetworkTraffic
-            await refreshStats()
-        }
-        .refreshable {
-            await refreshStats()
-        }
+            .task {
+                isNetworkLoggingEnabled = NDKLogger.logNetworkTraffic
+                await refreshStats()
+            }
+            .refreshable {
+                await refreshStats()
+            }
     }
 
     private func refreshStats() async {
@@ -160,8 +160,8 @@ struct DeveloperToolsView: View {
     private func formatNumber(_ value: Int) -> String {
         if value >= 1_000_000 {
             return String(format: "%.1fM", Double(value) / 1_000_000)
-        } else if value >= 1_000 {
-            return String(format: "%.1fK", Double(value) / 1_000)
+        } else if value >= 1000 {
+            return String(format: "%.1fK", Double(value) / 1000)
         }
         return "\(value)"
     }

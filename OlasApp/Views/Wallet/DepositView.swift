@@ -1,6 +1,6 @@
-import SwiftUI
 import BreezSdkSpark
 import NDKSwiftCashu
+import SwiftUI
 
 enum CurrencyDisplayMode {
     case sats
@@ -94,7 +94,7 @@ struct DepositView: View {
             .padding(.top, 40)
 
             // Mint selection for Cashu
-            if case .cashu(let viewModel, _) = walletType, viewModel.configuredMints.count > 1 {
+            if case let .cashu(viewModel, _) = walletType, viewModel.configuredMints.count > 1 {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Deposit to")
                         .font(.caption)
@@ -177,7 +177,7 @@ struct DepositView: View {
                 depositState = .idle
             }
         } message: {
-            if case .error(let message) = depositState {
+            if case let .error(message) = depositState {
                 Text(message)
             }
         }
@@ -188,7 +188,7 @@ struct DepositView: View {
     private var invoiceDisplayView: some View {
         ScrollView {
             VStack(spacing: 24) {
-                if case .monitoring(let invoice, let amount) = depositState {
+                if case let .monitoring(invoice, amount) = depositState {
                     let _ = print("[DepositView] Displaying - Invoice: \(invoice.isEmpty ? "EMPTY" : invoice.prefix(50))..., Length: \(invoice.count), Amount: \(amount)")
 
                     Text("Pay \(amount) sats")
@@ -262,7 +262,7 @@ struct DepositView: View {
             Text("Deposit Complete!")
                 .font(.title2.bold())
 
-            if case .completed(let amount) = depositState {
+            if case let .completed(amount) = depositState {
                 Text("\(amount) sats added to your wallet")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -328,7 +328,7 @@ struct DepositView: View {
 
     private var currencySymbol: String {
         switch walletType {
-        case .spark(let manager):
+        case let .spark(manager):
             return manager.preferredCurrency
         case .cashu:
             return "$" // Default to USD for Cashu
@@ -337,7 +337,7 @@ struct DepositView: View {
 
     private var currentBTCRate: Double {
         switch walletType {
-        case .spark(let manager):
+        case let .spark(manager):
             guard let rate = manager.fiatRates.first(where: { $0.coin == currencySymbol }) else {
                 return 0
             }
@@ -350,7 +350,8 @@ struct DepositView: View {
     private var satsEquivalent: String {
         guard currencyMode == .fiat,
               let fiatValue = Double(amount),
-              let sats = fiatToSats(fiatValue) else {
+              let sats = fiatToSats(fiatValue)
+        else {
             return "0 sats"
         }
 
@@ -378,7 +379,7 @@ struct DepositView: View {
     }
 
     private func setupDefaultMint() {
-        if case .cashu(let viewModel, _) = walletType {
+        if case let .cashu(viewModel, _) = walletType {
             if selectedMint == nil {
                 selectedMint = viewModel.configuredMints.first
             }
@@ -412,7 +413,8 @@ struct DepositView: View {
 
     private func generateInvoice() async {
         guard let amountValue = Double(amount),
-              let satsValue = fiatToSats(amountValue) else {
+              let satsValue = fiatToSats(amountValue)
+        else {
             depositState = .error("Invalid amount")
             return
         }
@@ -424,13 +426,13 @@ struct DepositView: View {
             let description = currencyMode == .fiat ? "Deposit of \(currencySymbol)\(amount)" : "Deposit of \(amount) sats"
 
             switch walletType {
-            case .spark(let manager):
+            case let .spark(manager):
                 invoice = try await manager.createInvoice(
                     amountSats: UInt64(satsValue),
                     description: description
                 )
 
-            case .cashu(let viewModel, _):
+            case let .cashu(viewModel, _):
                 guard let mintURL = selectedMint else {
                     depositState = .error("No mint selected")
                     return
@@ -452,11 +454,11 @@ struct DepositView: View {
     }
 
     private func startMonitoring() async {
-        guard case .monitoring(_, let amount) = depositState else { return }
+        guard case let .monitoring(_, amount) = depositState else { return }
 
         do {
             switch walletType {
-            case .spark(let manager):
+            case let .spark(manager):
                 for try await state in manager.monitorInvoice(expectedAmount: UInt64(amount)) {
                     depositState = state
                     if case .completed = state {
@@ -464,7 +466,7 @@ struct DepositView: View {
                     }
                 }
 
-            case .cashu(let viewModel, _):
+            case let .cashu(viewModel, _):
                 guard let quote = cashuQuote else { return }
 
                 for try await status in await viewModel.monitorDeposit(quote: quote) {

@@ -100,18 +100,18 @@ public struct CreateAccountView: View {
             }
             .navigationTitle("Create Account")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(.inline)
             #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { dismiss() }
+                    }
                 }
-            }
-            .alert("Error", isPresented: $showError) {
-                Button("OK") {}
-            } message: {
-                Text(errorMessage)
-            }
+                .alert("Error", isPresented: $showError) {
+                    Button("OK") {}
+                } message: {
+                    Text(errorMessage)
+                }
         }
     }
 }

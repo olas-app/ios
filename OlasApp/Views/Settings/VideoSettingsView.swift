@@ -17,7 +17,7 @@ struct VideoSettingsView: View {
         }
         .navigationTitle("Video")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
         #endif
     }
 }

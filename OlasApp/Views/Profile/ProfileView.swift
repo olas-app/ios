@@ -1,6 +1,6 @@
-import SwiftUI
 import NDKSwiftCore
 import NDKSwiftUI
+import SwiftUI
 
 public struct ProfileView: View {
     let ndk: NDK

@@ -1,11 +1,11 @@
-import Foundation
 import BreezSdkSpark
+import Foundation
 
 extension U128 {
     var formattedString: String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
-        let amountString = self.description
+        let amountString = description
         if let number = Decimal(string: amountString) {
             return formatter.string(from: number as NSDecimalNumber) ?? amountString
         }

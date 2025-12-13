@@ -1,5 +1,5 @@
-import SwiftUI
 import CoreImage.CIFilterBuiltins
+import SwiftUI
 
 struct QRCodeView: View {
     let content: String

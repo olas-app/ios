@@ -1,6 +1,6 @@
-import SwiftUI
 import NDKSwiftCore
 import NDKSwiftUI
+import SwiftUI
 
 public struct ExploreView: View {
     let ndk: NDK
@@ -31,24 +31,24 @@ public struct ExploreView: View {
             }
             .navigationTitle("Explore")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.large)
+                .navigationBarTitleDisplayMode(.large)
             #endif
-            .task {
-                await initializeViewModel()
-            }
-            .fullScreenCover(item: $selectedPost) { post in
-                FullscreenPostViewer(
-                    event: post,
-                    ndk: ndk,
-                    isPresented: Binding(
-                        get: { selectedPost != nil },
-                        set: { if !$0 { selectedPost = nil } }
+                .task {
+                    await initializeViewModel()
+                }
+                .fullScreenCover(item: $selectedPost) { post in
+                    FullscreenPostViewer(
+                        event: post,
+                        ndk: ndk,
+                        isPresented: Binding(
+                            get: { selectedPost != nil },
+                            set: { if !$0 { selectedPost = nil } }
+                        )
                     )
-                )
-            }
-            .navigationDestination(for: String.self) { pubkey in
-                ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: authViewModel.currentUser?.pubkey)
-            }
+                }
+                .navigationDestination(for: String.self) { pubkey in
+                    ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: authViewModel.currentUser?.pubkey)
+                }
         }
     }
 

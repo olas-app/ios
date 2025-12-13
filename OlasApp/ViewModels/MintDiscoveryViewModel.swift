@@ -1,6 +1,6 @@
 // MintDiscoveryViewModel.swift
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 
 /// Discovered mint information from NIP-87
 public struct DiscoveredMint: Identifiable, Hashable {
@@ -161,7 +161,7 @@ public class MintDiscoveryViewModel: ObservableObject {
         Array(selectedMints)
     }
 
-    private func extractNetwork(from announcement: NDKMintAnnouncement) -> String {
+    private func extractNetwork(from _: NDKMintAnnouncement) -> String {
         // Check nuts for network info, default to mainnet
         // The network is typically in the event tags, but for simplicity assume mainnet
         return "mainnet"

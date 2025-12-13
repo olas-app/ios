@@ -1,6 +1,6 @@
 import Foundation
-import SwiftUI
 import NDKSwiftCore
+import SwiftUI
 import UnifiedBlurHash
 
 public enum PostError: LocalizedError {
@@ -36,7 +36,7 @@ public struct PostPublishingService {
             }
         }
 
-        self.blossomManager = manager
+        blossomManager = manager
     }
 
     public func publish(

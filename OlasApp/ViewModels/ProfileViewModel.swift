@@ -1,6 +1,6 @@
-import SwiftUI
 import NDKSwiftCore
 import NDKSwiftUI
+import SwiftUI
 
 /// ViewModel for ProfileView that handles all data loading and business logic
 @MainActor
@@ -56,7 +56,7 @@ class ProfileViewModel {
     /// Loads user profile metadata
     private func loadProfile() async {
         for await metadata in await ndk.profileManager.subscribe(for: pubkey, maxAge: 60) {
-            self.profile = metadata
+            profile = metadata
         }
     }
 
@@ -120,9 +120,9 @@ class ProfileViewModel {
 
         do {
             let follows = try await user.follows()
-            self.followingCount = follows.count
+            followingCount = follows.count
         } catch {
-            self.followingCount = 0
+            followingCount = 0
         }
     }
 
