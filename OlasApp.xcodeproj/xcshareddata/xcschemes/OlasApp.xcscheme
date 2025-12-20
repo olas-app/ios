@@ -30,9 +30,6 @@
       shouldUseLaunchSchemeArgsEnv = "YES">
       <TestPlans>
          <TestPlanReference
-            reference = "container:OlasApp.xctestplan">
-         </TestPlanReference>
-         <TestPlanReference
             reference = "container:OlasApp/OlasApp.xctestplan"
             default = "YES">
          </TestPlanReference>
