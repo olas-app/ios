@@ -92,13 +92,15 @@ struct CommentsSheet: View {
 
         let subscription = ndk.subscribe(filter: filter)
 
-        // Stream comments as they arrive
-        for await commentEvent in subscription.events {
+        // Stream comments as they arrive (events now come in batches)
+        for await commentEvents in subscription.events {
             guard !Task.isCancelled else { break }
 
-            // Insert in sorted position (oldest first for comments)
-            let insertIndex = comments.firstIndex { commentEvent.createdAt < $0.createdAt } ?? comments.endIndex
-            comments.insert(commentEvent, at: insertIndex)
+            for commentEvent in commentEvents {
+                // Insert in sorted position (oldest first for comments)
+                let insertIndex = comments.firstIndex { commentEvent.createdAt < $0.createdAt } ?? comments.endIndex
+                comments.insert(commentEvent, at: insertIndex)
+            }
         }
     }
 

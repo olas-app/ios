@@ -27,9 +27,9 @@ class NIP46ViewModel: ObservableObject {
             }
             print("✅ [NIP46] NDK instance available")
 
-            // 2. Specify the relay for the remote signer to connect back to.
-            let relay = "wss://relay.damus.io"
-            print("✅ [NIP46] Using relay: \(relay)")
+            // 2. Specify the relays for the remote signer to connect back to.
+            let relays = ["wss://relay.damus.io"]
+            print("✅ [NIP46] Using relays: \(relays)")
 
             // 3. Create a new local key pair for this connection.
             // This is used to encrypt communication with the remote signer.
@@ -47,9 +47,9 @@ class NIP46ViewModel: ObservableObject {
 
             // 5. Create the bunker signer instance.
             print("🔵 [NIP46] Creating bunker signer...")
-            let bunkerSigner = try NDKBunkerSigner.nostrConnect(
+            let bunkerSigner = try await NDKBunkerSigner.nostrConnect(
                 ndk: ndk,
-                relay: relay,
+                relays: relays,
                 localSigner: localSigner,
                 options: options
             )
@@ -85,8 +85,8 @@ class NIP46ViewModel: ObservableObject {
         }
     }
 
-    func waitForConnection() async throws -> (NDKBunkerSigner, NDKUser) {
-        guard let bunkerSigner = bunkerSigner else {
+    func waitForConnection() async throws -> (NDKBunkerSigner, PublicKey) {
+        guard let bunkerSigner = bunkerSigner, let ndk = ndk else {
             throw NIP46Error.signerNotInitialized
         }
 
@@ -95,10 +95,10 @@ class NIP46ViewModel: ObservableObject {
 
         // Wait for the remote signer to connect
         // The connect() method will wait for the remote signer to respond
-        let user = try await bunkerSigner.connect()
-        connectedUser = user
+        let pubkey = try await bunkerSigner.connect()
+        connectedUser = try await NDKUser(pubkey: pubkey, ndk: ndk)
 
-        return (bunkerSigner, user)
+        return (bunkerSigner, pubkey)
     }
 
     private func generateQRCode(from string: String) {

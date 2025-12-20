@@ -327,13 +327,15 @@ struct FullscreenPostViewer: View {
 
         let subscription = ndk.subscribe(filter: reactionFilter)
 
-        for await reactionEvent in subscription.events {
-            let referencesOurEvent = reactionEvent.tags.contains { tag in
-                tag.first == "e" && tag.count > 1 && tag[1] == event.id
-            }
+        for await reactionEvents in subscription.events {
+            for reactionEvent in reactionEvents {
+                let referencesOurEvent = reactionEvent.tags.contains { tag in
+                    tag.first == "e" && tag.count > 1 && tag[1] == event.id
+                }
 
-            if referencesOurEvent && reactionEvent.content == "+" {
-                likeCount += 1
+                if referencesOurEvent && reactionEvent.content == "+" {
+                    likeCount += 1
+                }
             }
         }
     }

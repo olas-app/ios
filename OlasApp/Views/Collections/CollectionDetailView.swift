@@ -157,11 +157,13 @@ struct CollectionDetailView: View {
         let filter = NDKFilter(ids: eventIds)
         let subscription = ndk.subscribe(filter: filter, cachePolicy: .cacheWithNetwork)
 
-        for await event in subscription.events {
+        for await events in subscription.events {
             guard !Task.isCancelled else { break }
-            if !pictures.contains(where: { $0.id == event.id }) {
-                pictures.append(event)
-                isLoading = false // Hide loading after first picture arrives
+            for event in events {
+                if !pictures.contains(where: { $0.id == event.id }) {
+                    pictures.append(event)
+                    isLoading = false // Hide loading after first picture arrives
+                }
             }
         }
 

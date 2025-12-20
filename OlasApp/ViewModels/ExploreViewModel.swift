@@ -67,21 +67,9 @@ class ExploreViewModel {
         )
 
         let subscription = ndk.subscribe(filter: filter)
-        var buffer: [NDKEvent] = []
 
-        for await event in subscription.events {
-            buffer.append(event)
-
-            // Batch insert for efficiency
-            if buffer.count >= 10 {
-                insertTrendingPostsBatch(buffer)
-                buffer.removeAll()
-            }
-        }
-
-        // Insert remaining
-        if !buffer.isEmpty {
-            insertTrendingPostsBatch(buffer)
+        for await events in subscription.events {
+            insertTrendingPostsBatch(events)
         }
     }
 
@@ -127,7 +115,7 @@ class ExploreViewModel {
     }
 
     private func searchByNpub(_ npub: String) async {
-        guard let user = try? NDKUser(npub: npub) else { return }
+        guard let user = try? NDKUser(npub: npub, ndk: ndk) else { return }
         userResults = [SearchUserResult(pubkey: user.pubkey)]
     }
 
@@ -139,13 +127,15 @@ class ExploreViewModel {
 
         let subscription = ndk.subscribe(filter: filter)
 
-        for await event in subscription.events {
+        for await events in subscription.events {
             guard !Task.isCancelled else { break }
 
-            if let metadata = parseUserMetadata(from: event.content),
-               metadata.matchesQuery(query)
-            {
-                userResults.append(SearchUserResult(pubkey: event.pubkey))
+            for event in events {
+                if let metadata = parseUserMetadata(from: event.content),
+                   metadata.matchesQuery(query)
+                {
+                    userResults.append(SearchUserResult(pubkey: event.pubkey))
+                }
             }
         }
     }
@@ -158,11 +148,13 @@ class ExploreViewModel {
 
         let subscription = ndk.subscribe(filter: filter)
 
-        for await event in subscription.events {
+        for await events in subscription.events {
             guard !Task.isCancelled else { break }
 
-            if event.content.localizedCaseInsensitiveContains(query) {
-                searchResults.append(event)
+            for event in events {
+                if event.content.localizedCaseInsensitiveContains(query) {
+                    searchResults.append(event)
+                }
             }
         }
     }

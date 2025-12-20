@@ -32,23 +32,9 @@ struct NostrDBStatsView: View {
 
                 // Event Kinds Section
                 Section("Events by Kind") {
-                    ForEach(NdbCommonKind.allCases, id: \.self) { kind in
-                        if let counts = stats.commonKinds[kind], counts.count > 0 {
-                            KindStatRow(kind: kind, counts: counts)
-                        }
-                    }
-
-                    if stats.otherKinds.count > 0 {
-                        HStack {
-                            Text("Other Kinds")
-                            Spacer()
-                            VStack(alignment: .trailing) {
-                                Text("\(stats.otherKinds.count)")
-                                    .font(.system(.body, design: .monospaced))
-                                Text(formatBytes(Int64(stats.otherKinds.totalSize)))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
+                    ForEach(stats.kinds.sorted(by: { $0.key < $1.key }), id: \.key) { kind, counts in
+                        if counts.count > 0 {
+                            KindStatRow(kindNumber: kind, counts: counts)
                         }
                     }
                 }
@@ -165,12 +151,29 @@ private struct StatRow: View {
 }
 
 private struct KindStatRow: View {
-    let kind: NdbCommonKind
+    let kindNumber: UInt64
     let counts: NdbStatCounts
+
+    private var kindName: String {
+        switch kindNumber {
+        case 0: return "Profile"
+        case 1: return "Text Note"
+        case 3: return "Contacts"
+        case 4: return "DM"
+        case 5: return "Delete"
+        case 6: return "Repost"
+        case 7: return "Reaction"
+        case 9735: return "Zap Receipt"
+        case 9734: return "Zap Request"
+        case 10002: return "Relay List"
+        case 30023: return "Long-form"
+        default: return "Kind \(kindNumber)"
+        }
+    }
 
     var body: some View {
         HStack {
-            Text(kind.name)
+            Text(kindName)
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
                 Text("\(counts.count)")

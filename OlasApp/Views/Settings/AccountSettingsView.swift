@@ -148,7 +148,7 @@ struct AccountSettingsView: View {
     private func loadKeys() {
         // Get npub from currentUser (works for all signer types)
         if let currentUser = authViewModel.currentUser {
-            npub = currentUser.npub
+            npub = try? currentUser.npub
         }
 
         // Check if using a private key signer or remote signer

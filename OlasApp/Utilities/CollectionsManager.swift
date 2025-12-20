@@ -27,17 +27,19 @@ final class CollectionsManager {
 
             let subscription = ndk.subscribe(filter: filter, cachePolicy: .cacheWithNetwork)
 
-            for await event in subscription.events {
+            for await events in subscription.events {
                 guard !Task.isCancelled else { break }
-                let set = NDKPictureCurationSet(event: event)
+                for event in events {
+                    let set = NDKPictureCurationSet(event: event)
 
-                // Replace if same identifier exists (newer version), otherwise add
-                if let existingIndex = collections.firstIndex(where: { $0.identifier == set.identifier }) {
-                    if set.createdAt > collections[existingIndex].createdAt {
-                        collections[existingIndex] = set
+                    // Replace if same identifier exists (newer version), otherwise add
+                    if let existingIndex = collections.firstIndex(where: { $0.identifier == set.identifier }) {
+                        if set.createdAt > collections[existingIndex].createdAt {
+                            collections[existingIndex] = set
+                        }
+                    } else {
+                        collections.append(set)
                     }
-                } else {
-                    collections.append(set)
                 }
 
                 // Sort by createdAt descending
@@ -67,18 +69,20 @@ final class CollectionsManager {
                 var results: [String: NDKPictureCurationSet] = [:]
                 let subscription = ndk.subscribe(filter: filter, cachePolicy: .cacheWithNetwork)
 
-                for await event in subscription.events {
+                for await events in subscription.events {
                     guard !Task.isCancelled else { break }
-                    let set = NDKPictureCurationSet(event: event)
-                    let identifier = set.identifier ?? event.id
+                    for event in events {
+                        let set = NDKPictureCurationSet(event: event)
+                        let identifier = set.identifier ?? event.id
 
-                    // Keep newest version of each collection
-                    if let existing = results[identifier] {
-                        if set.createdAt > existing.createdAt {
+                        // Keep newest version of each collection
+                        if let existing = results[identifier] {
+                            if set.createdAt > existing.createdAt {
+                                results[identifier] = set
+                            }
+                        } else {
                             results[identifier] = set
                         }
-                    } else {
-                        results[identifier] = set
                     }
 
                     // Yield updated sorted array

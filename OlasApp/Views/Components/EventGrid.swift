@@ -33,9 +33,11 @@ public struct EventGrid: View {
 
     private func subscribeToEvents() async {
         let subscription = ndk.subscribe(filter: filter)
-        for await event in subscription.events {
-            let insertIndex = events.firstIndex { event.createdAt > $0.createdAt } ?? events.endIndex
-            events.insert(event, at: insertIndex)
+        for await eventBatch in subscription.events {
+            for event in eventBatch {
+                let insertIndex = events.firstIndex { event.createdAt > $0.createdAt } ?? events.endIndex
+                events.insert(event, at: insertIndex)
+            }
         }
     }
 }

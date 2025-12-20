@@ -154,15 +154,17 @@ struct LikeButton: View {
 
         let subscription = ndk.subscribe(filter: reactionFilter)
 
-        for await reactionEvent in subscription.events {
+        for await reactionEvents in subscription.events {
             guard !Task.isCancelled else { break }
 
-            if reactionEvent.content == "+" {
-                likeCount += 1
+            for reactionEvent in reactionEvents {
+                if reactionEvent.content == "+" {
+                    likeCount += 1
 
-                // Check if this is the current user's reaction
-                if reactionEvent.pubkey == currentUserPubkey {
-                    isLiked = true
+                    // Check if this is the current user's reaction
+                    if reactionEvent.pubkey == currentUserPubkey {
+                        isLiked = true
+                    }
                 }
             }
         }
@@ -218,9 +220,9 @@ struct CommentButton: View {
 
         let commentSub = ndk.subscribe(filter: commentFilter)
 
-        for await commentEvent in commentSub.events {
+        for await commentEvents in commentSub.events {
             guard !Task.isCancelled else { break }
-            commentCount += 1
+            commentCount += commentEvents.count
         }
     }
 }
@@ -440,7 +442,7 @@ struct ZapButton: View {
         var total: Int64 = 0
 
         do {
-            for try await zapInfo in ndk.zapManager.subscribeToZaps(for: event) {
+            for try await zapInfo in ndk.zapManager.subscribeToZaps(for: event, user: nil) {
                 total += zapInfo.amountSats
 
                 await MainActor.run {

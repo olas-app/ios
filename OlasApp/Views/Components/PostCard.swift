@@ -290,7 +290,9 @@ private struct PostCaptionText: View {
         if let name = metadata?.name, !name.isEmpty {
             return name
         }
-        let npub = NDKUser(pubkey: pubkey).npub
+        guard let npub = try? NDKUser(pubkey: pubkey, ndk: ndk).npub else {
+            return String(pubkey.prefix(16)) + "..."
+        }
         return String(npub.prefix(16)) + "..."
     }
 

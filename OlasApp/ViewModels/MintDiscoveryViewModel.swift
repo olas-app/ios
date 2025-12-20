@@ -82,32 +82,34 @@ public class MintDiscoveryViewModel: ObservableObject {
         )
 
         // Stream mints as they arrive
-        for await event in announcementSub.events {
+        for await events in announcementSub.events {
             if Task.isCancelled { break }
 
-            if let announcement = try? event.parseMintAnnouncement() {
-                let mintId = announcement.mintURL.absoluteString
+            for event in events {
+                if let announcement = try? event.parseMintAnnouncement() {
+                    let mintId = announcement.mintURL.absoluteString
 
-                // Only include mainnet mints we haven't seen
-                let network = extractNetwork(from: announcement)
-                guard network == "mainnet" && !seenMintIds.contains(mintId) else { continue }
+                    // Only include mainnet mints we haven't seen
+                    let network = extractNetwork(from: announcement)
+                    guard network == "mainnet" && !seenMintIds.contains(mintId) else { continue }
 
-                seenMintIds.insert(mintId)
+                    seenMintIds.insert(mintId)
 
-                let mint = DiscoveredMint(
-                    id: mintId,
-                    url: announcement.mintURL,
-                    name: announcement.name,
-                    description: announcement.description,
-                    iconURL: announcement.icon,
-                    units: announcement.units ?? ["sat"],
-                    network: network,
-                    recommendationCount: 0
-                )
+                    let mint = DiscoveredMint(
+                        id: mintId,
+                        url: announcement.mintURL,
+                        name: announcement.name,
+                        description: announcement.description,
+                        iconURL: announcement.icon,
+                        units: announcement.units ?? ["sat"],
+                        network: network,
+                        recommendationCount: 0
+                    )
 
-                // Insert sorted by recommendation count (higher first)
-                let insertIndex = discoveredMints.firstIndex { mint.recommendationCount > $0.recommendationCount } ?? discoveredMints.endIndex
-                discoveredMints.insert(mint, at: insertIndex)
+                    // Insert sorted by recommendation count (higher first)
+                    let insertIndex = discoveredMints.firstIndex { mint.recommendationCount > $0.recommendationCount } ?? discoveredMints.endIndex
+                    discoveredMints.insert(mint, at: insertIndex)
+                }
             }
         }
     }
@@ -127,21 +129,23 @@ public class MintDiscoveryViewModel: ObservableObject {
         )
 
         // Stream recommendations and update counts as they arrive
-        for await event in recommendationSub.events {
+        for await events in recommendationSub.events {
             if Task.isCancelled { break }
 
-            // Extract mint URL from u tag and increment count
-            for tag in event.tags where tag.first == "u" && tag.count > 1 {
-                let mintURL = tag[1]
+            for event in events {
+                // Extract mint URL from u tag and increment count
+                for tag in event.tags where tag.first == "u" && tag.count > 1 {
+                    let mintURL = tag[1]
 
-                // Find and update the mint's recommendation count
-                if let index = discoveredMints.firstIndex(where: { $0.id == mintURL }) {
-                    discoveredMints[index].recommendationCount += 1
+                    // Find and update the mint's recommendation count
+                    if let index = discoveredMints.firstIndex(where: { $0.id == mintURL }) {
+                        discoveredMints[index].recommendationCount += 1
 
-                    // Re-sort to maintain recommendation order
-                    let mint = discoveredMints.remove(at: index)
-                    let newIndex = discoveredMints.firstIndex { mint.recommendationCount > $0.recommendationCount } ?? discoveredMints.endIndex
-                    discoveredMints.insert(mint, at: newIndex)
+                        // Re-sort to maintain recommendation order
+                        let mint = discoveredMints.remove(at: index)
+                        let newIndex = discoveredMints.firstIndex { mint.recommendationCount > $0.recommendationCount } ?? discoveredMints.endIndex
+                        discoveredMints.insert(mint, at: newIndex)
+                    }
                 }
             }
         }

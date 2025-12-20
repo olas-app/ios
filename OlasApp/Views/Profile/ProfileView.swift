@@ -217,11 +217,11 @@ private struct ProfileTabsBar: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                TabButton(title: "Posts", isSelected: selectedTab == .posts) {
+                ProfileTabButton(title: "Posts", isSelected: selectedTab == .posts) {
                     selectedTab = .posts
                 }
 
-                TabButton(title: "Liked", isSelected: selectedTab == .liked) {
+                ProfileTabButton(title: "Liked", isSelected: selectedTab == .liked) {
                     selectedTab = .liked
                 }
             }
@@ -233,7 +233,7 @@ private struct ProfileTabsBar: View {
     }
 }
 
-private struct TabButton: View {
+private struct ProfileTabButton: View {
     let title: String
     let isSelected: Bool
     let action: () -> Void

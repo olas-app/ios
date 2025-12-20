@@ -332,8 +332,10 @@ private struct VideoCaptionText: View {
         if let name = metadata?.name, !name.isEmpty {
             return name
         }
-        let npub = NDKUser(pubkey: pubkey).npub
-        return String(npub.prefix(16)) + "..."
+        if let npub = try? NDKUser(pubkey: pubkey, ndk: ndk).npub {
+            return String(npub.prefix(16)) + "..."
+        }
+        return String(pubkey.prefix(16)) + "..."
     }
 
     private func loadProfile() {

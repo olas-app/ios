@@ -48,7 +48,6 @@ struct OlasApp: App {
 
     private func initializeNDK() async {
         let relayUrls = OlasConstants.defaultRelays
-        let newNDK = NDK(relayUrls: relayUrls)
 
         // Initialize NostrDB cache
         let cachePath = FileManager.default
@@ -67,15 +66,18 @@ struct OlasApp: App {
             print("Failed to create cache directory: \(error)")
         }
 
+        // Create cache first, then pass to NDK
+        var cache: (any NDKCache)?
         do {
-            let cache = try await NDKNostrDBCache(path: cachePath)
-            newNDK.cache = cache
+            cache = try await NDKNostrDBCache(path: cachePath)
             print("✓ NostrDB cache initialized at: \(cachePath)")
         } catch {
             print("❌ Failed to initialize NostrDB cache: \(error)")
             print("   Path: \(cachePath)")
             print("   Stats will be unavailable in Developer Tools")
         }
+
+        let newNDK = NDK(relayURLs: relayUrls, cache: cache)
 
         // Set NDK reference in AuthViewModel before restoring session
         authViewModel.setNDK(newNDK)

@@ -61,25 +61,27 @@ public final class FeedViewModel {
         subscriptionTask = Task { [weak self] in
             var seenEvents: Set<String> = []
 
-            for await event in subscription.events {
+            for await events in subscription.events {
                 guard let self = self else { break }
                 if Task.isCancelled { break }
 
-                // Track unique events
-                guard !seenEvents.contains(event.id) else { continue }
-                seenEvents.insert(event.id)
+                for event in events {
+                    // Track unique events
+                    guard !seenEvents.contains(event.id) else { continue }
+                    seenEvents.insert(event.id)
 
-                // Filter muted pubkeys
-                guard !muteListManager.mutedPubkeys.contains(event.pubkey) else {
-                    continue
+                    // Filter muted pubkeys
+                    guard !muteListManager.mutedPubkeys.contains(event.pubkey) else {
+                        continue
+                    }
+
+                    // Add to allPosts for tracking
+                    allPosts.append(event)
+
+                    // Insert in sorted position using binary search
+                    let insertIndex = posts.insertionIndex(for: event) { $0.createdAt > $1.createdAt }
+                    posts.insert(event, at: insertIndex)
                 }
-
-                // Add to allPosts for tracking
-                allPosts.append(event)
-
-                // Insert in sorted position using binary search
-                let insertIndex = posts.insertionIndex(for: event) { $0.createdAt > $1.createdAt }
-                posts.insert(event, at: insertIndex)
 
                 isLoading = false
             }

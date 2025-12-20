@@ -52,9 +52,9 @@ struct NIP46LoginView: View {
                 Button {
                     Task {
                         do {
-                            let (bunkerSigner, user) = try await viewModel.waitForConnection()
+                            let (bunkerSigner, pubkey) = try await viewModel.waitForConnection()
                             // Once connected, update the AuthViewModel
-                            try await authViewModel.loginWithNIP46(bunkerSigner: bunkerSigner, user: user)
+                            try await authViewModel.loginWithNIP46(bunkerSigner: bunkerSigner, pubkey: pubkey)
                             dismiss()
                         } catch {
                             errorMessage = error.localizedDescription

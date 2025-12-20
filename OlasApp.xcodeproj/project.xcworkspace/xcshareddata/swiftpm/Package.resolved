@@ -61,7 +61,7 @@
       "location" : "https://github.com/pablof7z/CashuSwift.git",
       "state" : {
         "branch" : "main",
-        "revision" : "f1259bad9fc8d869f4df1065998dc2f553dfcd5e"
+        "revision" : "3501e3baed8882cdf5e9badb7c26c72c05211a1a"
       }
     },
     {
@@ -97,7 +97,7 @@
       "location" : "https://github.com/pablof7z/NDKSwift",
       "state" : {
         "branch" : "master",
-        "revision" : "dc81858f0118d76fcac3f162c906b78c01f3f94f"
+        "revision" : "c15782b0cc105062e947f13c2c39a41d3c198bd7"
       }
     },
     {
@@ -141,8 +141,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/myfreeweb/SwiftCBOR.git",
       "state" : {
-        "revision" : "04ccff117f6549121d5721ec84fdf0162122b90e",
-        "version" : "0.5.0"
+        "revision" : "fd929a6d8f7651ce0f63fc99397fd5762358cc29",
+        "version" : "0.6.0"
       }
     },
     {

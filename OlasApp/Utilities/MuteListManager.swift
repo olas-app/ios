@@ -27,9 +27,11 @@ public final class MuteListManager: ObservableObject {
 
             let subscription = ndk.subscribe(filter: filter, cachePolicy: .cacheWithNetwork)
 
-            for await event in subscription.events {
+            for await events in subscription.events {
                 guard !Task.isCancelled else { break }
-                parseMuteList(from: event)
+                for event in events {
+                    parseMuteList(from: event)
+                }
             }
         }
     }
@@ -64,12 +66,13 @@ public final class MuteListManager: ObservableObject {
     }
 
     private func publishMuteList() async throws {
+        let pubkeys = mutedPubkeys
         _ = try await ndk.publish { builder in
             var b = builder
                 .kind(OlasConstants.EventKinds.muteList)
                 .content("")
 
-            for pubkey in self.mutedPubkeys {
+            for pubkey in pubkeys {
                 b = b.tag(["p", pubkey])
             }
 

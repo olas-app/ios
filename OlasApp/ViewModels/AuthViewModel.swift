@@ -31,19 +31,27 @@ public final class AuthViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
+        guard let ndk = ndk else {
+            throw AuthError.ndkNotInitialized
+        }
+
         let newSigner = try NDKPrivateKeySigner.generate()
         let nsec = try newSigner.nsec
 
         try saveToKeychain(nsec: nsec, account: keychainAccount)
 
         signer = newSigner
-        currentUser = try await newSigner.user()
+        currentUser = try await NDKUser(pubkey: newSigner.pubkey, ndk: ndk)
         isLoggedIn = true
     }
 
     public func loginWithNsec(_ nsec: String) async throws {
         isLoading = true
         defer { isLoading = false }
+
+        guard let ndk = ndk else {
+            throw AuthError.ndkNotInitialized
+        }
 
         guard nsec.hasPrefix("nsec1") else {
             throw AuthError.invalidNsec
@@ -53,7 +61,7 @@ public final class AuthViewModel: ObservableObject {
         try saveToKeychain(nsec: nsec, account: keychainAccount)
 
         signer = newSigner
-        currentUser = try await newSigner.user()
+        currentUser = try await NDKUser(pubkey: newSigner.pubkey, ndk: ndk)
         isLoggedIn = true
     }
 
@@ -71,16 +79,34 @@ public final class AuthViewModel: ObservableObject {
         }
 
         // Create bunker signer
-        let bunkerSigner = try NDKBunkerSigner.bunker(ndk: ndk, connectionToken: bunkerUri)
+        let bunkerSigner = try await NDKBunkerSigner.bunker(ndk: ndk, connectionToken: bunkerUri)
 
         // Connect to the remote signer
-        let user = try await bunkerSigner.connect()
+        let pubkey = try await bunkerSigner.connect()
 
         // Save bunker URI to keychain
         try saveToKeychain(nsec: bunkerUri, account: keychainBunkerAccount)
 
         signer = bunkerSigner
-        currentUser = user
+        currentUser = try await NDKUser(pubkey: pubkey, ndk: ndk)
+        isLoggedIn = true
+    }
+
+    public func loginWithNIP46(bunkerSigner: NDKBunkerSigner, pubkey: PublicKey) async throws {
+        isLoading = true
+        defer { isLoading = false }
+
+        guard let ndk = ndk else {
+            throw AuthError.ndkNotInitialized
+        }
+
+        // Save the bunker URI if available
+        if let bunkerUri = await bunkerSigner.nostrConnectUri {
+            try saveToKeychain(nsec: bunkerUri, account: keychainBunkerAccount)
+        }
+
+        signer = bunkerSigner
+        currentUser = try await NDKUser(pubkey: pubkey, ndk: ndk)
         isLoggedIn = true
     }
 

@@ -114,6 +114,35 @@ struct SearchUserRow: View {
     }
 }
 
+// MARK: - Media Content Helper
+
+private struct MediaContent {
+    let thumbnailURL: URL?
+    let blurhash: String?
+    let accessibilityLabel: String
+
+    init(event: NDKEvent) {
+        let isVideo = event.kind == OlasConstants.EventKinds.shortVideo
+
+        if isVideo {
+            let video = NDKVideo(event: event)
+            thumbnailURL = Self.parseURL(from: video.thumbnailURL)
+            blurhash = video.primaryBlurhash
+            accessibilityLabel = video.primaryAlt ?? "Video"
+        } else {
+            let image = NDKImage(event: event)
+            thumbnailURL = Self.parseURL(from: image.primaryImageURL)
+            blurhash = image.primaryBlurhash
+            accessibilityLabel = image.primaryAlt ?? "Post image"
+        }
+    }
+
+    private static func parseURL(from string: String?) -> URL? {
+        guard let string = string else { return nil }
+        return URL(string: string)
+    }
+}
+
 // MARK: - Search Post Row
 
 struct SearchPostRow: View {

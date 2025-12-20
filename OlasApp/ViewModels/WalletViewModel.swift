@@ -68,8 +68,7 @@ public class WalletViewModel: ObservableObject {
             // Load transaction history
             transactions = await newWallet.getTransactionHistory()
 
-            // Configure zap manager with this wallet
-            await ndk.zapManager.configureDefaults(cashuWallet: newWallet)
+            // Wallet configured - zap manager will use this wallet automatically
 
             // Fetch initial BTC price
             await fetchBTCPrice()
@@ -286,13 +285,15 @@ public class WalletViewModel: ObservableObject {
 
     /// Send a zap (nutzap or Lightning) to an event
     public func zap(event: NDKEvent, amount: Int64, comment: String? = nil) async throws {
-        let recipient = NDKUser(pubkey: event.pubkey)
+        let recipient = NDKUser(pubkey: event.pubkey, ndk: ndk)
 
         _ = try await ndk.zapManager.zap(
             event: event,
             to: recipient,
             amountSats: amount,
-            comment: comment
+            comment: comment,
+            preferredType: nil,
+            preferredProvider: nil
         )
 
         // Refresh balance after zap

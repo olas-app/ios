@@ -69,21 +69,9 @@ class ProfileViewModel {
         )
 
         let subscription = ndk.subscribe(filter: filter)
-        var buffer: [NDKEvent] = []
 
-        for await event in subscription.events {
-            buffer.append(event)
-
-            // Batch insert every 10 events for efficiency
-            if buffer.count >= 10 {
-                insertPostsBatch(buffer)
-                buffer.removeAll()
-            }
-        }
-
-        // Insert remaining events
-        if !buffer.isEmpty {
-            insertPostsBatch(buffer)
+        for await events in subscription.events {
+            insertPostsBatch(events)
         }
     }
 
@@ -115,8 +103,7 @@ class ProfileViewModel {
 
     /// Loads the count of users this profile follows
     private func loadFollowing() async {
-        let user = NDKUser(pubkey: pubkey)
-        await user.setNdk(ndk)
+        let user = NDKUser(pubkey: pubkey, ndk: ndk)
 
         do {
             let follows = try await user.follows()

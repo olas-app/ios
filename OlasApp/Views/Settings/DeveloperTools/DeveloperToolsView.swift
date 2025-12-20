@@ -11,7 +11,6 @@ struct DeveloperToolsView: View {
     @State private var signerPubkey: String?
     @State private var cachePath: String?
     @State private var isLoading = true
-    @State private var isNetworkLoggingEnabled = false
 
     var body: some View {
         List {
@@ -64,22 +63,6 @@ struct DeveloperToolsView: View {
                     Label("Refresh Stats", systemImage: "arrow.clockwise")
                 }
 
-                Button {
-                    toggleLogLevel()
-                } label: {
-                    Label("Toggle Log Level (\(NDKLogger.logLevel.description))", systemImage: "slider.horizontal.3")
-                }
-
-                Button {
-                    isNetworkLoggingEnabled.toggle()
-                    NDKLogger.logNetworkTraffic = isNetworkLoggingEnabled
-                } label: {
-                    Label(
-                        isNetworkLoggingEnabled ? "Disable Network Logging" : "Enable Network Logging",
-                        systemImage: isNetworkLoggingEnabled ? "wifi.slash" : "wifi"
-                    )
-                }
-
                 if let pubkey = signerPubkey {
                     Button {
                         UIPasteboard.general.string = pubkey
@@ -99,16 +82,6 @@ struct DeveloperToolsView: View {
                             .lineLimit(2)
                     }
                 }
-
-                LabeledContent("NDK Log Level") {
-                    Text(NDKLogger.logLevel.description)
-                        .foregroundStyle(.secondary)
-                }
-
-                LabeledContent("Network Logging") {
-                    Text(isNetworkLoggingEnabled ? "Enabled" : "Disabled")
-                        .foregroundStyle(isNetworkLoggingEnabled ? .green : .secondary)
-                }
             }
         }
         .navigationTitle("Developer Tools")
@@ -116,7 +89,6 @@ struct DeveloperToolsView: View {
             .navigationBarTitleDisplayMode(.inline)
         #endif
             .task {
-                isNetworkLoggingEnabled = NDKLogger.logNetworkTraffic
                 await refreshStats()
             }
             .refreshable {
@@ -142,19 +114,6 @@ struct DeveloperToolsView: View {
             signerPubkey = try? await signer.pubkey
         }
         isLoading = false
-    }
-
-    private func toggleLogLevel() {
-        switch NDKLogger.logLevel {
-        case .info:
-            NDKLogger.logLevel = .debug
-        case .debug:
-            NDKLogger.logLevel = .trace
-        case .trace:
-            NDKLogger.logLevel = .info
-        default:
-            NDKLogger.logLevel = .info
-        }
     }
 
     private func formatNumber(_ value: Int) -> String {
