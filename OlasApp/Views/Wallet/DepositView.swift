@@ -332,6 +332,8 @@ struct DepositView: View {
             return manager.preferredCurrency
         case .cashu:
             return "$" // Default to USD for Cashu
+        case let .nwc(manager):
+            return manager.preferredCurrency
         }
     }
 
@@ -344,6 +346,8 @@ struct DepositView: View {
             return rate.value
         case .cashu:
             return 50000 // Placeholder - Cashu doesn't have rate info
+        case let .nwc(manager):
+            return manager.btcRate ?? 0
         }
     }
 
@@ -444,6 +448,12 @@ struct DepositView: View {
                 )
                 cashuQuote = quote
                 invoice = quote.invoice
+
+            case let .nwc(manager):
+                invoice = try await manager.createInvoice(
+                    amountSats: satsValue,
+                    description: description
+                )
             }
 
             depositState = .monitoring(invoice: invoice, amount: satsValue)
@@ -465,6 +475,12 @@ struct DepositView: View {
                         break
                     }
                 }
+
+            case let .nwc(manager):
+                // NWC doesn't have built-in monitoring, so we'll poll
+                // For now, show monitoring state and user manually closes when paid
+                // Future enhancement: implement invoice status polling
+                break
 
             case let .cashu(viewModel, _):
                 guard let quote = cashuQuote else { return }

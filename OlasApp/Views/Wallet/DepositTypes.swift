@@ -3,6 +3,7 @@ import Foundation
 public enum DepositWallet {
     case spark(SparkWalletManager)
     case cashu(WalletViewModel, selectedMint: String)
+    case nwc(NWCWalletManager)
 }
 
 public enum DepositState: Equatable {
