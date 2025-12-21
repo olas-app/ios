@@ -1,23 +1,51 @@
+import CoreImage.CIFilterBuiltins
+import NDKSwiftCore
 import SwiftUI
-#if canImport(UIKit)
-    import UIKit
-#elseif canImport(AppKit)
-    import AppKit
-#endif
 
 public struct LoginView: View {
-    @ObservedObject var authViewModel: AuthViewModel
+    var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
 
-    @State private var selectedTab: LoginMethod = .nsec
-    @State private var nsec = ""
-    @State private var bunkerUri = ""
+    @State private var nostrConnectURL: String?
+    @State private var qrCodeImage: UIImage?
+    @State private var bunkerSigner: NDKBunkerSigner?
+    @State private var isWaitingForConnection = false
+    @State private var inputText = ""
     @State private var showError = false
     @State private var errorMessage = ""
+    @State private var detectedSigner: KnownSigner?
 
-    enum LoginMethod: String, CaseIterable {
-        case nsec = "Private Key"
-        case bunker = "Remote Signer"
+    private weak var ndk: NDK? { authViewModel.ndk }
+
+    enum KnownSigner: CaseIterable {
+        case amber
+        case primal
+        case other
+
+        var name: String {
+            switch self {
+            case .amber: return "Amber"
+            case .primal: return "Primal"
+            case .other: return "Signer App"
+            }
+        }
+
+        var urlScheme: String {
+            switch self {
+            case .amber: return "nostrsigner"
+            case .primal: return "primal"
+            case .other: return "nostrconnect"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .amber: return "key.fill"
+            case .primal: return "bolt.fill"
+            case .other: return "arrow.up.forward.app"
+            }
+        }
     }
 
     public init(authViewModel: AuthViewModel) {
@@ -26,193 +54,304 @@ public struct LoginView: View {
 
     public var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
-                // Tab selector
-                Picker("Login Method", selection: $selectedTab) {
-                    ForEach(LoginMethod.allCases, id: \.self) { method in
-                        Text(method.rawValue).tag(method)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
+            VStack(spacing: 0) {
+                // QR Code - hero element
+                qrCodeSection
+                    .frame(maxHeight: .infinity)
 
-                // Content based on selected tab
-                Group {
-                    switch selectedTab {
-                    case .nsec:
-                        nsecLoginView
-                    case .bunker:
-                        bunkerLoginView
+                // Bottom section
+                VStack(spacing: 16) {
+                    // Signer app button (only if detected)
+                    if let signer = detectedSigner, let url = nostrConnectURL {
+                        signerButton(signer: signer, connectURL: url)
+                    }
+
+                    // Input field
+                    inputSection
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
+            }
+            .background(Color(.systemBackground))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(.secondary)
                     }
                 }
+            }
+            .alert("Connection Failed", isPresented: $showError) {
+                Button("OK") {}
+            } message: {
+                Text(errorMessage)
+            }
+        }
+        .task {
+            detectSignerApps()
+            await generateNostrConnectQR()
+        }
+    }
+
+    // MARK: - QR Code Section
+
+    private var qrCodeSection: some View {
+        VStack(spacing: 20) {
+            Spacer()
+
+            if let qrCode = qrCodeImage {
+                Image(uiImage: qrCode)
+                    .resizable()
+                    .interpolation(.none)
+                    .scaledToFit()
+                    .padding(24)
+                    .background(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .padding(.horizontal, 32)
+                    .onTapGesture {
+                        if let urlString = nostrConnectURL, let url = URL(string: urlString) {
+                            openURL(url)
+                        }
+                    }
+            } else {
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color(.secondarySystemBackground))
+                    .aspectRatio(1, contentMode: .fit)
+                    .padding(.horizontal, 32)
+                    .overlay {
+                        ProgressView()
+                    }
+            }
+
+            VStack(spacing: 4) {
+                Text("Scan with your Nostr signer")
+                    .font(.subheadline.weight(.medium))
+
+                if isWaitingForConnection {
+                    HStack(spacing: 6) {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                        Text("Waiting for connection...")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
+            Spacer()
+        }
+    }
+
+    // MARK: - Signer Button
+
+    private func signerButton(signer: KnownSigner, connectURL: String) -> some View {
+        Button {
+            openSignerApp(connectURL: connectURL)
+        } label: {
+            HStack(spacing: 12) {
+                if signer == .primal {
+                    Image("PrimalLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
+                } else {
+                    Image(systemName: signer.icon)
+                        .font(.title3)
+                }
+
+                Text("Open in \(signer.name)")
+                    .font(.subheadline.weight(.semibold))
 
                 Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.7))
             }
-            .padding(.vertical, 24)
-            .navigationTitle("Connect Account")
-            #if os(iOS)
-                .navigationBarTitleDisplayMode(.inline)
-            #endif
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") { dismiss() }
-                    }
-                }
-                .alert("Login Failed", isPresented: $showError) {
-                    Button("OK") {}
-                } message: {
-                    Text(errorMessage)
-                }
-        }
-    }
-
-    private var nsecLoginView: some View {
-        VStack(spacing: 24) {
-            Text("Enter your private key (nsec)")
-                .font(.headline)
-
-            SecureField("nsec1...", text: $nsec)
-                .textFieldStyle(.roundedBorder)
-                .autocorrectionDisabled()
-                .padding(.horizontal, 24)
-            #if os(iOS)
-                .textInputAutocapitalization(.never)
-            #endif
-
-            HStack {
-                Image(systemName: "lock.fill")
-                    .foregroundStyle(OlasTheme.Colors.accent)
-                Text("Your key stays on device and is never sent anywhere")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 24)
-
-            Button {
-                Task {
-                    do {
-                        try await authViewModel.loginWithNsec(nsec)
-                        dismiss()
-                    } catch {
-                        errorMessage = error.localizedDescription
-                        showError = true
-                    }
-                }
-            } label: {
-                if authViewModel.isLoading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                } else {
-                    Text("Connect")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                }
-            }
+            .padding(16)
             .background(OlasTheme.Colors.accent)
             .foregroundStyle(.white)
-            .cornerRadius(12)
-            .disabled(nsec.isEmpty || authViewModel.isLoading)
-            .padding(.horizontal, 24)
-
-            Button("Paste from clipboard") {
-                pasteFromClipboard()
-            }
-            .font(.subheadline)
-            .foregroundStyle(OlasTheme.Colors.accent)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
         }
     }
 
-    private var bunkerLoginView: some View {
-        VStack(spacing: 24) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Connect with Remote Signer")
-                    .font(.headline)
+    // MARK: - Input Section
 
-                Text("Enter a bunker:// or nostrconnect:// URI from your remote signing app")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+    private var inputSection: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                TextField("nsec or bunker://", text: $inputText)
+                    .font(.system(.subheadline, design: .monospaced))
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                Button {
+                    if let clipboard = UIPasteboard.general.string {
+                        inputText = clipboard
+                    }
+                } label: {
+                    Image(systemName: "doc.on.clipboard")
+                        .font(.body)
+                        .foregroundStyle(.primary)
+                        .frame(width: 48, height: 48)
+                        .background(Color(.secondarySystemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 24)
 
-            TextField("bunker:// or nostrconnect://", text: $bunkerUri, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
-                .autocorrectionDisabled()
-                .lineLimit(3 ... 6)
-                .padding(.horizontal, 24)
-            #if os(iOS)
-                .textInputAutocapitalization(.never)
-                .keyboardType(.URL)
-            #endif
-
-            HStack {
-                Image(systemName: "network")
-                    .foregroundStyle(OlasTheme.Colors.accent)
-                Text("Events are signed remotely via NIP-46")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 24)
-
-            Button {
-                Task {
-                    do {
-                        try await authViewModel.loginWithBunker(bunkerUri)
-                        dismiss()
-                    } catch {
-                        errorMessage = error.localizedDescription
-                        showError = true
+            if !inputText.isEmpty {
+                Button {
+                    Task { await connectWithInput() }
+                } label: {
+                    if authViewModel.isLoading {
+                        ProgressView()
+                            .tint(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                    } else {
+                        Text("Connect")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
                     }
                 }
-            } label: {
-                if authViewModel.isLoading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                } else {
-                    Text("Connect to Remote Signer")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                }
+                .background(OlasTheme.Colors.accent)
+                .foregroundStyle(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .disabled(authViewModel.isLoading)
             }
-            .background(OlasTheme.Colors.accent)
-            .foregroundStyle(.white)
-            .cornerRadius(12)
-            .disabled(bunkerUri.isEmpty || authViewModel.isLoading)
-            .padding(.horizontal, 24)
-
-            Button("Paste from clipboard") {
-                pasteFromClipboardBunker()
-            }
-            .font(.subheadline)
-            .foregroundStyle(OlasTheme.Colors.accent)
         }
     }
 
-    private func pasteFromClipboard() {
-        #if os(iOS)
-            if let clipboardContent = UIPasteboard.general.string {
-                nsec = clipboardContent
+    // MARK: - Actions
+
+    private func detectSignerApps() {
+        // Check for known signer apps first (most specific to least)
+        for signer in KnownSigner.allCases {
+            if let url = URL(string: "\(signer.urlScheme)://"),
+               UIApplication.shared.canOpenURL(url)
+            {
+                detectedSigner = signer
+                return
             }
-        #elseif os(macOS)
-            if let clipboardContent = NSPasteboard.general.string(forType: .string) {
-                nsec = clipboardContent
-            }
-        #endif
+        }
     }
 
-    private func pasteFromClipboardBunker() {
-        #if os(iOS)
-            if let clipboardContent = UIPasteboard.general.string {
-                bunkerUri = clipboardContent
+    private func openSignerApp(connectURL: String) {
+        guard let url = URL(string: connectURL) else { return }
+        openURL(url)
+    }
+
+    private func generateNostrConnectQR() async {
+        guard let ndk = ndk else { return }
+
+        do {
+            let relays = ["wss://relay.damus.io"]
+            let localSigner = try NDKPrivateKeySigner.generate()
+
+            let options = NDKBunkerSigner.NostrConnectOptions(
+                name: "Olas",
+                url: "https://olas.app",
+                image: "https://olas.app/icon.png",
+                perms: "sign_event:1,sign_event:7,sign_event:20,sign_event:22,sign_event:1111,nip04_encrypt,nip04_decrypt"
+            )
+
+            let signer = try await NDKBunkerSigner.nostrConnect(
+                ndk: ndk,
+                relays: relays,
+                localSigner: localSigner,
+                options: options
+            )
+
+            bunkerSigner = signer
+
+            var url: String?
+            for _ in 1 ... 20 {
+                url = await signer.nostrConnectUri
+                if url != nil { break }
+                try? await Task.sleep(for: .milliseconds(100))
             }
-        #elseif os(macOS)
-            if let clipboardContent = NSPasteboard.general.string(forType: .string) {
-                bunkerUri = clipboardContent
+
+            if var url = url {
+                // Add callback for signers that support return-to-app flow
+                let callback = "olas://nip46"
+                // Use alphanumerics to ensure :// gets encoded as %3A%2F%2F
+                if let encodedCallback = callback.addingPercentEncoding(withAllowedCharacters: .alphanumerics) {
+                    url += "&callback=\(encodedCallback)"
+                }
+                nostrConnectURL = url
+                generateQRCode(from: url)
+
+                // Start listening for connection immediately
+                isWaitingForConnection = true
+                Task {
+                    await waitForSignerConnection()
+                }
             }
-        #endif
+        } catch {
+            errorMessage = "Failed to generate QR code: \(error.localizedDescription)"
+            showError = true
+        }
+    }
+
+    private func generateQRCode(from string: String) {
+        let context = CIContext()
+        let filter = CIFilter.qrCodeGenerator()
+        filter.setValue(Data(string.utf8), forKey: "inputMessage")
+
+        if let outputImage = filter.outputImage {
+            let transform = CGAffineTransform(scaleX: 10, y: 10)
+            let scaledImage = outputImage.transformed(by: transform)
+            if let cgimg = context.createCGImage(scaledImage, from: scaledImage.extent) {
+                qrCodeImage = UIImage(cgImage: cgimg)
+            }
+        }
+    }
+
+    private func waitForSignerConnection() async {
+        guard let signer = bunkerSigner else { return }
+
+        do {
+            let pubkey = try await signer.connect()
+            try await authViewModel.loginWithNIP46(bunkerSigner: signer, pubkey: pubkey)
+            await MainActor.run {
+                isWaitingForConnection = false
+                dismiss()
+            }
+        } catch {
+            await MainActor.run {
+                isWaitingForConnection = false
+                errorMessage = error.localizedDescription
+                showError = true
+            }
+        }
+    }
+
+    private func connectWithInput() async {
+        let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        do {
+            if trimmed.hasPrefix("nsec1") {
+                try await authViewModel.loginWithNsec(trimmed)
+                dismiss()
+            } else if trimmed.hasPrefix("bunker://") || trimmed.hasPrefix("nostrconnect://") {
+                try await authViewModel.loginWithBunker(trimmed)
+                dismiss()
+            } else {
+                errorMessage = "Invalid input. Enter an nsec or bunker:// URI."
+                showError = true
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+        }
     }
 }

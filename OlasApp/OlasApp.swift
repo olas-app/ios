@@ -4,14 +4,16 @@ import SwiftUI
 
 @main
 struct OlasApp: App {
-    @StateObject private var authViewModel = AuthViewModel()
+    @State private var authViewModel = AuthViewModel()
     @State private var settings = SettingsManager()
     @State private var relayCache = RelayMetadataCache()
     @State private var imageCache = ImageCache()
     @State private var publishingState = PublishingState()
     @State private var ndk: NDK?
     @State private var sparkWalletManager: SparkWalletManager?
+    @State private var nwcWalletManager: NWCWalletManager?
     @State private var isInitialized = false
+    @State private var pendingNWCURI: String?
 
     var body: some Scene {
         WindowGroup {
@@ -23,14 +25,23 @@ struct OlasApp: App {
                         }
                 } else if !authViewModel.isLoggedIn {
                     OnboardingView(authViewModel: authViewModel)
-                } else if let ndk = ndk, let sparkWalletManager = sparkWalletManager {
-                    MainTabView(ndk: ndk, sparkWalletManager: sparkWalletManager)
-                        .environmentObject(authViewModel)
+                } else if let ndk = ndk, let sparkWalletManager = sparkWalletManager, let nwcWalletManager = nwcWalletManager {
+                    if authViewModel.isNewAccount && !settings.hasCompletedOnboarding {
+                        OnboardingFlowView(ndk: ndk) {
+                            settings.hasCompletedOnboarding = true
+                        }
+                        .environment(authViewModel)
                         .environment(\.ndk, ndk)
                         .environment(settings)
-                        .environment(relayCache)
-                        .environment(imageCache)
-                        .environment(publishingState)
+                    } else {
+                        MainTabView(ndk: ndk, sparkWalletManager: sparkWalletManager, nwcWalletManager: nwcWalletManager)
+                            .environment(authViewModel)
+                            .environment(\.ndk, ndk)
+                            .environment(settings)
+                            .environment(relayCache)
+                            .environment(imageCache)
+                            .environment(publishingState)
+                    }
                 }
             }
             .environment(settings)
@@ -41,8 +52,74 @@ struct OlasApp: App {
                     ndk?.signer = authViewModel.signer
                 } else {
                     ndk?.signer = nil
+                    settings.hasCompletedOnboarding = false
                 }
             }
+            .onOpenURL { url in
+                handleIncomingURL(url)
+            }
+            .onChange(of: isInitialized) { _, initialized in
+                if initialized, let uri = pendingNWCURI {
+                    Task {
+                        await connectPendingNWC(uri: uri)
+                    }
+                    pendingNWCURI = nil
+                }
+            }
+        }
+    }
+
+    private func handleIncomingURL(_ url: URL) {
+        guard url.scheme == "olas" else { return }
+
+        switch url.host {
+        case "nwc":
+            handleNWCCallback(url)
+        case "nip46":
+            // NIP-46 callback - signer app returned to Olas
+            // The actual connection is handled via relays in LoginView.waitForSignerConnection()
+            // This callback just brings Olas back to foreground
+            print("[OlasApp] NIP-46 signer returned via callback")
+        default:
+            break
+        }
+    }
+
+    private func handleNWCCallback(_ url: URL) {
+        // Handle NWC callback: olas://nwc?value=nostr+walletconnect://...
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let valueParam = components.queryItems?.first(where: { $0.name == "value" })?.value,
+              let decodedURI = valueParam.removingPercentEncoding
+        else {
+            return
+        }
+
+        // Validate it's a proper NWC URI
+        guard decodedURI.hasPrefix("nostr+walletconnect://") else {
+            return
+        }
+
+        if isInitialized, let manager = nwcWalletManager {
+            Task {
+                await connectWithNWC(manager: manager, uri: decodedURI)
+            }
+        } else {
+            // Store for processing after initialization
+            pendingNWCURI = decodedURI
+        }
+    }
+
+    private func connectPendingNWC(uri: String) async {
+        guard let manager = nwcWalletManager else { return }
+        await connectWithNWC(manager: manager, uri: uri)
+    }
+
+    private func connectWithNWC(manager: NWCWalletManager, uri: String) async {
+        do {
+            try await manager.connect(walletConnectURI: uri)
+            settings.walletType = .nwc
+        } catch {
+            print("[OlasApp] NWC connection failed: \(error)")
         }
     }
 
@@ -93,14 +170,21 @@ struct OlasApp: App {
         await newNDK.connect()
 
         // Initialize SparkWalletManager
-        let walletManager = SparkWalletManager()
+        let sparkManager = SparkWalletManager()
 
         // Attempt to restore saved wallet
-        await walletManager.restoreWalletIfExists()
+        await sparkManager.restoreWalletIfExists()
+
+        // Initialize NWCWalletManager
+        let nwcManager = NWCWalletManager(ndk: newNDK)
+
+        // Attempt to restore NWC connection
+        await nwcManager.restoreConnectionIfExists()
 
         await MainActor.run {
             self.ndk = newNDK
-            self.sparkWalletManager = walletManager
+            self.sparkWalletManager = sparkManager
+            self.nwcWalletManager = nwcManager
             self.isInitialized = true
         }
     }
