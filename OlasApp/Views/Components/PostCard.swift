@@ -273,38 +273,11 @@ private struct PostCaptionText: View {
     let pubkey: String
     let content: String
 
-    @State private var metadata: NDKUserMetadata?
-    @State private var profileTask: Task<Void, Never>?
-
     var body: some View {
-        (Text(displayName).fontWeight(.semibold) + Text(" ") + Text(content))
+        let profile = ndk.profile(for: pubkey)
+
+        (Text(profile.displayName).fontWeight(.semibold) + Text(" ") + Text(content))
             .font(.subheadline)
-            .onAppear { loadProfile() }
-            .onDisappear { profileTask?.cancel() }
-    }
-
-    private var displayName: String {
-        if let displayName = metadata?.displayName, !displayName.isEmpty {
-            return displayName
-        }
-        if let name = metadata?.name, !name.isEmpty {
-            return name
-        }
-        guard let npub = try? NDKUser(pubkey: pubkey, ndk: ndk).npub else {
-            return String(pubkey.prefix(16)) + "..."
-        }
-        return String(npub.prefix(16)) + "..."
-    }
-
-    private func loadProfile() {
-        profileTask?.cancel()
-        profileTask = Task {
-            for await metadata in await ndk.profileManager.subscribe(for: pubkey) {
-                await MainActor.run {
-                    self.metadata = metadata
-                }
-            }
-        }
     }
 }
 

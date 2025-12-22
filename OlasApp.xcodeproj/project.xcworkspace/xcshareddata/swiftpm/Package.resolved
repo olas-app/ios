@@ -97,7 +97,7 @@
       "location" : "https://github.com/pablof7z/NDKSwift",
       "state" : {
         "branch" : "master",
-        "revision" : "c15782b0cc105062e947f13c2c39a41d3c198bd7"
+        "revision" : "cf903e03eb7d2cbf9b02f0c8eb1068b4c1c15e6c"
       }
     },
     {
@@ -143,6 +143,15 @@
       "state" : {
         "revision" : "fd929a6d8f7651ce0f63fc99397fd5762358cc29",
         "version" : "0.6.0"
+      }
+    },
+    {
+      "identity" : "swiftsvg",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/mchoe/SwiftSVG.git",
+      "state" : {
+        "revision" : "c3a8866a25ace169ee8e5c037670ba14aa59606f",
+        "version" : "2.3.2"
       }
     },
     {

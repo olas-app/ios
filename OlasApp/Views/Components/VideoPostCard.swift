@@ -13,6 +13,7 @@ public struct VideoPostCard: View {
     @State private var isMuted = true
     @State private var showLikeAnimation = false
     @State private var showReportSheet = false
+    @State private var loopObserver: NSObjectProtocol?
 
     @EnvironmentObject private var muteListManager: MuteListManager
 
@@ -38,7 +39,7 @@ public struct VideoPostCard: View {
             setupPlayer()
         }
         .onDisappear {
-            player?.pause()
+            cleanupPlayer()
         }
         .sheet(isPresented: $showReportSheet) {
             ReportSheet(event: event, ndk: ndk)
@@ -240,20 +241,29 @@ public struct VideoPostCard: View {
         avPlayer.isMuted = true
         player = avPlayer
 
-        // Loop video
-        NotificationCenter.default.addObserver(
+        // Loop video - store observer for cleanup
+        loopObserver = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
             object: playerItem,
             queue: .main
-        ) { _ in
-            avPlayer.seek(to: .zero)
-            avPlayer.play()
+        ) { [weak avPlayer] _ in
+            avPlayer?.seek(to: .zero)
+            avPlayer?.play()
         }
 
         // Autoplay if enabled
         if settings.autoplayVideos {
             avPlayer.play()
         }
+    }
+
+    private func cleanupPlayer() {
+        player?.pause()
+        if let observer = loopObserver {
+            NotificationCenter.default.removeObserver(observer)
+            loopObserver = nil
+        }
+        player = nil
     }
 
     private func toggleMute() {
@@ -315,37 +325,10 @@ private struct VideoCaptionText: View {
     let pubkey: String
     let content: String
 
-    @State private var metadata: NDKUserMetadata?
-    @State private var profileTask: Task<Void, Never>?
-
     var body: some View {
-        (Text(displayName).fontWeight(.semibold) + Text(" ") + Text(content))
+        let profile = ndk.profile(for: pubkey)
+
+        (Text(profile.displayName).fontWeight(.semibold) + Text(" ") + Text(content))
             .font(.subheadline)
-            .onAppear { loadProfile() }
-            .onDisappear { profileTask?.cancel() }
-    }
-
-    private var displayName: String {
-        if let displayName = metadata?.displayName, !displayName.isEmpty {
-            return displayName
-        }
-        if let name = metadata?.name, !name.isEmpty {
-            return name
-        }
-        if let npub = try? NDKUser(pubkey: pubkey, ndk: ndk).npub {
-            return String(npub.prefix(16)) + "..."
-        }
-        return String(pubkey.prefix(16)) + "..."
-    }
-
-    private func loadProfile() {
-        profileTask?.cancel()
-        profileTask = Task {
-            for await metadata in await ndk.profileManager.subscribe(for: pubkey) {
-                await MainActor.run {
-                    self.metadata = metadata
-                }
-            }
-        }
     }
 }

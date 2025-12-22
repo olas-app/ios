@@ -7,72 +7,86 @@ public struct ProfileView: View {
     let pubkey: String
     let currentUserPubkey: String?
     var sparkWalletManager: SparkWalletManager?
+    var nwcWalletManager: NWCWalletManager?
 
     @Environment(SettingsManager.self) private var settings
-    @State private var profile: NDKUserMetadata?
     @State private var showEditProfile = false
     @State private var selectedTab: ProfileTab = .posts
     @State private var selectedPost: NDKEvent?
+    @State private var followingCount: Int?
+    @Namespace private var imageNamespace
 
     private var isOwnProfile: Bool {
         guard let currentUserPubkey else { return false }
         return pubkey == currentUserPubkey
     }
 
-    public init(ndk: NDK, pubkey: String, currentUserPubkey: String? = nil, sparkWalletManager: SparkWalletManager? = nil) {
+    public init(ndk: NDK, pubkey: String, currentUserPubkey: String? = nil, sparkWalletManager: SparkWalletManager? = nil, nwcWalletManager: NWCWalletManager? = nil) {
         self.ndk = ndk
         self.pubkey = pubkey
         self.currentUserPubkey = currentUserPubkey
         self.sparkWalletManager = sparkWalletManager
+        self.nwcWalletManager = nwcWalletManager
     }
 
     public var body: some View {
-        ScrollView {
+        let profile = ndk.profile(for: pubkey)
+
+        ZStack {
+            ScrollView {
             VStack(spacing: 0) {
                 // Banner
                 ProfileBannerView(profile: profile)
 
-                // Profile header - avatar and name side by side
-                HStack(alignment: .center, spacing: 16) {
+                // Avatar + Name row
+                HStack(alignment: .top, spacing: 16) {
                     ProfileAvatarView(profile: profile)
-                        .padding(.leading, 20)
-                        .offset(y: -48)
+                        .offset(y: -40)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(profile?.name ?? "Unknown")
+                        Text(profile.displayName)
                             .font(.system(size: 22, weight: .bold))
-                            .foregroundStyle(.primary)
 
-                        if let about = profile?.about, !about.isEmpty {
-                            Text(about)
-                                .font(.system(size: 15))
+                        // Bio
+                        if !profile.about.isEmpty {
+                            Text(profile.about)
+                                .font(.system(size: 14))
                                 .foregroundStyle(.secondary)
                                 .lineLimit(2)
                         }
+
+                        // Stats
+                        if let followingCount = followingCount {
+                            Text("\(followingCount) following")
+                                .font(.system(size: 13))
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 4)
+                        }
                     }
-                    .padding(.trailing, 20)
+                    .padding(.top, 12)
 
                     Spacer()
                 }
-                .padding(.top, 8)
+                .padding(.horizontal, 16)
 
                 // Action button
                 if isOwnProfile {
                     Button(action: { showEditProfile = true }) {
                         Text("Edit Profile")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(.primary)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
+                            .padding(.vertical, 10)
                             .background(Color(.systemGray5))
-                            .cornerRadius(10)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
                 }
 
                 // Tabs
                 ProfileTabsBar(selectedTab: $selectedTab)
+                    .padding(.top, 16)
 
                 // Content grid
                 switch selectedTab {
@@ -84,53 +98,76 @@ public struct ProfileView: View {
                             kinds: feedKinds,
                             limit: 50
                         ),
-                        onTap: { post in selectedPost = post }
+                        onTap: { post in
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                                selectedPost = post
+                            }
+                        },
+                        namespace: imageNamespace
                     )
                 case .liked:
-                    LikedPostsGrid(ndk: ndk, pubkey: pubkey) { post in
-                        selectedPost = post
+                    LikedPostsGrid(ndk: ndk, pubkey: pubkey, namespace: imageNamespace) { post in
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                            selectedPost = post
+                        }
                     }
                 }
             }
-        }
-        .ignoresSafeArea(edges: .top)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        .task {
-            Task { await loadProfile() }
-        }
-        .sheet(isPresented: $showEditProfile) {
-            EditProfileView(ndk: ndk, currentProfile: profile) {
-                Task { await loadProfile() }
+            }
+            .ignoresSafeArea(edges: .top)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .task {
+                await loadFollowCounts()
+            }
+            .sheet(isPresented: $showEditProfile) {
+                EditProfileView(ndk: ndk, currentProfile: profile.metadata) {
+                    // Profile will auto-update via ndk.profile(for:)
+                }
+            }
+
+            if let post = selectedPost {
+                FullscreenPostViewer(
+                    event: post,
+                    ndk: ndk,
+                    isPresented: Binding(
+                        get: { selectedPost != nil },
+                        set: { if !$0 { selectedPost = nil } }
+                    ),
+                    namespace: imageNamespace
+                )
+                .transition(.opacity)
+                .zIndex(1)
             }
         }
-        .fullScreenCover(item: $selectedPost) { post in
-            FullscreenPostViewer(
-                event: post,
-                ndk: ndk,
-                isPresented: Binding(
-                    get: { selectedPost != nil },
-                    set: { if !$0 { selectedPost = nil } }
-                )
-            )
-        }
         .toolbar {
-            if isOwnProfile, let sparkWalletManager = sparkWalletManager {
+            if isOwnProfile, let sparkWalletManager = sparkWalletManager, let nwcWalletManager = nwcWalletManager {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink(destination: SettingsView(ndk: ndk, sparkWalletManager: sparkWalletManager)) {
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundStyle(.primary)
+                    NavigationLink(destination: SettingsView(ndk: ndk, sparkWalletManager: sparkWalletManager, nwcWalletManager: nwcWalletManager)) {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundStyle(.white)
+                            .shadow(color: .black.opacity(0.5), radius: 2)
                     }
                 }
             }
         }
     }
 
-    private func loadProfile() async {
-        for await metadata in await ndk.profileManager.subscribe(for: pubkey, maxAge: 60) {
-            await MainActor.run {
-                self.profile = metadata
+    private func loadFollowCounts() async {
+        // Fetch following count from user's kind 3 contact list
+        let followingFilter = NDKFilter(
+            authors: [pubkey],
+            kinds: [Kind(3)],
+            limit: 1
+        )
+
+        let followingSub = ndk.subscribe(filter: followingFilter)
+        for await batch in followingSub.events {
+            if let event = batch.first {
+                let pTags = event.tags.filter { $0.first == "p" }
+                await MainActor.run { followingCount = pTags.count }
+                break
             }
         }
     }
@@ -147,85 +184,107 @@ public struct ProfileView: View {
 // MARK: - Profile Components
 
 private struct ProfileBannerView: View {
-    let profile: NDKUserMetadata?
+    let profile: NDKProfile
 
     var body: some View {
         Group {
-            if let bannerURL = profile?.banner, let url = URL(string: bannerURL) {
-                AsyncImage(url: url) { image in
+            if let bannerURL = profile.bannerURL {
+                AsyncImage(url: bannerURL) { image in
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                 } placeholder: {
-                    Rectangle()
-                        .fill(Color(.systemGray6))
+                    LinearGradient(
+                        colors: [Color(.systemGray4), Color(.systemGray5)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
                 }
             } else {
-                Rectangle()
-                    .fill(Color(.systemGray6))
+                LinearGradient(
+                    colors: [Color(.systemGray4), Color(.systemGray5)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
             }
         }
-        .frame(height: 160)
+        .frame(height: 180)
         .frame(maxWidth: .infinity)
         .clipped()
     }
 }
 
 private struct ProfileAvatarView: View {
-    let profile: NDKUserMetadata?
+    let profile: NDKProfile
 
     var body: some View {
         Group {
-            if let pictureURL = profile?.picture, let url = URL(string: pictureURL) {
-                AsyncImage(url: url) { image in
+            if let pictureURL = profile.pictureURL {
+                AsyncImage(url: pictureURL) { image in
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                 } placeholder: {
-                    Circle()
-                        .fill(Color(.systemGray5))
-                        .overlay(
-                            Text(String(profile?.name?.prefix(1) ?? "?").uppercased())
-                                .font(.system(size: 40, weight: .bold))
-                                .foregroundStyle(.primary)
-                        )
+                    avatarPlaceholder
                 }
-                .frame(width: 96, height: 96)
+                .frame(width: 100, height: 100)
                 .clipShape(Circle())
             } else {
-                Circle()
-                    .fill(Color(.systemGray5))
-                    .frame(width: 96, height: 96)
-                    .overlay(
-                        Text(String(profile?.name?.prefix(1) ?? "?").uppercased())
-                            .font(.system(size: 40, weight: .bold))
-                            .foregroundStyle(.primary)
-                    )
+                avatarPlaceholder
             }
         }
         .overlay(
             Circle()
                 .stroke(Color(.systemBackground), lineWidth: 4)
         )
-        .shadow(color: Color(.label).opacity(0.3), radius: 8, y: 4)
+        .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+    }
+
+    private var avatarPlaceholder: some View {
+        Circle()
+            .fill(
+                LinearGradient(
+                    colors: [OlasTheme.Colors.accent.opacity(0.6), OlasTheme.Colors.accent],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .frame(width: 100, height: 100)
+            .overlay(
+                Text(String(profile.name.prefix(1)).uppercased())
+                    .font(.system(size: 40, weight: .bold))
+                    .foregroundStyle(.white)
+            )
     }
 }
 
 private struct ProfileTabsBar: View {
     @Binding var selectedTab: ProfileTab
+    @Namespace private var animation
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                ProfileTabButton(title: "Posts", isSelected: selectedTab == .posts) {
+        HStack(spacing: 0) {
+            ProfileTabButton(
+                icon: "squareshape.split.3x3",
+                isSelected: selectedTab == .posts,
+                animation: animation
+            ) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                     selectedTab = .posts
-                }
-
-                ProfileTabButton(title: "Liked", isSelected: selectedTab == .liked) {
-                    selectedTab = .liked
                 }
             }
 
+            ProfileTabButton(
+                icon: "heart",
+                isSelected: selectedTab == .liked,
+                animation: animation
+            ) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    selectedTab = .liked
+                }
+            }
+        }
+        .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(Color(.separator))
                 .frame(height: 0.5)
@@ -234,22 +293,30 @@ private struct ProfileTabsBar: View {
 }
 
 private struct ProfileTabButton: View {
-    let title: String
+    let icon: String
     let isSelected: Bool
+    var animation: Namespace.ID
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             VStack(spacing: 0) {
-                Text(title)
-                    .font(.system(size: 15, weight: .semibold))
+                Image(systemName: isSelected ? "\(icon).fill" : icon)
+                    .font(.system(size: 22))
                     .foregroundStyle(isSelected ? .primary : .secondary)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
+                    .padding(.vertical, 12)
 
-                Rectangle()
-                    .fill(isSelected ? Color.primary : Color.clear)
-                    .frame(height: 1)
+                if isSelected {
+                    Rectangle()
+                        .fill(Color.primary)
+                        .frame(height: 1)
+                        .matchedGeometryEffect(id: "tab_indicator", in: animation)
+                } else {
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(height: 1)
+                }
             }
         }
     }
@@ -260,22 +327,18 @@ private struct ProfileTabButton: View {
 private struct LikedPostsGrid: View {
     let ndk: NDK
     let pubkey: String
+    let namespace: Namespace.ID
     let onTap: (NDKEvent) -> Void
 
     @State private var likedMetaSubscription: NDKMetaSubscription?
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 1),
-        GridItem(.flexible(), spacing: 1),
-        GridItem(.flexible(), spacing: 1)
-    ]
-
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 1) {
-            ForEach(likedMetaSubscription?.events ?? []) { event in
-                GridItemView(event: event, onTap: onTap)
-            }
-        }
+        PostGridView(
+            posts: likedMetaSubscription?.events ?? [],
+            spacing: 1,
+            onTap: onTap,
+            namespace: namespace
+        )
         .task {
             await loadLikedPosts()
         }
