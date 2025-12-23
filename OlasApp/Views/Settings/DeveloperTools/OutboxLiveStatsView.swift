@@ -4,9 +4,9 @@ import SwiftUI
 struct OutboxLiveStatsView: View {
     let ndk: NDK
 
-    @State private var stats: RelayUpdateStats?
     @State private var recentUpdates: [OutboxUpdateLog] = []
     @State private var isLoading = true
+    @State private var cachedItemsCount = 0
 
     var body: some View {
         List {
@@ -21,24 +21,16 @@ struct OutboxLiveStatsView: View {
             } else {
                 // Current Stats Section
                 Section("Current Statistics") {
-                    if let stats = stats {
-                        LabeledContent("Active Subscriptions") {
-                            Text("\(stats.activeSubscriptions)")
-                                .font(.system(.body, design: .monospaced))
-                                .foregroundStyle(.green)
-                        }
+                    LabeledContent("Cached Users") {
+                        Text("\(cachedItemsCount)")
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundStyle(.green)
+                    }
 
-                        LabeledContent("Unknown Authors") {
-                            Text("\(stats.totalUnknownAuthors)")
-                                .font(.system(.body, design: .monospaced))
-                                .foregroundStyle(stats.totalUnknownAuthors > 0 ? .orange : .secondary)
-                        }
-
-                        LabeledContent("Update Subscriptions") {
-                            Text("\(stats.totalUpdateSubscriptions)")
-                                .font(.system(.body, design: .monospaced))
-                                .foregroundStyle(.secondary)
-                        }
+                    LabeledContent("Recent Discoveries") {
+                        Text("\(recentUpdates.count)")
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundStyle(.secondary)
                     }
                 }
 
@@ -82,20 +74,20 @@ struct OutboxLiveStatsView: View {
     private func loadInitialData() async {
         isLoading = true
 
-        stats = await ndk.outbox.getRelayUpdateStats()
+        cachedItemsCount = await ndk.outbox.getAllCachedItems().count
 
         isLoading = false
     }
 
     private func subscribeToUpdates() async {
         Task {
-            for await update in ndk.outbox.relayUpdates {
+            for await update in ndk.outbox.relayDiscoveries {
                 await MainActor.run {
                     // Create log entry
                     let log = OutboxUpdateLog(
                         pubkey: update.pubkey,
-                        readRelayCount: update.relays.readRelays.count,
-                        writeRelayCount: update.relays.writeRelays.count,
+                        readRelayCount: update.readRelays.count,
+                        writeRelayCount: update.writeRelays.count,
                         timestamp: update.timestamp
                     )
 
@@ -107,7 +99,7 @@ struct OutboxLiveStatsView: View {
 
                     // Refresh stats
                     Task {
-                        stats = await ndk.outbox.getRelayUpdateStats()
+                        cachedItemsCount = await ndk.outbox.getAllCachedItems().count
                     }
                 }
             }

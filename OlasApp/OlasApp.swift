@@ -19,7 +19,7 @@ struct OlasApp: App {
         WindowGroup {
             Group {
                 if !isInitialized {
-                    ProgressView("Connecting...")
+                    ProgressView("Loading...")
                         .task {
                             await initializeNDK()
                         }
@@ -165,7 +165,10 @@ struct OlasApp: App {
             newNDK.signer = authViewModel.signer
         }
 
-        await newNDK.connect()
+        // Connect in background - don't block UI for network
+        Task {
+            await newNDK.connect()
+        }
 
         // Initialize SparkWalletManager
         let sparkManager = SparkWalletManager()

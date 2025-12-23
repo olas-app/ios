@@ -5,7 +5,6 @@ struct OutboxInspectorView: View {
     let ndk: NDK
 
     @State private var trackedItems: [NDKOutboxItem] = []
-    @State private var stats: RelayUpdateStats?
     @State private var isLoading = true
 
     var body: some View {
@@ -25,10 +24,6 @@ struct OutboxInspectorView: View {
                     QuickStatRow(label: "Unique Relays", value: "\(uniqueRelayCount)")
                     QuickStatRow(label: "Avg Read Relays", value: String(format: "%.1f", averageReadRelays))
                     QuickStatRow(label: "Avg Write Relays", value: String(format: "%.1f", averageWriteRelays))
-
-                    if let stats = stats {
-                        QuickStatRow(label: "Unknown Authors", value: "\(stats.totalUnknownAuthors)")
-                    }
                 }
 
                 // Navigation Section
@@ -97,8 +92,7 @@ struct OutboxInspectorView: View {
     private func loadData() async {
         isLoading = true
 
-        trackedItems = await ndk.outbox.getAllTrackedItems()
-        stats = await ndk.outbox.getRelayUpdateStats()
+        trackedItems = await ndk.outbox.getAllCachedItems()
 
         isLoading = false
     }

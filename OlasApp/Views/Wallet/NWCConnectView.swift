@@ -12,9 +12,6 @@ public struct NWCConnectView: View {
     @State private var showManualEntry = false
     @State private var connectionURI = ""
     @State private var errorMessage: String?
-    @State private var showDebugAlert = false
-    @State private var debugURLString = ""
-    @State private var pendingWalletName = ""
 
     enum ConnectionState: Equatable {
         case idle
@@ -93,20 +90,6 @@ public struct NWCConnectView: View {
                         }
                     }
                 }
-            }
-            .alert("NWC Deep Link URL", isPresented: $showDebugAlert) {
-                Button("Copy") {
-                    UIPasteboard.general.string = debugURLString
-                }
-                Button("Open", role: .cancel) {
-                    if let url = URL(string: debugURLString) {
-                        Task {
-                            await openDeepLink(url)
-                        }
-                    }
-                }
-            } message: {
-                Text(debugURLString)
             }
         }
     }
@@ -284,15 +267,8 @@ public struct NWCConnectView: View {
             return
         }
 
-        // Show debug alert with the URL
-        debugURLString = url.absoluteString
-        pendingWalletName = wallet.name
-        showDebugAlert = true
-    }
-
-    private func openDeepLink(_ url: URL) async {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-            connectionState = .waitingForCallback(walletName: pendingWalletName)
+            connectionState = .waitingForCallback(walletName: wallet.name)
             awaitingCallback = true
         }
 

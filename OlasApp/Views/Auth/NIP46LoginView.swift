@@ -9,7 +9,6 @@ struct NIP46LoginView: View {
 
     @State private var showError = false
     @State private var errorMessage = ""
-    @State private var showDebugAlert = false
 
     init(authViewModel: AuthViewModel, ndk: NDK?) {
         self.authViewModel = authViewModel
@@ -96,29 +95,10 @@ struct NIP46LoginView: View {
                 await viewModel.generateNostrConnectURL()
             }
         }
-        .onChange(of: viewModel.nostrConnectURL) { _, newValue in
-            if newValue != nil {
-                showDebugAlert = true
-            }
-        }
         .alert("Connection Failed", isPresented: $showError) {
             Button("OK") {}
         } message: {
             Text(errorMessage)
-        }
-        .alert("NIP-46 Nostrconnect URL", isPresented: $showDebugAlert) {
-            Button("Copy") {
-                if let url = viewModel.nostrConnectURL {
-                    UIPasteboard.general.string = url
-                }
-            }
-            Button("Open", role: .cancel) {
-                if let urlString = viewModel.nostrConnectURL, let url = URL(string: urlString) {
-                    openURL(url)
-                }
-            }
-        } message: {
-            Text(viewModel.nostrConnectURL ?? "No URL")
         }
         .navigationTitle("NIP-46 Login")
         #if os(iOS)
