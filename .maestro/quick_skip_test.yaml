@@ -1,0 +1,43 @@
+appId: com.olas.app
+name: Quick Skip Test
+---
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Set Up Your Profile"
+    timeout: 15000
+
+- takeScreenshot: "01_profile_setup"
+
+- tapOn:
+    text: "Skip for Now"
+
+- takeScreenshot: "02_after_skip"
+
+- extendedWaitUntil:
+    visible:
+      text: "Discover People to Follow"
+    timeout: 10000
+
+- takeScreenshot: "03_follow_packs"
+
+- extendedWaitUntil:
+    visible:
+      text: "Skip for Now"
+    timeout: 15000
+
+- takeScreenshot: "04_packs_loaded"
+
+- tapOn:
+    text: "Skip for Now"
+
+- takeScreenshot: "05_after_final_skip"
+
+- extendedWaitUntil:
+    notVisible:
+      text: "Discover People to Follow"
+    timeout: 10000
+
+- takeScreenshot: "06_onboarding_complete"

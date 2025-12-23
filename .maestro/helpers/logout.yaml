@@ -1,0 +1,18 @@
+appId: com.olas.app
+name: Helper - Logout
+
+---
+# Navigate to settings and log out
+- tapOn:
+    id: "settings_button"
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Log Out"
+    commands:
+      - tapOn:
+          text: "Log Out"
+      - tapOn:
+          text: "Log Out"
+          optional: true

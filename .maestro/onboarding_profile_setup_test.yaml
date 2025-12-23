@@ -1,0 +1,66 @@
+appId: com.olas.app
+name: Onboarding - Profile Setup Screen Test
+
+---
+# Wait for app to initialize
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 10000
+
+- takeScreenshot: "01_app_launched"
+
+# Check if we're on onboarding screen (not already logged in)
+# If logged in, we need to log out first
+- runFlow:
+    when:
+      visible: "Edit Profile"
+    file: helpers/logout.yaml
+
+# Wait for onboarding view to appear
+- extendedWaitUntil:
+    visible:
+      text: "Create Account"
+    timeout: 10000
+
+- takeScreenshot: "02_onboarding_view"
+
+# Tap Create Account
+- tapOn:
+    text: "Create Account"
+
+- takeScreenshot: "03_create_account_tapped"
+
+# Wait for create account view
+- extendedWaitUntil:
+    visible:
+      text: "Welcome to Olas"
+    timeout: 5000
+
+- takeScreenshot: "04_create_account_view"
+
+# Tap Create My Account button
+- tapOn:
+    text: "Create My Account"
+
+- takeScreenshot: "05_creating_account"
+
+# Wait for Profile Setup screen
+- extendedWaitUntil:
+    visible:
+      text: "Set Up Your Profile"
+    timeout: 10000
+
+- takeScreenshot: "06_profile_setup_view"
+
+# Verify profile setup elements are visible
+- assertVisible:
+    text: "Display Name"
+
+- assertVisible:
+    text: "About (optional)"
+
+- assertVisible:
+    text: "Skip for Now"
+
+- takeScreenshot: "07_profile_setup_complete"

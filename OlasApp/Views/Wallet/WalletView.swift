@@ -4,7 +4,7 @@ import SwiftUI
 
 public struct WalletView: View {
     let ndk: NDK
-    @ObservedObject var walletViewModel: WalletViewModel
+    var walletViewModel: WalletViewModel
 
     @State private var showDeposit = false
     @State private var showSend = false
@@ -152,7 +152,7 @@ public struct WalletView: View {
 // MARK: - Wallet Settings View
 
 struct WalletSettingsView: View {
-    @ObservedObject var walletViewModel: WalletViewModel
+    var walletViewModel: WalletViewModel
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {

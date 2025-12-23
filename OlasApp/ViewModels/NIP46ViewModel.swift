@@ -2,13 +2,13 @@ import CoreImage.CIFilterBuiltins
 import NDKSwiftCore
 import SwiftUI
 
-@MainActor
-class NIP46ViewModel: ObservableObject {
-    @Published var nostrConnectURL: String?
-    @Published var qrCode: UIImage?
-    @Published var isWaitingForConnection = false
-    @Published var connectionError: Error?
-    @Published var connectedUser: NDKUser?
+@Observable @MainActor
+final class NIP46ViewModel {
+    var nostrConnectURL: String?
+    var qrCode: UIImage?
+    var isWaitingForConnection = false
+    var connectionError: Error?
+    var connectedUser: NDKUser?
 
     private var bunkerSigner: NDKBunkerSigner?
     weak var ndk: NDK?
@@ -18,69 +18,60 @@ class NIP46ViewModel: ObservableObject {
     }
 
     func generateNostrConnectURL() async {
-        print("🔵 [NIP46] Starting QR code generation...")
+        Log.debug("Starting QR code generation", category: "NIP46")
         do {
-            // 1. Create an NDK instance or use the provided one
             guard let ndk = ndk else {
-                print("🔴 [NIP46] Error: NDK instance not available")
+                Log.error("NDK instance not available", category: "NIP46")
                 return
             }
-            print("✅ [NIP46] NDK instance available")
+            Log.debug("NDK instance available", category: "NIP46")
 
-            // 2. Specify the relays for the remote signer to connect back to.
             let relays = ["wss://relay.damus.io"]
-            print("✅ [NIP46] Using relays: \(relays)")
+            Log.debug("Using relays: \(relays)", category: "NIP46")
 
-            // 3. Create a new local key pair for this connection.
-            // This is used to encrypt communication with the remote signer.
             let localSigner = try NDKPrivateKeySigner.generate()
-            print("✅ [NIP46] Generated local signer")
+            Log.debug("Generated local signer", category: "NIP46")
 
-            // 4. Define your app's metadata.
             let options = NDKBunkerSigner.NostrConnectOptions(
                 name: "Olas",
                 url: "https://olas.io",
                 image: "https://olas.io/favicon.ico",
-                perms: "sign_event:1,nip04_encrypt,nip04_decrypt" // Request permissions
+                perms: "sign_event:1,nip04_encrypt,nip04_decrypt"
             )
-            print("✅ [NIP46] Created options")
+            Log.debug("Created options", category: "NIP46")
 
-            // 5. Create the bunker signer instance.
-            print("🔵 [NIP46] Creating bunker signer...")
+            Log.debug("Creating bunker signer", category: "NIP46")
             let bunkerSigner = try await NDKBunkerSigner.nostrConnect(
                 ndk: ndk,
                 relays: relays,
                 localSigner: localSigner,
                 options: options
             )
-            print("✅ [NIP46] Bunker signer created")
+            Log.info("Bunker signer created", category: "NIP46")
 
-            // Store the bunker signer for later use
             self.bunkerSigner = bunkerSigner
 
-            // 6. Wait for the nostrconnect URL to be generated
-            // The URI is generated asynchronously in a Task, so we need to poll for it
-            print("🔵 [NIP46] Waiting for nostrConnectUri to be generated...")
+            Log.debug("Waiting for nostrConnectUri to be generated", category: "NIP46")
             var url: String?
             for attempt in 1 ... 20 {
                 url = await bunkerSigner.nostrConnectUri
                 if url != nil {
                     break
                 }
-                print("⏳ [NIP46] Attempt \(attempt): URI not ready yet, waiting...")
+                Log.debug("Attempt \(attempt): URI not ready yet", category: "NIP46")
                 try? await Task.sleep(for: .milliseconds(100))
             }
 
             if let url = url {
-                print("✅ [NIP46] Got nostrconnect URL: \(url)")
+                Log.info("Got nostrconnect URL", category: "NIP46", metadata: ["url": String(url.prefix(50))])
                 nostrConnectURL = url
                 generateQRCode(from: url)
-                print("✅ [NIP46] QR code generated successfully")
+                Log.info("QR code generated successfully", category: "NIP46")
             } else {
-                print("🔴 [NIP46] Timeout: nostrConnectUri never became available!")
+                Log.error("Timeout: nostrConnectUri never became available", category: "NIP46")
             }
         } catch {
-            print("🔴 [NIP46] Error generating nostrconnect URL: \(error)")
+            Log.error("Error generating nostrconnect URL: \(error.localizedDescription)", category: "NIP46")
             connectionError = error
         }
     }

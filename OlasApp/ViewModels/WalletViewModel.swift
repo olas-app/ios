@@ -4,27 +4,27 @@ import NDKSwiftCashu
 import NDKSwiftCore
 import SwiftUI
 
-@MainActor
-public class WalletViewModel: ObservableObject {
+@Observable @MainActor
+public final class WalletViewModel {
     let ndk: NDK
 
-    @Published public private(set) var wallet: NIP60Wallet?
-    @Published public private(set) var balance: Int64 = 0
-    @Published public private(set) var balancesByMint: [String: Int64] = [:]
-    @Published public private(set) var isLoading = false
-    @Published public private(set) var isSetup = false
-    @Published public private(set) var transactions: [WalletTransaction] = []
-    @Published public private(set) var configuredMints: [String] = []
-    @Published public private(set) var error: Error?
-    @Published public private(set) var btcRate: Double?
-    @Published public var preferredCurrency: String = UserDefaults.standard.string(forKey: "preferred_fiat_currency") ?? "USD" {
+    public private(set) var wallet: NIP60Wallet?
+    public private(set) var balance: Int64 = 0
+    public private(set) var balancesByMint: [String: Int64] = [:]
+    public private(set) var isLoading = false
+    public private(set) var isSetup = false
+    public private(set) var transactions: [WalletTransaction] = []
+    public private(set) var configuredMints: [String] = []
+    public private(set) var error: Error?
+    public private(set) var btcRate: Double?
+    public var preferredCurrency: String = UserDefaults.standard.string(forKey: "preferred_fiat_currency") ?? "USD" {
         didSet {
             UserDefaults.standard.set(preferredCurrency, forKey: "preferred_fiat_currency")
         }
     }
 
-    private var eventObservationTask: Task<Void, Never>?
-    private var priceRefreshTask: Task<Void, Never>?
+    nonisolated(unsafe) private var eventObservationTask: Task<Void, Never>?
+    nonisolated(unsafe) private var priceRefreshTask: Task<Void, Never>?
 
     public init(ndk: NDK) {
         self.ndk = ndk
@@ -206,7 +206,7 @@ public class WalletViewModel: ObservableObject {
                 btcRate = rate
             }
         } catch {
-            print("[Wallet] Failed to fetch BTC price: \(error)")
+            Log.warning("Failed to fetch BTC price: \(error.localizedDescription)", category: "Wallet")
             // Don't set error to avoid disrupting UI for non-critical feature
         }
     }

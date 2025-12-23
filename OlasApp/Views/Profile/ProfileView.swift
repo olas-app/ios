@@ -251,7 +251,7 @@ private struct ProfileAvatarView: View {
             )
             .frame(width: 100, height: 100)
             .overlay(
-                Text(String(profile.name.prefix(1)).uppercased())
+                Text(String(profile.displayName.prefix(1)).uppercased())
                     .font(.system(size: 40, weight: .bold))
                     .foregroundStyle(.white)
             )

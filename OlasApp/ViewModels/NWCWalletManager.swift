@@ -60,21 +60,7 @@ public final class NWCWalletManager {
     }
 
     private func debugLog(_ message: String) {
-        let logPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("nwc_debug.log")
-        let timestamp = ISO8601DateFormatter().string(from: Date())
-        let line = "[\(timestamp)] \(message)\n"
-        if let data = line.data(using: .utf8) {
-            if FileManager.default.fileExists(atPath: logPath.path) {
-                if let handle = try? FileHandle(forWritingTo: logPath) {
-                    handle.seekToEndOfFile()
-                    handle.write(data)
-                    handle.closeFile()
-                }
-            } else {
-                try? data.write(to: logPath)
-            }
-        }
-        print(message) // Also print to console
+        Log.debug(message, category: "NWC")
     }
 
     /// Connect to NWC wallet using a connection URI
@@ -254,7 +240,7 @@ public final class NWCWalletManager {
                 btcRate = rate
             }
         } catch {
-            print("[NWC] Failed to fetch BTC price: \(error)")
+            Log.warning("Failed to fetch BTC price: \(error.localizedDescription)", category: "NWC")
         }
     }
 

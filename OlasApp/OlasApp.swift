@@ -79,7 +79,7 @@ struct OlasApp: App {
             // NIP-46 callback - signer app returned to Olas
             // The actual connection is handled via relays in LoginView.waitForSignerConnection()
             // This callback just brings Olas back to foreground
-            print("[OlasApp] NIP-46 signer returned via callback")
+            logInfo("NIP-46 signer returned via callback", category: "App")
         default:
             break
         }
@@ -119,7 +119,7 @@ struct OlasApp: App {
             try await manager.connect(walletConnectURI: uri)
             settings.walletType = .nwc
         } catch {
-            print("[OlasApp] NWC connection failed: \(error)")
+            logError("NWC connection failed: \(error.localizedDescription)", category: "NWC")
         }
     }
 
@@ -140,18 +140,16 @@ struct OlasApp: App {
                 attributes: nil
             )
         } catch {
-            print("Failed to create cache directory: \(error)")
+            logError("Failed to create cache directory: \(error.localizedDescription)", category: "Cache")
         }
 
         // Create cache first, then pass to NDK
         var cache: (any NDKCache)?
         do {
             cache = try await NDKNostrDBCache(path: cachePath)
-            print("✓ NostrDB cache initialized at: \(cachePath)")
+            logInfo("NostrDB cache initialized", category: "Cache", metadata: ["path": cachePath])
         } catch {
-            print("❌ Failed to initialize NostrDB cache: \(error)")
-            print("   Path: \(cachePath)")
-            print("   Stats will be unavailable in Developer Tools")
+            logError("Failed to initialize NostrDB cache: \(error.localizedDescription)", category: "Cache", metadata: ["path": cachePath])
         }
 
         let newNDK = NDK(relayURLs: relayUrls, cache: cache)

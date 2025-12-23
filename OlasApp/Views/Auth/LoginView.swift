@@ -15,6 +15,8 @@ public struct LoginView: View {
     @State private var showError = false
     @State private var errorMessage = ""
     @State private var detectedSigner: KnownSigner?
+    @State private var showDebugAlert = false
+    @State private var debugURLString = ""
 
     private weak var ndk: NDK? { authViewModel.ndk }
 
@@ -89,6 +91,18 @@ public struct LoginView: View {
                 Button("OK") {}
             } message: {
                 Text(errorMessage)
+            }
+            .alert("NIP-46 Nostrconnect URL", isPresented: $showDebugAlert) {
+                Button("Copy") {
+                    UIPasteboard.general.string = debugURLString
+                }
+                Button("Open", role: .cancel) {
+                    if let url = URL(string: debugURLString) {
+                        openURL(url)
+                    }
+                }
+            } message: {
+                Text(debugURLString)
             }
         }
         .task {
@@ -246,8 +260,8 @@ public struct LoginView: View {
     }
 
     private func openSignerApp(connectURL: String) {
-        guard let url = URL(string: connectURL) else { return }
-        openURL(url)
+        debugURLString = connectURL
+        showDebugAlert = true
     }
 
     private func generateNostrConnectQR() async {

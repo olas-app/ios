@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Olas - Concept 8: Golden Sunrise</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: #1a1a1a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .phone-frame {
+            width: 390px;
+            height: 844px;
+            background: linear-gradient(180deg,
+                #1a0a1f 0%,
+                #2d1b3d 15%,
+                #5c3d5e 30%,
+                #b86b77 50%,
+                #e8a87c 65%,
+                #f8d49a 80%,
+                #fff5e6 100%
+            );
+            border-radius: 50px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.5);
+        }
+
+        .sun {
+            position: absolute;
+            bottom: 35%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, #fff5e6 0%, #f8d49a 40%, #e8a87c 70%, transparent 100%);
+            border-radius: 50%;
+            box-shadow:
+                0 0 60px rgba(248, 212, 154, 0.8),
+                0 0 120px rgba(232, 168, 124, 0.6),
+                0 0 180px rgba(184, 107, 119, 0.4);
+            animation: sunPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes sunPulse {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.05); }
+        }
+
+        .horizon-line {
+            position: absolute;
+            bottom: 35%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255,245,230,0.3), transparent);
+        }
+
+        .water {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 35%;
+            background: linear-gradient(180deg,
+                rgba(232, 168, 124, 0.3) 0%,
+                rgba(184, 107, 119, 0.4) 30%,
+                rgba(92, 61, 94, 0.6) 60%,
+                rgba(45, 27, 61, 0.8) 100%
+            );
+        }
+
+        .reflection {
+            position: absolute;
+            bottom: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 25%;
+            background: linear-gradient(180deg, rgba(255,245,230,0.6) 0%, transparent 100%);
+            filter: blur(3px);
+            animation: shimmer 2s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 0.6; height: 25%; }
+            50% { opacity: 0.9; height: 27%; }
+        }
+
+        .birds {
+            position: absolute;
+            top: 20%;
+            left: 20%;
+        }
+
+        .bird {
+            font-size: 12px;
+            color: rgba(26, 10, 31, 0.4);
+            animation: fly 8s ease-in-out infinite;
+        }
+
+        @keyframes fly {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(10px, -5px); }
+            50% { transform: translate(20px, 0); }
+            75% { transform: translate(10px, 5px); }
+        }
+
+        .content {
+            position: absolute;
+            top: 100px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .logo {
+            width: 70px;
+            height: 42px;
+            margin: 0 auto 16px;
+            opacity: 0.9;
+        }
+
+        .brand-name {
+            font-size: 48px;
+            font-weight: 600;
+            color: rgba(255,245,230,0.95);
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 20px rgba(0,0,0,0.2);
+        }
+
+        .tagline {
+            font-size: 16px;
+            color: rgba(255,245,230,0.7);
+            font-weight: 400;
+        }
+
+        .welcome-text {
+            position: absolute;
+            top: 55%;
+            left: 30px;
+            right: 30px;
+            text-align: center;
+        }
+
+        .welcome-text p {
+            font-size: 20px;
+            color: rgba(45, 27, 61, 0.8);
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        .buttons {
+            position: absolute;
+            bottom: 50px;
+            left: 30px;
+            right: 30px;
+            z-index: 10;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 18px;
+            border-radius: 16px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            margin-bottom: 12px;
+        }
+
+        .btn-primary {
+            background: rgba(45, 27, 61, 0.9);
+            color: #fff5e6;
+            box-shadow: 0 10px 30px rgba(45, 27, 61, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(45, 27, 61, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255,245,230,0.3);
+            color: rgba(45, 27, 61, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,245,230,0.5);
+        }
+
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 30%;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(255,245,230,0.6);
+            border-radius: 50%;
+            animation: twinkle 3s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="stars">
+            <div class="star" style="top: 8%; left: 15%; animation-delay: 0s;"></div>
+            <div class="star" style="top: 12%; left: 35%; animation-delay: 0.5s;"></div>
+            <div class="star" style="top: 5%; left: 55%; animation-delay: 1s;"></div>
+            <div class="star" style="top: 15%; left: 75%; animation-delay: 1.5s;"></div>
+            <div class="star" style="top: 10%; left: 85%; animation-delay: 2s;"></div>
+        </div>
+
+        <div class="birds">
+            <span class="bird">~</span>
+            <span class="bird" style="margin-left: 20px; animation-delay: 0.5s;">~</span>
+            <span class="bird" style="margin-left: 15px; animation-delay: 1s;">~</span>
+        </div>
+
+        <div class="content">
+            <div class="logo">
+                <svg viewBox="0 0 100 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 35 L35 20 L50 35" stroke="rgba(255,245,230,0.9)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <path d="M35 35 L50 20 L65 35" stroke="rgba(255,245,230,0.7)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <path d="M50 35 L65 20 L80 35" stroke="rgba(255,245,230,0.5)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                </svg>
+            </div>
+            <h1 class="brand-name">Olas</h1>
+            <p class="tagline">Share moments. Ride the wave.</p>
+        </div>
+
+        <div class="sun"></div>
+        <div class="horizon-line"></div>
+
+        <div class="water">
+            <div class="reflection"></div>
+        </div>
+
+        <div class="welcome-text">
+            <p>A new day.<br>A new way to share.</p>
+        </div>
+
+        <div class="buttons">
+            <button class="btn btn-primary">Create Account</button>
+            <button class="btn btn-secondary">I have a Nostr account</button>
+        </div>
+    </div>
+</body>
+</html>

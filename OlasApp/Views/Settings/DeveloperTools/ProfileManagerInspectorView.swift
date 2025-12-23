@@ -130,11 +130,7 @@ struct ProfileManagerInspectorView: View {
 
         // Get cache stats from profile manager
         cacheStats = await ndk.profileManager.getCacheStats()
-
-        // Get profile cache count
-        await MainActor.run {
-            profileCacheCount = ndk.profileCache.count
-        }
+        profileCacheCount = cacheStats?.size ?? 0
 
         isLoading = false
     }
@@ -143,15 +139,12 @@ struct ProfileManagerInspectorView: View {
         guard !searchPubkey.isEmpty else { return }
 
         await MainActor.run {
-            searchedProfile = ndk.profileCache.get(searchPubkey)
+            searchedProfile = ndk.profile(for: searchPubkey)
         }
     }
 
     private func clearCache() async {
         await ndk.profileManager.clearCache()
-        await MainActor.run {
-            ndk.profileCache.clearAll()
-        }
         searchedProfile = nil
         await loadData()
     }
@@ -364,7 +357,7 @@ private struct ProfileDetailView: View {
     }
 
     private var hasProfileDetails: Bool {
-        profile.about != nil || profile.nip05 != nil
+        !profile.about.isEmpty || profile.nip05 != nil
     }
 
     private var hasMedia: Bool {
@@ -380,9 +373,8 @@ private struct ProfileDetailView: View {
     }
 
     private func clearFromCache() async {
-        await MainActor.run {
-            ndk.profileCache.clear(pubkey)
-        }
+        // Profile cache is now internal - clear the entire cache instead
+        await ndk.profileManager.clearCache()
         dismiss()
     }
 }

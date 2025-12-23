@@ -41,11 +41,21 @@
 			);
 			target = 8B41F6442DEDD0D5001A66F9 /* OlasApp */;
 		};
+		8BD71C0B2DEE41E100CEDD93 /* Exceptions for "OlasApp" folder in "OlasApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8B41F6442DEDD0D5001A66F9 /* OlasApp */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8B41F6472DEDD0D5001A66F9 /* OlasApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8BD71C0B2DEE41E100CEDD93 /* Exceptions for "OlasApp" folder in "OlasApp" target */,
+			);
 			path = OlasApp;
 			sourceTree = "<group>";
 		};
@@ -389,12 +399,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 456SHKPP26;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_DISPLAY_NAME)";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Olas needs camera access to scan QR codes for Lightning payments.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = OlasApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -414,12 +420,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 456SHKPP26;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_DISPLAY_NAME)";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Olas needs camera access to scan QR codes for Lightning payments.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = OlasApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

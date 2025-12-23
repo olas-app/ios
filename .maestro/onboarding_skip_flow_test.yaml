@@ -1,0 +1,53 @@
+appId: com.olas.app
+name: Onboarding - Skip Flow Test
+
+---
+# Test that skipping both profile and follow packs works
+
+# Launch the app fresh
+- launchApp:
+    clearState: true
+
+# Wait for Profile Setup (app auto-creates account on fresh launch)
+- extendedWaitUntil:
+    visible:
+      text: "Set Up Your Profile"
+    timeout: 15000
+
+- takeScreenshot: "01_profile_setup"
+
+# Skip profile setup
+- tapOn:
+    text: "Skip for Now"
+
+- takeScreenshot: "02_skip_profile_tapped"
+
+# Wait for Follow Packs screen
+- extendedWaitUntil:
+    visible:
+      text: "Discover People to Follow"
+    timeout: 10000
+
+- takeScreenshot: "03_follow_packs"
+
+# Wait for loading to complete
+- extendedWaitUntil:
+    visible:
+      text: "Skip for Now"
+    timeout: 15000
+
+- takeScreenshot: "04_follow_packs_loaded"
+
+# Skip follow packs
+- tapOn:
+    text: "Skip for Now"
+
+- takeScreenshot: "05_skip_follow_packs_tapped"
+
+# Should now be on main app
+- extendedWaitUntil:
+    notVisible:
+      text: "Discover People to Follow"
+    timeout: 10000
+
+- takeScreenshot: "06_onboarding_complete"

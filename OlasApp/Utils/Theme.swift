@@ -7,8 +7,17 @@ public enum OlasTheme {
     // Use iOS system colors for backgrounds (Color(.systemBackground), Color(.systemGray5), etc.)
     // These accent colors are for highlights, feedback, and branding only
     public enum Colors {
-        // Primary accent - native blue
-        public static let accent = Color.blue
+        // Primary accent - almost black, neutral
+        public static let accent = Color(hex: "1A1A1A")
+
+        // Wave gradient colors (for special branding moments)
+        public static let waveBlue = Color(hex: "2563EB")
+        public static let waveCyan = Color(hex: "06B6D4")
+        public static let waveGradient = LinearGradient(
+            colors: [waveBlue, waveCyan],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
 
         // Feedback colors
         public static let zapGold = Color(hex: "FFB800")

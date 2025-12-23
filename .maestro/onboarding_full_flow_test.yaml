@@ -1,0 +1,63 @@
+appId: com.olas.app
+name: Onboarding - Full Flow Test
+
+---
+# Launch the app fresh
+- launchApp:
+    clearState: true
+
+# Wait for Profile Setup screen (app auto-creates account on fresh launch)
+- extendedWaitUntil:
+    visible:
+      text: "Set Up Your Profile"
+    timeout: 15000
+
+- takeScreenshot: "01_profile_setup"
+
+# Enter a display name
+- tapOn:
+    text: "Your name"
+
+- inputText: "Test User"
+
+- takeScreenshot: "02_name_entered"
+
+# Button should now say "Continue"
+- assertVisible:
+    text: "Continue"
+
+# Tap Continue
+- tapOn:
+    text: "Continue"
+
+- takeScreenshot: "03_continue_tapped"
+
+# Wait for Follow Packs screen
+- extendedWaitUntil:
+    visible:
+      text: "Discover People to Follow"
+    timeout: 10000
+
+- takeScreenshot: "04_follow_packs_view"
+
+# Wait for packs to load (either packs or skip button)
+- extendedWaitUntil:
+    visible:
+      text: "Skip for Now"
+    timeout: 15000
+
+- takeScreenshot: "05_follow_packs_loaded"
+
+# Tap Skip for Now to complete onboarding
+- tapOn:
+    text: "Skip for Now"
+
+- takeScreenshot: "06_skip_tapped"
+
+# Should now be on main app (onboarding dismissed)
+- extendedWaitUntil:
+    notVisible:
+      text: "Discover People to Follow"
+    timeout: 10000
+
+- takeScreenshot: "07_onboarding_complete"

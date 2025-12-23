@@ -230,7 +230,7 @@ struct CommentButton: View {
 struct ZapButton: View {
     let event: NDKEvent
     let ndk: NDK
-    @EnvironmentObject private var walletViewModel: WalletViewModel
+    @Environment(WalletViewModel.self) private var walletViewModel
 
     @State private var isAnimating = false
     @State private var showZapSheet = false

@@ -5,30 +5,22 @@ public struct EventGrid: View {
     let ndk: NDK
     let filter: NDKFilter
     let onTap: (NDKEvent) -> Void
+    let namespace: Namespace.ID
 
     @State private var events: [NDKEvent] = []
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 1),
-        GridItem(.flexible(), spacing: 1),
-        GridItem(.flexible(), spacing: 1)
-    ]
-
-    public init(ndk: NDK, filter: NDKFilter, onTap: @escaping (NDKEvent) -> Void) {
+    public init(ndk: NDK, filter: NDKFilter, onTap: @escaping (NDKEvent) -> Void, namespace: Namespace.ID) {
         self.ndk = ndk
         self.filter = filter
         self.onTap = onTap
+        self.namespace = namespace
     }
 
     public var body: some View {
-        LazyVGrid(columns: columns, spacing: 1) {
-            ForEach(events) { event in
-                GridItemView(event: event, onTap: onTap)
+        PostGridView(posts: events, spacing: 1, onTap: onTap, namespace: namespace)
+            .task {
+                await subscribeToEvents()
             }
-        }
-        .task {
-            await subscribeToEvents()
-        }
     }
 
     private func subscribeToEvents() async {

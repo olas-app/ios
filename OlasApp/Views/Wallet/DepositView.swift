@@ -189,8 +189,6 @@ struct DepositView: View {
         ScrollView {
             VStack(spacing: 24) {
                 if case let .monitoring(invoice, amount) = depositState {
-                    let _ = print("[DepositView] Displaying - Invoice: \(invoice.isEmpty ? "EMPTY" : invoice.prefix(50))..., Length: \(invoice.count), Amount: \(amount)")
-
                     Text("Pay \(amount) sats")
                         .font(.title.bold())
                         .padding(.top, 20)

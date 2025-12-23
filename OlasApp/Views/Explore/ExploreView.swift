@@ -5,12 +5,13 @@ import SwiftUI
 public struct ExploreView: View {
     let ndk: NDK
 
-    @EnvironmentObject private var authViewModel: AuthViewModel
+    @Environment(AuthViewModel.self) private var authViewModel
     @EnvironmentObject private var muteListManager: MuteListManager
     @Environment(SettingsManager.self) private var settings
     @State private var viewModel: ExploreViewModel?
     @State private var selectedPost: NDKEvent?
     @FocusState private var isSearchFocused: Bool
+    @Namespace private var imageNamespace
 
     public init(ndk: NDK) {
         self.ndk = ndk
@@ -18,37 +19,48 @@ public struct ExploreView: View {
 
     public var body: some View {
         NavigationStack {
-            ScrollView {
-                if let viewModel = viewModel {
-                    ExploreContentView(
-                        viewModel: viewModel,
-                        isSearchFocused: $isSearchFocused,
-                        onPostTap: { selectedPost = $0 }
-                    )
-                } else {
-                    ProgressView()
+            ZStack {
+                ScrollView {
+                    if let viewModel = viewModel {
+                        ExploreContentView(
+                            viewModel: viewModel,
+                            isSearchFocused: $isSearchFocused,
+                            onPostTap: { post in
+                                withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                                    selectedPost = post
+                                }
+                            },
+                            namespace: imageNamespace
+                        )
+                    } else {
+                        ProgressView()
+                    }
                 }
-            }
-            .navigationTitle("Explore")
-            #if os(iOS)
-                .navigationBarTitleDisplayMode(.large)
-            #endif
-                .task {
-                    await initializeViewModel()
-                }
-                .fullScreenCover(item: $selectedPost) { post in
+                .navigationTitle("Explore")
+                #if os(iOS)
+                    .navigationBarTitleDisplayMode(.large)
+                #endif
+                    .navigationDestination(for: String.self) { pubkey in
+                        ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: authViewModel.currentUser?.pubkey)
+                    }
+
+                if let post = selectedPost {
                     FullscreenPostViewer(
                         event: post,
                         ndk: ndk,
                         isPresented: Binding(
                             get: { selectedPost != nil },
                             set: { if !$0 { selectedPost = nil } }
-                        )
+                        ),
+                        namespace: imageNamespace
                     )
+                    .transition(.opacity)
+                    .zIndex(1)
                 }
-                .navigationDestination(for: String.self) { pubkey in
-                    ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: authViewModel.currentUser?.pubkey)
-                }
+            }
+            .task {
+                await initializeViewModel()
+            }
         }
     }
 
@@ -72,6 +84,7 @@ private struct ExploreContentView: View {
     @Bindable var viewModel: ExploreViewModel
     @FocusState.Binding var isSearchFocused: Bool
     let onPostTap: (NDKEvent) -> Void
+    let namespace: Namespace.ID
 
     var body: some View {
         VStack(spacing: 0) {
@@ -95,7 +108,8 @@ private struct ExploreContentView: View {
             } else {
                 DiscoverContentView(
                     viewModel: viewModel,
-                    onPostTap: onPostTap
+                    onPostTap: onPostTap,
+                    namespace: namespace
                 )
             }
         }
@@ -182,6 +196,7 @@ private struct CancelButton: View {
 struct DiscoverContentView: View {
     @Bindable var viewModel: ExploreViewModel
     let onPostTap: (NDKEvent) -> Void
+    let namespace: Namespace.ID
 
     var body: some View {
         VStack(spacing: 0) {
@@ -192,7 +207,7 @@ struct DiscoverContentView: View {
                 SuggestedUsersSection(users: viewModel.filteredSuggestedUsers)
             }
 
-            PostGridView(posts: viewModel.filteredTrendingPosts, spacing: 2, onTap: onPostTap)
+            PostGridView(posts: viewModel.filteredTrendingPosts, spacing: 2, onTap: onPostTap, namespace: namespace)
                 .padding(.top, 16)
         }
     }

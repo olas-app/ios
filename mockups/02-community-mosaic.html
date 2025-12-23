@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Olas - Concept 2: Community Mosaic</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: #111;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .phone-frame {
+            width: 390px;
+            height: 844px;
+            background: #000;
+            border-radius: 50px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.8);
+        }
+
+        .mosaic-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(6, 1fr);
+            gap: 3px;
+            padding: 3px;
+            opacity: 0.6;
+        }
+
+        .mosaic-item {
+            background-size: cover;
+            background-position: center;
+            animation: fadeInOut var(--duration) ease-in-out infinite;
+            animation-delay: var(--delay);
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        .gradient-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                180deg,
+                rgba(0,0,0,0.3) 0%,
+                rgba(0,0,0,0.7) 40%,
+                rgba(0,0,0,0.95) 70%,
+                rgba(0,0,0,1) 100%
+            );
+        }
+
+        .content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            z-index: 10;
+        }
+
+        .logo {
+            width: 80px;
+            height: 48px;
+            margin-bottom: 16px;
+        }
+
+        .brand-name {
+            font-size: 52px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+        }
+
+        .tagline {
+            font-size: 17px;
+            color: rgba(255,255,255,0.6);
+            font-weight: 400;
+            margin-bottom: 40px;
+        }
+
+        .community-stats {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .avatars {
+            display: flex;
+            margin-bottom: 12px;
+        }
+
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 3px solid #000;
+            margin-left: -12px;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .avatar:first-child {
+            margin-left: 0;
+        }
+
+        .avatar-more {
+            background: linear-gradient(135deg, #0095f6 0%, #00d4ff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .join-text {
+            font-size: 14px;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 40px;
+        }
+
+        .buttons {
+            width: 100%;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 18px;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            margin-bottom: 12px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0095f6 0%, #00d4ff 100%);
+            color: white;
+            box-shadow: 0 10px 30px rgba(0, 149, 246, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(0, 149, 246, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .pulse-ring {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border: 2px solid rgba(0, 149, 246, 0.3);
+            border-radius: 50%;
+            animation: pulse 3s ease-out infinite;
+        }
+
+        .pulse-ring:nth-child(2) {
+            animation-delay: 1s;
+        }
+
+        .pulse-ring:nth-child(3) {
+            animation-delay: 2s;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.5); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        .pulse-container {
+            position: absolute;
+            top: 35%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="mosaic-grid">
+            <!-- Generate mosaic items with placeholder images -->
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #ff6b6b, #feca57); --delay: 0s; --duration: 4s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #48dbfb, #0abde3); --delay: 0.5s; --duration: 5s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #ff9ff3, #f368e0); --delay: 1s; --duration: 4.5s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #54a0ff, #2e86de); --delay: 1.5s; --duration: 5.5s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #5f27cd, #341f97); --delay: 2s; --duration: 4s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #00d2d3, #01a3a4); --delay: 0.3s; --duration: 5s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #ff6b6b, #ee5a24); --delay: 0.8s; --duration: 4.5s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #feca57, #ff9f43); --delay: 1.3s; --duration: 5.5s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #1dd1a1, #10ac84); --delay: 1.8s; --duration: 4s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #ff9ff3, #c44569); --delay: 0.2s; --duration: 5s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #48dbfb, #0984e3); --delay: 0.7s; --duration: 4.5s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #a29bfe, #6c5ce7); --delay: 1.2s; --duration: 5.5s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #fd79a8, #e84393); --delay: 1.7s; --duration: 4s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #fdcb6e, #f39c12); --delay: 0.4s; --duration: 5s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #00b894, #00cec9); --delay: 0.9s; --duration: 4.5s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #e17055, #d63031); --delay: 1.4s; --duration: 5.5s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #74b9ff, #0984e3); --delay: 1.9s; --duration: 4s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #55efc4, #00b894); --delay: 0.1s; --duration: 5s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #fab1a0, #e17055); --delay: 0.6s; --duration: 4.5s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #81ecec, #00cec9); --delay: 1.1s; --duration: 5.5s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #dfe6e9, #b2bec3); --delay: 1.6s; --duration: 4s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #ffeaa7, #fdcb6e); --delay: 0.35s; --duration: 5s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #a29bfe, #6c5ce7); --delay: 0.85s; --duration: 4.5s;"></div>
+            <div class="mosaic-item" style="background: linear-gradient(45deg, #fd79a8, #e84393); --delay: 1.35s; --duration: 5.5s;"></div>
+        </div>
+
+        <div class="gradient-overlay"></div>
+
+        <div class="pulse-container">
+            <div class="pulse-ring"></div>
+            <div class="pulse-ring"></div>
+            <div class="pulse-ring"></div>
+        </div>
+
+        <div class="content">
+            <div class="logo">
+                <svg viewBox="0 0 100 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 35 L35 20 L50 35" stroke="url(#grad1)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <path d="M35 35 L50 20 L65 35" stroke="url(#grad2)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <path d="M50 35 L65 20 L80 35" stroke="url(#grad3)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <defs>
+                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#0095f6"/>
+                            <stop offset="100%" style="stop-color:#00d4ff"/>
+                        </linearGradient>
+                        <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#00d4ff"/>
+                            <stop offset="100%" style="stop-color:#00f5d4"/>
+                        </linearGradient>
+                        <linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#00f5d4"/>
+                            <stop offset="100%" style="stop-color:#7bf1a8"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <h1 class="brand-name">Olas</h1>
+            <p class="tagline">Share moments. Ride the wave.</p>
+
+            <div class="community-stats">
+                <div class="stat">
+                    <span class="stat-number">47K</span>
+                    <span class="stat-label">Creators</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">2.1M</span>
+                    <span class="stat-label">Moments</span>
+                </div>
+            </div>
+
+            <div class="avatars">
+                <div class="avatar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                <div class="avatar" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
+                <div class="avatar" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
+                <div class="avatar" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);"></div>
+                <div class="avatar avatar-more">+12K</div>
+            </div>
+            <p class="join-text">joined this week</p>
+
+            <div class="buttons">
+                <button class="btn btn-primary">Create Account</button>
+                <button class="btn btn-secondary">I have a Nostr account</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

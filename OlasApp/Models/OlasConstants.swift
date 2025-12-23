@@ -22,6 +22,9 @@ public enum OlasConstants {
         public static let report: NDKSwiftCore.Kind = 1984
         public static let muteList: NDKSwiftCore.Kind = 10000
         public static let pictureCurationSet: NDKSwiftCore.Kind = 30006
+        public static let followPack: NDKSwiftCore.Kind = 39089
+        public static let mediaFollowPack: NDKSwiftCore.Kind = 39092
+        public static let contactList: NDKSwiftCore.Kind = 3
     }
 
     public enum ReportType: String, CaseIterable, Identifiable {

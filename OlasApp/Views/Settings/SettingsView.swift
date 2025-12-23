@@ -3,15 +3,17 @@ import SwiftUI
 
 public struct SettingsView: View {
     let ndk: NDK
-    @EnvironmentObject private var authViewModel: AuthViewModel
+    @Environment(AuthViewModel.self) private var authViewModel
     @State private var blossomManager: NDKBlossomServerManager
     var sparkWalletManager: SparkWalletManager
+    var nwcWalletManager: NWCWalletManager
     @Environment(SettingsManager.self) private var settings
 
-    public init(ndk: NDK, sparkWalletManager: SparkWalletManager) {
+    public init(ndk: NDK, sparkWalletManager: SparkWalletManager, nwcWalletManager: NWCWalletManager) {
         self.ndk = ndk
         _blossomManager = State(wrappedValue: NDKBlossomServerManager(ndk: ndk))
         self.sparkWalletManager = sparkWalletManager
+        self.nwcWalletManager = nwcWalletManager
     }
 
     public var body: some View {
@@ -30,14 +32,36 @@ public struct SettingsView: View {
                     }
                 }
 
-                NavigationLink(destination: SparkWalletSettingsView(walletManager: sparkWalletManager)) {
-                    HStack {
-                        SettingsRow(icon: "bolt.fill", title: "Spark Wallet", color: OlasTheme.Colors.zapGold)
-                        Spacer()
-                        if sparkWalletManager.connectionStatus == .connected {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
+                switch settings.walletType {
+                case .spark:
+                    NavigationLink(destination: SparkWalletSettingsView(walletManager: sparkWalletManager)) {
+                        HStack {
+                            SettingsRow(icon: "bolt.fill", title: "Spark Wallet", color: OlasTheme.Colors.zapGold)
+                            Spacer()
+                            if sparkWalletManager.connectionStatus == .connected {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(.green)
+                            }
                         }
+                    }
+                case .nwc:
+                    NavigationLink(destination: NWCWalletSettingsView(walletManager: nwcWalletManager)) {
+                        HStack {
+                            SettingsRow(icon: "link", title: "NWC Wallet", color: .purple)
+                            Spacer()
+                            if nwcWalletManager.connectionStatus == .connected {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(.green)
+                            }
+                        }
+                    }
+                case .cashu:
+                    HStack {
+                        SettingsRow(icon: "banknote", title: "Cashu Wallet", color: .green)
+                        Spacer()
+                        Text("Coming Soon")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -57,6 +81,9 @@ public struct SettingsView: View {
                 }
                 NavigationLink(destination: DeveloperToolsView(ndk: ndk)) {
                     SettingsRow(icon: "wrench.and.screwdriver", title: "Developer Tools", color: .gray)
+                }
+                NavigationLink(destination: TelemetrySettingsView()) {
+                    SettingsRow(icon: "antenna.radiowaves.left.and.right", title: "Telemetry", color: .indigo)
                 }
             }
 

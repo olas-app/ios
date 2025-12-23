@@ -3,8 +3,8 @@ import NDKSwiftCore
 import SwiftUI
 
 public struct MainTabView: View {
-    @EnvironmentObject private var authViewModel: AuthViewModel
-    @StateObject private var walletViewModel: WalletViewModel
+    @Environment(AuthViewModel.self) private var authViewModel
+    @State private var walletViewModel: WalletViewModel
     @StateObject private var muteListManager: MuteListManager
     @Environment(SettingsManager.self) private var settings
     @Environment(PublishingState.self) private var publishingState
@@ -13,12 +13,14 @@ public struct MainTabView: View {
 
     private let ndk: NDK
     private var sparkWalletManager: SparkWalletManager
+    private var nwcWalletManager: NWCWalletManager
 
-    public init(ndk: NDK, sparkWalletManager: SparkWalletManager) {
+    public init(ndk: NDK, sparkWalletManager: SparkWalletManager, nwcWalletManager: NWCWalletManager) {
         self.ndk = ndk
-        _walletViewModel = StateObject(wrappedValue: WalletViewModel(ndk: ndk))
+        self._walletViewModel = State(initialValue: WalletViewModel(ndk: ndk))
         _muteListManager = StateObject(wrappedValue: MuteListManager(ndk: ndk))
         self.sparkWalletManager = sparkWalletManager
+        self.nwcWalletManager = nwcWalletManager
     }
 
     public var body: some View {
@@ -42,13 +44,15 @@ public struct MainTabView: View {
                 }
                 .tag(2)
 
-            // Wallet - show Spark or Cashu based on settings
+            // Wallet - show Spark, Cashu, or NWC based on settings
             Group {
                 switch settings.walletType {
                 case .spark:
                     SparkWalletView(walletManager: sparkWalletManager)
                 case .cashu:
                     WalletView(ndk: ndk, walletViewModel: walletViewModel)
+                case .nwc:
+                    NWCWalletView(walletManager: nwcWalletManager)
                 }
             }
             .tabItem {
@@ -59,7 +63,7 @@ public struct MainTabView: View {
             // Profile
             NavigationStack {
                 if let pubkey = authViewModel.currentUser?.pubkey {
-                    ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: pubkey, sparkWalletManager: sparkWalletManager)
+                    ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: pubkey, sparkWalletManager: sparkWalletManager, nwcWalletManager: nwcWalletManager)
                 } else {
                     Text("Not logged in")
                 }
@@ -83,9 +87,10 @@ public struct MainTabView: View {
             await walletViewModel.loadWallet()
             muteListManager.startSubscription()
         }
-        .environmentObject(walletViewModel)
+        .environment(walletViewModel)
         .environmentObject(muteListManager)
         .environment(sparkWalletManager)
+        .environment(nwcWalletManager)
         .overlay(alignment: .top) {
             if publishingState.isPublishing || publishingState.error != nil {
                 HStack(spacing: 12) {

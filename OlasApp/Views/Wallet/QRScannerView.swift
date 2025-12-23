@@ -5,7 +5,6 @@ import SwiftUI
 
 struct QRScannerView: View {
     let onScan: (String) -> Void
-    @Environment(\.dismiss) private var dismiss
 
     @State private var cameraPermission: CameraPermission = .undetermined
     @State private var hasScanned = false
@@ -17,45 +16,36 @@ struct QRScannerView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                switch cameraPermission {
-                case .authorized:
-                    QRCameraView(onScan: handleScan)
-                        .ignoresSafeArea()
+        ZStack {
+            switch cameraPermission {
+            case .authorized:
+                QRCameraView(onScan: handleScan)
+                    .ignoresSafeArea()
 
-                    // Scanning overlay
-                    VStack {
-                        Spacer()
+                // Scanning overlay
+                VStack {
+                    Spacer()
 
-                        Text("Point camera at QR code")
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                            .padding()
-                            .background(.black.opacity(0.7))
-                            .cornerRadius(10)
-                            .padding()
-                    }
-
-                case .denied:
-                    permissionDeniedView
-
-                case .undetermined:
-                    ProgressView("Requesting camera access...")
-                        .foregroundStyle(.primary)
+                    Text("Point camera at QR code")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .padding()
+                        .background(.black.opacity(0.7))
+                        .cornerRadius(10)
+                        .padding()
                 }
+
+            case .denied:
+                permissionDeniedView
+
+            case .undetermined:
+                ProgressView("Requesting camera access...")
+                    .foregroundStyle(.primary)
             }
-            .background(Color(.systemBackground))
-            .navigationTitle("Scan QR Code")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
-            .task {
-                await requestCameraPermission()
-            }
+        }
+        .background(Color(.systemBackground))
+        .task {
+            await requestCameraPermission()
         }
     }
 

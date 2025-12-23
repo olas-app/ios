@@ -43,6 +43,14 @@ struct DeveloperToolsView: View {
                 NavigationLink(destination: RelayMonitorView(ndk: ndk)) {
                     ToolRow(icon: "antenna.radiowaves.left.and.right", title: "Relay Monitor", subtitle: "Connection states and message counts", color: .green)
                 }
+
+                NavigationLink(destination: OutboxInspectorView(ndk: ndk)) {
+                    ToolRow(icon: "arrow.left.arrow.right.circle", title: "Outbox Inspector", subtitle: "Relay selection and user tracking", color: .indigo)
+                }
+
+                NavigationLink(destination: ProfileManagerInspectorView(ndk: ndk)) {
+                    ToolRow(icon: "person.crop.circle.badge.checkmark", title: "Profile Manager", subtitle: "Profile cache and metadata", color: .cyan)
+                }
             }
 
             Section("Logging") {
@@ -109,7 +117,7 @@ struct DeveloperToolsView: View {
             cachePath = nil
         }
 
-        relayCount = ndk.relays.count
+        relayCount = await ndk.relays.count
         if let signer = ndk.signer {
             signerPubkey = try? await signer.pubkey
         }

@@ -7,6 +7,7 @@ struct FullscreenPostViewer: View {
     let event: NDKEvent
     let ndk: NDK
     @Binding var isPresented: Bool
+    let namespace: Namespace.ID
 
     @State private var player: AVPlayer?
     @State private var isMuted = false
@@ -14,6 +15,8 @@ struct FullscreenPostViewer: View {
     @State private var showLikeAnimation = false
     @State private var likeCount = 0
     @State private var dragOffset: CGFloat = 0
+    @State private var loopObserver: NSObjectProtocol?
+    @State private var reactionsTask: Task<Void, Never>?
 
     private var isVideo: Bool {
         event.kind == OlasConstants.EventKinds.shortVideo
@@ -89,10 +92,12 @@ struct FullscreenPostViewer: View {
             if isVideo {
                 setupPlayer()
             }
-            await loadReactions()
+            loadReactions()
         }
         .onDisappear {
-            player?.pause()
+            cleanupPlayer()
+            reactionsTask?.cancel()
+            reactionsTask = nil
         }
     }
 
@@ -145,6 +150,7 @@ struct FullscreenPostViewer: View {
                     loadedImage
                         .resizable()
                         .aspectRatio(contentMode: .fit)
+                        .matchedGeometryEffect(id: "image-\(event.id)", in: namespace)
                         .scaleEffect(imageScale)
                         .offset(imageOffset)
                 } placeholder: {
@@ -264,17 +270,26 @@ struct FullscreenPostViewer: View {
         isMuted = false
         player = avPlayer
 
-        // Loop video
-        NotificationCenter.default.addObserver(
+        // Loop video - store observer for cleanup
+        loopObserver = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
             object: playerItem,
             queue: .main
-        ) { _ in
-            avPlayer.seek(to: .zero)
-            avPlayer.play()
+        ) { [weak avPlayer] _ in
+            avPlayer?.seek(to: .zero)
+            avPlayer?.play()
         }
 
         avPlayer.play()
+    }
+
+    private func cleanupPlayer() {
+        player?.pause()
+        if let observer = loopObserver {
+            NotificationCenter.default.removeObserver(observer)
+            loopObserver = nil
+        }
+        player = nil
     }
 
     private func toggleMute() {
@@ -319,22 +334,26 @@ struct FullscreenPostViewer: View {
         }
     }
 
-    private func loadReactions() async {
-        let reactionFilter = NDKFilter(
-            kinds: [OlasConstants.EventKinds.reaction],
-            limit: 500
-        )
+    private func loadReactions() {
+        reactionsTask?.cancel()
+        reactionsTask = Task {
+            let reactionFilter = NDKFilter(
+                kinds: [OlasConstants.EventKinds.reaction],
+                limit: 500
+            )
 
-        let subscription = ndk.subscribe(filter: reactionFilter)
+            let subscription = ndk.subscribe(filter: reactionFilter)
 
-        for await reactionEvents in subscription.events {
-            for reactionEvent in reactionEvents {
-                let referencesOurEvent = reactionEvent.tags.contains { tag in
-                    tag.first == "e" && tag.count > 1 && tag[1] == event.id
-                }
+            for await reactionEvents in subscription.events {
+                if Task.isCancelled { break }
+                for reactionEvent in reactionEvents {
+                    let referencesOurEvent = reactionEvent.tags.contains { tag in
+                        tag.first == "e" && tag.count > 1 && tag[1] == event.id
+                    }
 
-                if referencesOurEvent && reactionEvent.content == "+" {
-                    likeCount += 1
+                    if referencesOurEvent && reactionEvent.content == "+" {
+                        likeCount += 1
+                    }
                 }
             }
         }

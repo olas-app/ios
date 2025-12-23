@@ -12,6 +12,7 @@ struct CollectionDetailView: View {
     @State private var isLoading = true
     @State private var selectedPicture: NDKEvent?
     @State private var showCoverPicker = false
+    @Namespace private var imageNamespace
 
     private let columns = [
         GridItem(.flexible(), spacing: 1),
@@ -20,7 +21,8 @@ struct CollectionDetailView: View {
     ]
 
     var body: some View {
-        ScrollView {
+        ZStack {
+            ScrollView {
             VStack(spacing: 0) {
                 headerSection
 
@@ -57,23 +59,28 @@ struct CollectionDetailView: View {
                     Image(systemName: "ellipsis")
                 }
             }
-        }
-        .task {
-            await loadPictures()
-        }
-        .fullScreenCover(item: $selectedPicture) { picture in
-            FullscreenPostViewer(
-                event: picture,
-                ndk: ndk,
-                isPresented: Binding(
-                    get: { selectedPicture != nil },
-                    set: { if !$0 { selectedPicture = nil } }
+            }
+            .task {
+                await loadPictures()
+            }
+                .sheet(isPresented: $showCoverPicker) {
+                CoverPickerSheet(pictures: pictures) { selected in
+                    Task { await setCover(from: selected) }
+                }
+            }
+
+            if let picture = selectedPicture {
+                FullscreenPostViewer(
+                    event: picture,
+                    ndk: ndk,
+                    isPresented: Binding(
+                        get: { selectedPicture != nil },
+                        set: { if !$0 { selectedPicture = nil } }
+                    ),
+                    namespace: imageNamespace
                 )
-            )
-        }
-        .sheet(isPresented: $showCoverPicker) {
-            CoverPickerSheet(pictures: pictures) { selected in
-                Task { await setCover(from: selected) }
+                .transition(.opacity)
+                .zIndex(1)
             }
         }
     }
@@ -132,8 +139,10 @@ struct CollectionDetailView: View {
     private var picturesGrid: some View {
         LazyVGrid(columns: columns, spacing: 1) {
             ForEach(pictures, id: \.id) { picture in
-                PictureGridCell(event: picture) {
-                    selectedPicture = picture
+                PictureGridCell(event: picture, namespace: imageNamespace) {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                        selectedPicture = picture
+                    }
                 }
                 .contextMenu {
                     Button(role: .destructive) {
@@ -204,7 +213,46 @@ struct CollectionDetailView: View {
 
 private struct PictureGridCell: View {
     let event: NDKEvent
+    let namespace: Namespace.ID
     let onTap: () -> Void
+
+    private var image: NDKImage {
+        NDKImage(event: event)
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            if let imageURL = image.primaryImageURL, let url = URL(string: imageURL) {
+                AsyncImage(url: url) { loadedImage in
+                    loadedImage
+                        .resizable()
+                        .scaledToFill()
+                        .matchedGeometryEffect(id: "image-\(event.id)", in: namespace)
+                } placeholder: {
+                    Rectangle()
+                        .fill(Color(.systemGray6))
+                }
+                .frame(width: geo.size.width, height: geo.size.width)
+                .clipped()
+            } else {
+                Rectangle()
+                    .fill(Color(.systemGray6))
+                    .overlay(
+                        Image(systemName: "photo")
+                            .foregroundStyle(.secondary)
+                    )
+            }
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .contentShape(Rectangle())
+        .onTapGesture { onTap() }
+    }
+}
+
+// MARK: - Non-Animated Picture Grid Cell (for cover picker)
+
+private struct PictureGridCellNonAnimated: View {
+    let event: NDKEvent
 
     private var image: NDKImage {
         NDKImage(event: event)
@@ -233,8 +281,6 @@ private struct PictureGridCell: View {
             }
         }
         .aspectRatio(1, contentMode: .fit)
-        .contentShape(Rectangle())
-        .onTapGesture { onTap() }
     }
 }
 
@@ -261,7 +307,7 @@ private struct CoverPickerSheet: View {
                             onSelect(picture)
                             dismiss()
                         } label: {
-                            PictureGridCell(event: picture) {}
+                            PictureGridCellNonAnimated(event: picture)
                         }
                         .buttonStyle(.plain)
                     }

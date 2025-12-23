@@ -16,6 +16,7 @@ public enum FeedMode: Equatable, Hashable {
 
 public enum DiscoveryRelays {
     public static let relays = [
+        "wss://relay.olas.app",
         "wss://relay.divine.video",
     ]
 }

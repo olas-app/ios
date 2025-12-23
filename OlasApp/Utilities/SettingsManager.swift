@@ -4,11 +4,13 @@ import SwiftUI
 public enum WalletType: String, CaseIterable, Hashable {
     case spark
     case cashu
+    case nwc
 
     var displayName: String {
         switch self {
         case .spark: return "Spark (Lightning)"
         case .cashu: return "Cashu (Ecash)"
+        case .nwc: return "NWC (Remote Wallet)"
         }
     }
 }
@@ -16,12 +18,26 @@ public enum WalletType: String, CaseIterable, Hashable {
 @Observable
 @MainActor
 public final class SettingsManager {
-    // Shared instance removed
-    // public static let shared = SettingsManager()
-
     @ObservationIgnored @AppStorage("showVideos") public var showVideos: Bool = true
     @ObservationIgnored @AppStorage("autoplayVideos") public var autoplayVideos: Bool = true
-    @ObservationIgnored @AppStorage("walletType") public var walletType: WalletType = .spark
 
-    public init() {}
+    public var hasCompletedOnboarding: Bool = false {
+        didSet {
+            UserDefaults.standard.set(hasCompletedOnboarding, forKey: "hasCompletedOnboarding")
+        }
+    }
+
+    public var walletType: WalletType = .spark {
+        didSet {
+            UserDefaults.standard.set(walletType.rawValue, forKey: "walletType")
+        }
+    }
+
+    public init() {
+        self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+        if let stored = UserDefaults.standard.string(forKey: "walletType"),
+           let type = WalletType(rawValue: stored) {
+            self.walletType = type
+        }
+    }
 }

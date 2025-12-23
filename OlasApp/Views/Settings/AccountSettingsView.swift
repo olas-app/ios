@@ -3,7 +3,7 @@ import Security
 import SwiftUI
 
 struct AccountSettingsView: View {
-    @EnvironmentObject private var authViewModel: AuthViewModel
+    @Environment(AuthViewModel.self) private var authViewModel
     @State private var showNsec = false
     @State private var nsec: String?
     @State private var npub: String?

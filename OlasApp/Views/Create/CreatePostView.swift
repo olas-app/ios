@@ -91,15 +91,14 @@ public struct CreatePostView: View {
     private func publishPost() async {
         guard let image = editedImage ?? selectedImage else { return }
 
-        let service = PostPublishingService(ndk: ndk)
-
         // Start background publishing
         Task {
             publishingState.isPublishing = true
             publishingState.error = nil
 
             do {
-                let eventId = try await service.publish(
+                let eventId = try await PostPublishingService.publish(
+                    ndk: ndk,
                     image: image,
                     caption: caption,
                     onProgress: { status, progress in

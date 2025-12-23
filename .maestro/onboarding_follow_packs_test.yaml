@@ -1,0 +1,70 @@
+appId: com.olas.app
+name: Onboarding - Follow Packs Selection Test
+
+---
+# Test selecting and following packs
+
+# Launch the app fresh
+- launchApp:
+    clearState: true
+
+# Wait for Profile Setup (app auto-creates account)
+- extendedWaitUntil:
+    visible:
+      text: "Set Up Your Profile"
+    timeout: 15000
+
+# Skip profile setup
+- tapOn:
+    text: "Skip for Now"
+
+# Wait for Follow Packs screen
+- extendedWaitUntil:
+    visible:
+      text: "Discover People to Follow"
+    timeout: 10000
+
+- takeScreenshot: "01_follow_packs_view"
+
+# Wait for packs to load
+- extendedWaitUntil:
+    visible:
+      text: "accounts"
+    timeout: 15000
+
+- takeScreenshot: "02_packs_loaded"
+
+# Tap on first pack to select it
+- tapOn:
+    index: 0
+    text: ".*accounts.*"
+
+- takeScreenshot: "03_pack_selected"
+
+# Verify selection indicator appears
+- extendedWaitUntil:
+    visible:
+      text: ".*pack.*selected.*"
+    timeout: 3000
+
+- takeScreenshot: "04_selection_shown"
+
+# Button should now show "Follow X Accounts"
+- assertVisible:
+    text: "Follow.*Accounts"
+
+- takeScreenshot: "05_follow_button_updated"
+
+# Tap follow button
+- tapOn:
+    text: "Follow.*Accounts"
+
+- takeScreenshot: "06_follow_tapped"
+
+# Should complete onboarding
+- extendedWaitUntil:
+    notVisible:
+      text: "Discover People to Follow"
+    timeout: 10000
+
+- takeScreenshot: "07_onboarding_complete"

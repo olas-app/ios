@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+        .sheet {
+            width: 100%;
+            max-width: 390px;
+            background: #1c1c1e;
+            border-radius: 24px;
+            overflow: hidden;
+            padding-bottom: 32px;
+        }
+        .handle {
+            width: 36px;
+            height: 5px;
+            background: #3a3a3c;
+            border-radius: 3px;
+            margin: 8px auto 20px;
+        }
+
+        /* Hero QR Section */
+        .hero {
+            text-align: center;
+            padding: 0 24px 32px;
+            background: linear-gradient(180deg, #2c2c2e 0%, transparent 100%);
+        }
+        .qr-container {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .qr-code {
+            width: 220px;
+            height: 220px;
+            background: #fff;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        .qr-placeholder {
+            width: 200px;
+            height: 200px;
+            background: repeating-conic-gradient(#000 0% 25%, #fff 0% 50%) 50% / 18px 18px;
+        }
+        .qr-logo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 48px;
+            height: 48px;
+            background: #667eea;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .hero h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .hero p {
+            font-size: 15px;
+            color: #8e8e93;
+            line-height: 1.4;
+        }
+
+        /* Quick Actions */
+        .actions {
+            padding: 0 16px;
+            margin-bottom: 24px;
+        }
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            background: #2c2c2e;
+            border: 1px solid #3a3a3c;
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .action-btn:hover {
+            background: #3a3a3c;
+        }
+        .action-btn.primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+        }
+        .action-icon {
+            width: 44px;
+            height: 44px;
+            background: #3a3a3c;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .action-btn.primary .action-icon {
+            background: rgba(255,255,255,0.2);
+        }
+        .action-text {
+            flex: 1;
+            text-align: left;
+        }
+        .action-text h3 {
+            font-size: 17px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+        .action-text p {
+            font-size: 13px;
+            color: #8e8e93;
+        }
+        .action-btn.primary .action-text p {
+            color: rgba(255,255,255,0.7);
+        }
+        .action-arrow {
+            color: #8e8e93;
+            font-size: 18px;
+        }
+
+        /* Manual Input Expandable */
+        .manual-section {
+            padding: 0 16px;
+        }
+        .manual-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: #8e8e93;
+            font-size: 14px;
+            padding: 12px;
+            cursor: pointer;
+        }
+        .manual-toggle:hover {
+            color: #fff;
+        }
+        .manual-input {
+            margin-top: 12px;
+        }
+        .input-field {
+            width: 100%;
+            background: #2c2c2e;
+            border: 1px solid #3a3a3c;
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: #fff;
+            font-size: 14px;
+            font-family: 'SF Mono', monospace;
+            resize: none;
+            min-height: 80px;
+        }
+        .input-field::placeholder {
+            color: #636366;
+        }
+        .input-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .input-btn {
+            flex: 1;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+        .input-btn.secondary {
+            background: #3a3a3c;
+            color: #fff;
+        }
+        .input-btn.primary {
+            background: #667eea;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="sheet">
+        <div class="handle"></div>
+
+        <!-- Hero with QR -->
+        <div class="hero">
+            <div class="qr-container">
+                <div class="qr-code">
+                    <div class="qr-placeholder"></div>
+                </div>
+                <div class="qr-logo">🌊</div>
+            </div>
+            <h1>Sign in to Olas</h1>
+            <p>Scan with your Nostr signer app<br>or choose an option below</p>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="actions">
+            <!-- This only shows if Amber/signer detected -->
+            <div class="action-btn primary">
+                <div class="action-icon">🔐</div>
+                <div class="action-text">
+                    <h3>Open Amber</h3>
+                    <p>Sign in with your signer app</p>
+                </div>
+                <span class="action-arrow">→</span>
+            </div>
+
+            <div class="action-btn">
+                <div class="action-icon">📋</div>
+                <div class="action-text">
+                    <h3>Paste from clipboard</h3>
+                    <p>nsec, bunker://, or nostrconnect://</p>
+                </div>
+                <span class="action-arrow">→</span>
+            </div>
+        </div>
+
+        <!-- Manual Input Toggle -->
+        <div class="manual-section">
+            <div class="manual-toggle">
+                <span>Enter manually</span>
+                <span>▼</span>
+            </div>
+
+            <!-- Expanded state -->
+            <div class="manual-input">
+                <textarea class="input-field" placeholder="Paste your nsec1..., bunker://..., or nostrconnect://... here"></textarea>
+                <div class="input-actions">
+                    <button class="input-btn secondary">Paste</button>
+                    <button class="input-btn primary">Connect</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

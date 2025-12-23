@@ -109,8 +109,35 @@ class ExploreViewModel {
     private func searchUsers(query: String) async {
         if query.hasPrefix("npub") {
             await searchByNpub(query)
+            return
+        }
+
+        // Run NIP-05 check and name search in parallel if it looks like a domain
+        if looksLikeDomain(query) {
+            async let nip05Result: Void = tryNip05Resolution(query)
+            async let nameResult: Void = searchUsersByName(query)
+            _ = await (nip05Result, nameResult)
         } else {
             await searchUsersByName(query)
+        }
+    }
+
+    private func looksLikeDomain(_ query: String) -> Bool {
+        // Has @ with domain, or bare domain like "dergigi.com"
+        if query.contains("@") {
+            let parts = query.split(separator: "@")
+            guard parts.count == 2 else { return false }
+            return String(parts[1]).contains(".")
+        }
+        return query.contains(".") && !query.contains(" ")
+    }
+
+    private func tryNip05Resolution(_ query: String) async {
+        let nip05 = query.contains("@") ? query : "_@\(query)"
+        guard let user = try? await NDKUser.fromNip05(nip05, ndk: ndk) else { return }
+        // Add to results if not already present
+        if !userResults.contains(where: { $0.pubkey == user.pubkey }) {
+            userResults.insert(SearchUserResult(pubkey: user.pubkey), at: 0)
         }
     }
 

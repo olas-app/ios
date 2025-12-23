@@ -364,8 +364,7 @@ public final class SparkWalletManager {
             let response = try await sdk.listFiatRates()
             fiatRates = response.rates
         } catch {
-            // Don't show error to user for fiat rates failure - just log it
-            print("[Spark] Failed to fetch fiat rates: \(error)")
+            Log.warning("Failed to fetch fiat rates: \(error.localizedDescription)", category: "Spark")
         }
     }
 
@@ -445,7 +444,7 @@ public final class SparkWalletManager {
             throw SparkWalletError.notConnected
         }
 
-        print("[Spark] Creating invoice with amount: \(amountSats) sats, description: \(description ?? "nil")")
+        Log.debug("Creating invoice", category: "Spark", metadata: ["amount": "\(amountSats)", "description": description ?? "nil"])
 
         let response = try await sdk.receivePayment(
             request: ReceivePaymentRequest(
@@ -456,8 +455,7 @@ public final class SparkWalletManager {
             )
         )
 
-        print("[Spark] Generated invoice: \(response.paymentRequest)")
-        print("[Spark] Invoice length: \(response.paymentRequest.count) characters")
+        Log.info("Generated invoice", category: "Spark", metadata: ["length": "\(response.paymentRequest.count)"])
 
         return response.paymentRequest
     }
@@ -468,7 +466,7 @@ public final class SparkWalletManager {
             throw SparkWalletError.notConnected
         }
 
-        print("[Spark] Creating open invoice, description: \(description ?? "nil")")
+        Log.debug("Creating open invoice", category: "Spark", metadata: ["description": description ?? "nil"])
 
         let response = try await sdk.receivePayment(
             request: ReceivePaymentRequest(
@@ -479,8 +477,7 @@ public final class SparkWalletManager {
             )
         )
 
-        print("[Spark] Generated open invoice: \(response.paymentRequest)")
-        print("[Spark] Invoice length: \(response.paymentRequest.count) characters")
+        Log.info("Generated open invoice", category: "Spark", metadata: ["length": "\(response.paymentRequest.count)"])
 
         return response.paymentRequest
     }
@@ -602,23 +599,26 @@ public final class SparkWalletManager {
                 }
             }
 
-            print("[Spark] Payment succeeded: \(payment.amount) sats")
+            Log.info("Payment succeeded", category: "Spark", metadata: ["amount": "\(payment.amount)"])
         case let .paymentFailed(payment):
             error = "Payment failed. Please check your balance and try again."
-            print("[Spark] Payment failed: \(payment.id)")
+            Log.error("Payment failed", category: "Spark", metadata: ["id": payment.id])
         case let .paymentPending(payment):
-            print("[Spark] Payment pending: \(payment.amount) sats")
+            Log.debug("Payment pending", category: "Spark", metadata: ["amount": "\(payment.amount)"])
         case let .unclaimedDeposits(deposits):
-            print("[Spark] Unclaimed deposits: \(deposits.count)")
+            Log.debug("Unclaimed deposits", category: "Spark", metadata: ["count": "\(deposits.count)"])
         case let .claimedDeposits(deposits):
-            print("[Spark] Claimed deposits: \(deposits.count)")
+            Log.info("Claimed deposits", category: "Spark", metadata: ["count": "\(deposits.count)"])
             await refreshInfo()
         }
     }
 
     private func getStorageDirectory() -> String {
         let fileManager = FileManager.default
-        let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        guard let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            Log.error("Could not access application support directory", category: "Spark")
+            return NSTemporaryDirectory()
+        }
         let sparkDir = appSupport.appendingPathComponent("spark_wallet", isDirectory: true)
 
         if !fileManager.fileExists(atPath: sparkDir.path) {

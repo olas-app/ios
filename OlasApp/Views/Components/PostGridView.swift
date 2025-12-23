@@ -8,20 +8,24 @@ public struct PostGridView: View {
     let posts: [NDKEvent]
     let spacing: CGFloat
     let onTap: (NDKEvent) -> Void
+    let namespace: Namespace.ID
 
     /// Creates a post grid view
     /// - Parameters:
     ///   - posts: Array of NDKEvent posts to display
     ///   - spacing: Space between grid items (default: 2)
     ///   - onTap: Closure called when a post is tapped
+    ///   - namespace: Matched geometry namespace for hero animations
     public init(
         posts: [NDKEvent],
         spacing: CGFloat = 2,
-        onTap: @escaping (NDKEvent) -> Void
+        onTap: @escaping (NDKEvent) -> Void,
+        namespace: Namespace.ID
     ) {
         self.posts = posts
         self.spacing = spacing
         self.onTap = onTap
+        self.namespace = namespace
     }
 
     private var columns: [GridItem] {
@@ -35,7 +39,7 @@ public struct PostGridView: View {
     public var body: some View {
         LazyVGrid(columns: columns, spacing: spacing) {
             ForEach(posts, id: \.id) { post in
-                GridCell(event: post, onTap: onTap)
+                GridCell(event: post, onTap: onTap, namespace: namespace)
             }
         }
     }
@@ -47,6 +51,7 @@ public struct PostGridView: View {
 private struct GridCell: View {
     let event: NDKEvent
     let onTap: (NDKEvent) -> Void
+    let namespace: Namespace.ID
 
     @State private var media: MediaContent?
 
@@ -56,7 +61,9 @@ private struct GridCell: View {
                 if let media = media {
                     MediaContentView(
                         media: media,
-                        cellWidth: geometry.size.width
+                        cellWidth: geometry.size.width,
+                        namespace: namespace,
+                        eventId: event.id
                     )
                 } else {
                     LoadingPlaceholder()
@@ -124,6 +131,8 @@ private struct MediaContent {
 private struct MediaContentView: View {
     let media: MediaContent
     let cellWidth: CGFloat
+    let namespace: Namespace.ID
+    let eventId: String
 
     var body: some View {
         if let url = media.thumbnailURL {
@@ -131,7 +140,9 @@ private struct MediaContentView: View {
                 url: url,
                 blurhash: media.blurhash,
                 cellWidth: cellWidth,
-                accessibilityLabel: media.accessibilityLabel
+                accessibilityLabel: media.accessibilityLabel,
+                namespace: namespace,
+                eventId: eventId
             )
             .overlay(alignment: .bottomTrailing) {
                 if media.type == .video {
@@ -152,6 +163,8 @@ private struct ThumbnailImageView: View {
     let blurhash: String?
     let cellWidth: CGFloat
     let accessibilityLabel: String
+    let namespace: Namespace.ID
+    let eventId: String
 
     var body: some View {
         CachedAsyncImage(
@@ -164,6 +177,7 @@ private struct ThumbnailImageView: View {
                 .scaledToFill()
                 .frame(width: cellWidth, height: cellWidth)
                 .clipped()
+                .matchedGeometryEffect(id: "image-\(eventId)", in: namespace)
         } placeholder: {
             LoadingPlaceholder()
         }

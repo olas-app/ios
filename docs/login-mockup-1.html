@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+        .sheet {
+            width: 100%;
+            max-width: 390px;
+            background: #1c1c1e;
+            border-radius: 24px;
+            overflow: hidden;
+        }
+        .handle {
+            width: 36px;
+            height: 5px;
+            background: #3a3a3c;
+            border-radius: 3px;
+            margin: 8px auto 16px;
+        }
+        .header {
+            text-align: center;
+            padding: 0 24px 24px;
+        }
+        .header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .header p {
+            font-size: 15px;
+            color: #8e8e93;
+        }
+
+        /* Signer App Detection */
+        .signer-app {
+            margin: 0 16px 24px;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea22, #764ba222);
+            border: 1px solid #667eea44;
+            border-radius: 16px;
+        }
+        .signer-app-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .signer-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #f5af19, #f12711);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        .signer-info {
+            flex: 1;
+        }
+        .signer-info h3 {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        .signer-info p {
+            font-size: 13px;
+            color: #8e8e93;
+        }
+        .open-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* QR Code Section */
+        .qr-section {
+            text-align: center;
+            padding: 0 24px 24px;
+        }
+        .qr-code {
+            width: 200px;
+            height: 200px;
+            background: #fff;
+            border-radius: 16px;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .qr-placeholder {
+            width: 180px;
+            height: 180px;
+            background: repeating-conic-gradient(#000 0% 25%, #fff 0% 50%) 50% / 20px 20px;
+        }
+        .qr-label {
+            font-size: 13px;
+            color: #8e8e93;
+        }
+
+        /* Divider */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 0 24px;
+            margin-bottom: 24px;
+        }
+        .divider-line {
+            flex: 1;
+            height: 1px;
+            background: #3a3a3c;
+        }
+        .divider-text {
+            font-size: 13px;
+            color: #8e8e93;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Input Section */
+        .input-section {
+            padding: 0 16px 32px;
+        }
+        .input-wrapper {
+            position: relative;
+        }
+        .input-field {
+            width: 100%;
+            background: #2c2c2e;
+            border: 1px solid #3a3a3c;
+            border-radius: 12px;
+            padding: 16px;
+            padding-right: 50px;
+            color: #fff;
+            font-size: 15px;
+            font-family: 'SF Mono', monospace;
+        }
+        .input-field::placeholder {
+            color: #636366;
+        }
+        .paste-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #3a3a3c;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .input-hint {
+            margin-top: 12px;
+            font-size: 13px;
+            color: #8e8e93;
+            text-align: center;
+        }
+        .input-hint code {
+            color: #667eea;
+            background: #667eea22;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="sheet">
+        <div class="handle"></div>
+
+        <div class="header">
+            <h1>Connect to Nostr</h1>
+            <p>Scan with your signer app or paste your key</p>
+        </div>
+
+        <!-- Detected Signer App -->
+        <div class="signer-app">
+            <div class="signer-app-content">
+                <div class="signer-icon">🔐</div>
+                <div class="signer-info">
+                    <h3>Amber detected</h3>
+                    <p>Open to sign in securely</p>
+                </div>
+                <button class="open-btn">Open</button>
+            </div>
+        </div>
+
+        <!-- QR Code -->
+        <div class="qr-section">
+            <div class="qr-code">
+                <div class="qr-placeholder"></div>
+            </div>
+            <p class="qr-label">Scan with Amber, nsec.app, or any NIP-46 signer</p>
+        </div>
+
+        <!-- Divider -->
+        <div class="divider">
+            <div class="divider-line"></div>
+            <span class="divider-text">or paste</span>
+            <div class="divider-line"></div>
+        </div>
+
+        <!-- Input -->
+        <div class="input-section">
+            <div class="input-wrapper">
+                <input type="text" class="input-field" placeholder="nsec1... or bunker://...">
+                <button class="paste-btn">Paste</button>
+            </div>
+            <p class="input-hint">
+                Accepts <code>nsec</code>, <code>bunker://</code>, or <code>nostrconnect://</code>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

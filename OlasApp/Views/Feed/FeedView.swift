@@ -5,7 +5,7 @@ import SwiftUI
 public struct FeedView: View {
     @State private var viewModel: FeedViewModel
     @Environment(RelayMetadataCache.self) private var relayMetadataCache
-    @EnvironmentObject private var authViewModel: AuthViewModel
+    @Environment(AuthViewModel.self) private var authViewModel
     @EnvironmentObject private var muteListManager: MuteListManager
     private let ndk: NDK
 
@@ -27,18 +27,16 @@ public struct FeedView: View {
 
     public var body: some View {
         NavigationStack(path: $navigationPath) {
-            List {
-                ForEach(viewModel.posts, id: \.id) { event in
-                    PostCard(event: event, ndk: ndk) { pubkey in
-                        navigationPath.append(pubkey)
+            ScrollView {
+                LazyVStack(spacing: 8) {
+                    ForEach(viewModel.posts, id: \.id) { event in
+                        PostCard(event: event, ndk: ndk) { pubkey in
+                            navigationPath.append(pubkey)
+                        }
+                        .equatable()
                     }
-                    .equatable()
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 8, trailing: 0))
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
                 }
             }
-            .listStyle(.plain)
             .refreshable {
                 viewModel.stopSubscription()
                 viewModel.startSubscription(muteListManager: muteListManager)

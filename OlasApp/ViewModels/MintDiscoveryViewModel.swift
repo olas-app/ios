@@ -26,16 +26,16 @@ public struct DiscoveredMint: Identifiable, Hashable {
     }
 }
 
-@MainActor
-public class MintDiscoveryViewModel: ObservableObject {
+@Observable @MainActor
+public final class MintDiscoveryViewModel {
     private let ndk: NDK
 
-    @Published public private(set) var discoveredMints: [DiscoveredMint] = []
-    @Published public private(set) var error: Error?
-    @Published public private(set) var isDiscovering = false
-    @Published public var selectedMints: Set<String> = []
+    public private(set) var discoveredMints: [DiscoveredMint] = []
+    public private(set) var error: Error?
+    public private(set) var isDiscovering = false
+    public var selectedMints: Set<String> = []
 
-    private var discoveryTask: Task<Void, Never>?
+    nonisolated(unsafe) private var discoveryTask: Task<Void, Never>?
     private var seenMintIds: Set<String> = []
 
     public init(ndk: NDK) {

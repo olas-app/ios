@@ -6,7 +6,7 @@ struct BalanceCard: View {
     let balancesByMint: [String: Int64]
     let onDeposit: () -> Void
     let onSend: () -> Void
-    @ObservedObject var walletViewModel: WalletViewModel
+    var walletViewModel: WalletViewModel
 
     @State private var showMintBreakdown = false
     @State private var showFiat = false

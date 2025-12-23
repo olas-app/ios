@@ -3,12 +3,13 @@ import NDKSwiftCore
 import Security
 import SwiftUI
 
-@MainActor
-public final class AuthViewModel: ObservableObject {
-    @Published public private(set) var isLoggedIn = false
-    @Published public private(set) var currentUser: NDKUser?
-    @Published public private(set) var isLoading = false
-    @Published public var error: Error?
+@Observable @MainActor
+public final class AuthViewModel {
+    public private(set) var isLoggedIn = false
+    public private(set) var currentUser: NDKUser?
+    public private(set) var isLoading = false
+    public private(set) var isNewAccount = false
+    public var error: Error?
 
     public private(set) var signer: (any NDKSigner)?
     public weak var ndk: NDK?
@@ -43,6 +44,7 @@ public final class AuthViewModel: ObservableObject {
         signer = newSigner
         currentUser = try await NDKUser(pubkey: newSigner.pubkey, ndk: ndk)
         isLoggedIn = true
+        isNewAccount = true
     }
 
     public func loginWithNsec(_ nsec: String) async throws {

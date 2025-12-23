@@ -22,28 +22,21 @@ public enum PostError: LocalizedError {
 
 /// Service for publishing posts to Nostr
 public struct PostPublishingService {
-    private let ndk: NDK
-    private let blossomManager: NDKBlossomServerManager
-
-    public init(ndk: NDK) {
-        self.ndk = ndk
-        let manager = NDKBlossomServerManager(ndk: ndk)
-
-        // Initialize with default servers if none configured
-        if manager.userServers.isEmpty {
-            for server in OlasConstants.blossomServers {
-                manager.addUserServer(server)
-            }
-        }
-
-        blossomManager = manager
-    }
-
-    public func publish(
+    public static func publish(
+        ndk: NDK,
         image: UIImage,
         caption: String,
         onProgress: @MainActor (String, Double) -> Void
     ) async throws -> String {
+        let blossomManager = NDKBlossomServerManager(ndk: ndk)
+
+        // Initialize with default servers if none configured
+        if blossomManager.userServers.isEmpty {
+            for server in OlasConstants.blossomServers {
+                blossomManager.addUserServer(server)
+            }
+        }
+
         // Compress
         await onProgress("Starting upload...", 0.1)
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {

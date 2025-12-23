@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Olas - Concept 1: Ocean Immersion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: linear-gradient(180deg, #0a1628 0%, #1a3a5c 50%, #2d5a7b 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .phone-frame {
+            width: 390px;
+            height: 844px;
+            background: linear-gradient(180deg, #0a1628 0%, #1a3a5c 40%, #2d5a7b 70%, #4a90b8 100%);
+            border-radius: 50px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.5);
+        }
+
+        .ocean-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60%;
+            overflow: hidden;
+        }
+
+        .wave {
+            position: absolute;
+            width: 200%;
+            height: 100%;
+            bottom: 0;
+            left: -50%;
+            background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.1) 100%);
+        }
+
+        .wave-1 {
+            animation: wave 8s ease-in-out infinite;
+            opacity: 0.6;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%234a90b8' fill-opacity='0.4' d='M0,160L48,176C96,192,192,224,288,213.3C384,203,480,149,576,138.7C672,128,768,160,864,181.3C960,203,1056,213,1152,197.3C1248,181,1344,139,1392,117.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E") repeat-x;
+            background-size: 50% 100%;
+        }
+
+        .wave-2 {
+            animation: wave 6s ease-in-out infinite reverse;
+            animation-delay: -2s;
+            opacity: 0.4;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%2366b3d9' fill-opacity='0.5' d='M0,224L48,208C96,192,192,160,288,165.3C384,171,480,213,576,218.7C672,224,768,192,864,165.3C960,139,1056,117,1152,128C1248,139,1344,181,1392,202.7L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E") repeat-x;
+            background-size: 50% 100%;
+        }
+
+        .wave-3 {
+            animation: wave 10s ease-in-out infinite;
+            animation-delay: -4s;
+            opacity: 0.3;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%2388cce8' fill-opacity='0.6' d='M0,96L48,112C96,128,192,160,288,165.3C384,171,480,149,576,149.3C672,149,768,171,864,181.3C960,192,1056,192,1152,176C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E") repeat-x;
+            background-size: 50% 100%;
+        }
+
+        @keyframes wave {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(-25%); }
+        }
+
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .moon {
+            position: absolute;
+            top: 80px;
+            right: 60px;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle at 30% 30%, #fff9e6 0%, #ffeaa7 50%, #fdcb6e 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 40px rgba(253, 203, 110, 0.4), 0 0 80px rgba(253, 203, 110, 0.2);
+            animation: moonGlow 4s ease-in-out infinite;
+        }
+
+        @keyframes moonGlow {
+            0%, 100% { box-shadow: 0 0 40px rgba(253, 203, 110, 0.4), 0 0 80px rgba(253, 203, 110, 0.2); }
+            50% { box-shadow: 0 0 60px rgba(253, 203, 110, 0.6), 0 0 100px rgba(253, 203, 110, 0.3); }
+        }
+
+        .content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 10;
+        }
+
+        .logo {
+            width: 100px;
+            height: 60px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .logo svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .brand-name {
+            font-size: 48px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: 2px;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            margin-bottom: 12px;
+        }
+
+        .tagline {
+            font-size: 16px;
+            color: rgba(255,255,255,0.7);
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+
+        .buttons {
+            position: absolute;
+            bottom: 60px;
+            left: 30px;
+            right: 30px;
+            z-index: 10;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 18px;
+            border-radius: 16px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            margin-bottom: 12px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+            color: #1a3a5c;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .reflection {
+            position: absolute;
+            bottom: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 200px;
+            background: linear-gradient(180deg, rgba(253, 203, 110, 0.3) 0%, transparent 100%);
+            filter: blur(20px);
+            animation: shimmer 4s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 0.5; width: 80px; }
+            50% { opacity: 0.8; width: 100px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="stars">
+            <div class="star" style="top: 10%; left: 10%; animation-delay: 0s;"></div>
+            <div class="star" style="top: 15%; left: 30%; animation-delay: 0.5s;"></div>
+            <div class="star" style="top: 8%; left: 50%; animation-delay: 1s;"></div>
+            <div class="star" style="top: 20%; left: 70%; animation-delay: 1.5s;"></div>
+            <div class="star" style="top: 12%; left: 85%; animation-delay: 2s;"></div>
+            <div class="star" style="top: 25%; left: 20%; animation-delay: 0.3s;"></div>
+            <div class="star" style="top: 30%; left: 45%; animation-delay: 0.8s;"></div>
+            <div class="star" style="top: 18%; left: 60%; animation-delay: 1.3s;"></div>
+            <div class="star" style="top: 35%; left: 80%; animation-delay: 1.8s;"></div>
+            <div class="star" style="top: 28%; left: 5%; animation-delay: 2.3s;"></div>
+        </div>
+
+        <div class="moon"></div>
+        <div class="reflection"></div>
+
+        <div class="content">
+            <div class="logo">
+                <svg viewBox="0 0 100 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 35 L35 20 L50 35" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.9"/>
+                    <path d="M35 35 L50 20 L65 35" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.7"/>
+                    <path d="M50 35 L65 20 L80 35" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.5"/>
+                </svg>
+            </div>
+            <h1 class="brand-name">Olas</h1>
+            <p class="tagline">Share moments. Ride the wave.</p>
+        </div>
+
+        <div class="ocean-container">
+            <div class="wave wave-1"></div>
+            <div class="wave wave-2"></div>
+            <div class="wave wave-3"></div>
+        </div>
+
+        <div class="buttons">
+            <button class="btn btn-primary">Create Account</button>
+            <button class="btn btn-secondary">I have a Nostr account</button>
+        </div>
+    </div>
+</body>
+</html>

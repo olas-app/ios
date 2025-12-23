@@ -55,140 +55,119 @@ public struct NWCWalletView: View {
     // MARK: - Connected View
 
     private var connectedView: some View {
-        ScrollView {
-            VStack(spacing: 32) {
-                modernBalanceSection
-                modernActionButtons
-                modernTransactionsContainer
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(spacing: 0) {
+                    heroSection
+                        .frame(minHeight: geometry.size.height - geometry.safeAreaInsets.top - 60)
+                    transactionsSection
+                }
             }
-            .padding(.top, 40)
+            .refreshable {
+                await walletManager.refreshInfo()
+            }
         }
-        .refreshable {
+        .background(Color(.systemBackground))
+        .task {
             await walletManager.refreshInfo()
         }
     }
 
-    private var modernBalanceSection: some View {
-        VStack(spacing: 16) {
-            // Wallet Info
-            if let info = walletManager.walletInfo {
-                HStack {
-                    if let alias = info.alias {
-                        Text(alias)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Text(walletManager.connectionStatus.description)
-                        .font(.caption)
-                        .foregroundStyle(walletManager.connectionStatus.color)
-                }
-                .padding(.horizontal)
-            }
-
-            // Balance Display
+    private var heroSection: some View {
+        VStack(spacing: 32) {
+            // Balance display
             VStack(spacing: 8) {
-                Text("Balance")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                Text(formatSats(UInt64(walletManager.balance)))
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
-                    .foregroundStyle(OlasTheme.Colors.accent)
+                AnimatedBalanceView(
+                    balance: walletManager.balance,
+                    fontSize: 56,
+                    color: .primary
+                )
 
                 if let fiatFormatted = walletManager.formatFiat(walletManager.balance) {
                     Text("≈ \(fiatFormatted)")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-
-                if walletManager.isLoading {
-                    ProgressView()
-                        .padding(.top, 8)
+                        .font(.title3)
+                        .foregroundStyle(.tertiary)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 32)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(.systemBackground))
-                    .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
-            )
-            .padding(.horizontal)
-        }
-    }
+            .padding(.top, 24)
 
-    private var modernActionButtons: some View {
-        HStack(spacing: 20) {
-            Button {
-                showReceive = true
-            } label: {
-                VStack(spacing: 8) {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .font(.system(size: 32))
-                    Text("Receive")
-                        .font(.caption)
+            // Action buttons
+            HStack(spacing: 12) {
+                Button {
+                    showReceive = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.down")
+                            .font(.system(size: 16, weight: .semibold))
+                        Text("Receive")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color(.systemGray6))
+                    .foregroundStyle(.primary)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(OlasTheme.Colors.accent.opacity(0.1))
-                .foregroundStyle(OlasTheme.Colors.accent)
-                .cornerRadius(16)
+
+                Button {
+                    showSend = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.up")
+                            .font(.system(size: 16, weight: .semibold))
+                        Text("Send")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color(.systemGray6))
+                    .foregroundStyle(.primary)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
             }
+            .padding(.horizontal, 20)
 
-            Button {
-                showSend = true
-            } label: {
-                VStack(spacing: 8) {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 32))
-                    Text("Send")
-                        .font(.caption)
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(OlasTheme.Colors.zapGold.opacity(0.1))
-                .foregroundStyle(OlasTheme.Colors.zapGold)
-                .cornerRadius(16)
+            if walletManager.isLoading {
+                ProgressView()
             }
         }
-        .padding(.horizontal)
+        .frame(maxWidth: .infinity)
+        .padding(.bottom, 40)
     }
 
-    private var modernTransactionsContainer: some View {
+    private var transactionsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Recent Activity")
-                .font(.headline)
-                .padding(.horizontal)
+            Text("Activity")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 20)
 
             if walletManager.transactions.isEmpty {
-                VStack(spacing: 8) {
-                    Image(systemName: "tray")
-                        .font(.largeTitle)
-                        .foregroundStyle(.secondary)
-                    Text("No recent transactions")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 48)
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
-                .padding(.horizontal)
+                emptyTransactionsView
             } else {
-                LazyVStack(spacing: 0) {
-                    ForEach(walletManager.transactions, id: \.paymentHash) { transaction in
-                        NWCTransactionRow(transaction: transaction, walletManager: walletManager)
-                        if transaction.paymentHash != walletManager.transactions.last?.paymentHash {
-                            Divider()
-                                .padding(.leading, 48)
-                        }
-                    }
+                transactionsList
+            }
+        }
+    }
+
+    private var emptyTransactionsView: some View {
+        VStack(spacing: 8) {
+            Text("No transactions yet")
+                .font(.subheadline)
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+    }
+
+    private var transactionsList: some View {
+        LazyVStack(spacing: 0) {
+            ForEach(Array(walletManager.transactions.enumerated()), id: \.offset) { index, transaction in
+                NWCTransactionRow(transaction: transaction, walletManager: walletManager)
+                if index < walletManager.transactions.count - 1 {
+                    Divider()
+                        .padding(.leading, 56)
                 }
-                .background(Color(.systemBackground))
-                .cornerRadius(12)
-                .shadow(color: .black.opacity(0.05), radius: 5, y: 2)
-                .padding(.horizontal)
             }
         }
         .padding(.bottom, 32)
@@ -277,14 +256,6 @@ public struct NWCWalletView: View {
         .padding()
     }
 
-    // MARK: - Helper Methods
-
-    private func formatSats(_ sats: UInt64) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.groupingSeparator = ","
-        return (formatter.string(from: NSNumber(value: sats)) ?? "0") + " sats"
-    }
 }
 
 // MARK: - Transaction Row
@@ -310,8 +281,8 @@ private struct NWCTransactionRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-                } else {
-                    Text(transaction.paymentHash.prefix(16) + "...")
+                } else if let paymentHash = transaction.paymentHash {
+                    Text(paymentHash.prefix(16) + "...")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
