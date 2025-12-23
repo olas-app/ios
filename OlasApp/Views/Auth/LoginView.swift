@@ -3,7 +3,8 @@ import NDKSwiftCore
 import SwiftUI
 
 public struct LoginView: View {
-    var authViewModel: AuthViewModel
+    var authManager: NDKAuthManager
+    var ndk: NDK
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
 
@@ -11,12 +12,11 @@ public struct LoginView: View {
     @State private var qrCodeImage: UIImage?
     @State private var bunkerSigner: NDKBunkerSigner?
     @State private var isWaitingForConnection = false
+    @State private var isLoading = false
     @State private var inputText = ""
     @State private var showError = false
     @State private var errorMessage = ""
     @State private var detectedSigner: KnownSigner?
-
-    private weak var ndk: NDK? { authViewModel.ndk }
 
     enum KnownSigner: CaseIterable {
         case amber
@@ -48,8 +48,9 @@ public struct LoginView: View {
         }
     }
 
-    public init(authViewModel: AuthViewModel) {
-        self.authViewModel = authViewModel
+    public init(authManager: NDKAuthManager, ndk: NDK) {
+        self.authManager = authManager
+        self.ndk = ndk
     }
 
     public var body: some View {
@@ -211,7 +212,7 @@ public struct LoginView: View {
                 Button {
                     Task { await connectWithInput() }
                 } label: {
-                    if authViewModel.isLoading {
+                    if isLoading {
                         ProgressView()
                             .tint(.white)
                             .frame(maxWidth: .infinity)
@@ -226,7 +227,7 @@ public struct LoginView: View {
                 .background(OlasTheme.Colors.accent)
                 .foregroundStyle(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
-                .disabled(authViewModel.isLoading)
+                .disabled(isLoading)
             }
         }
     }
@@ -252,8 +253,6 @@ public struct LoginView: View {
     }
 
     private func generateNostrConnectQR() async {
-        guard let ndk = ndk else { return }
-
         do {
             let relays = ["wss://relay.damus.io"]
             let localSigner = try NDKPrivateKeySigner.generate()
@@ -321,8 +320,8 @@ public struct LoginView: View {
         guard let signer = bunkerSigner else { return }
 
         do {
-            let pubkey = try await signer.connect()
-            try await authViewModel.loginWithNIP46(bunkerSigner: signer, pubkey: pubkey)
+            _ = try await signer.connect()
+            _ = try await authManager.addSession(signer)
             await MainActor.run {
                 isWaitingForConnection = false
                 dismiss()
@@ -339,12 +338,18 @@ public struct LoginView: View {
     private func connectWithInput() async {
         let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
 
+        isLoading = true
+        defer { isLoading = false }
+
         do {
             if trimmed.hasPrefix("nsec1") {
-                try await authViewModel.loginWithNsec(trimmed)
+                let signer = try NDKPrivateKeySigner(nsec: trimmed)
+                _ = try await authManager.addSession(signer)
                 dismiss()
             } else if trimmed.hasPrefix("bunker://") || trimmed.hasPrefix("nostrconnect://") {
-                try await authViewModel.loginWithBunker(trimmed)
+                let signer = try await NDKBunkerSigner.bunker(ndk: ndk, connectionToken: trimmed)
+                _ = try await signer.connect()
+                _ = try await authManager.addSession(signer)
                 dismiss()
             } else {
                 errorMessage = "Invalid input. Enter an nsec or bunker:// URI."

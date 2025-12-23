@@ -4,12 +4,12 @@ import SwiftUI
 
 @main
 struct OlasApp: App {
-    @State private var authViewModel = AuthViewModel()
     @State private var settings = SettingsManager()
     @State private var relayCache = RelayMetadataCache()
     @State private var imageCache = ImageCache()
     @State private var publishingState = PublishingState()
     @State private var ndk: NDK?
+    @State private var authManager: NDKAuthManager?
     @State private var sparkWalletManager: SparkWalletManager?
     @State private var nwcWalletManager: NWCWalletManager?
     @State private var isInitialized = false
@@ -23,36 +23,37 @@ struct OlasApp: App {
                         .task {
                             await initializeNDK()
                         }
-                } else if !authViewModel.isLoggedIn {
-                    OnboardingView(authViewModel: authViewModel)
-                } else if let ndk = ndk, let sparkWalletManager = sparkWalletManager, let nwcWalletManager = nwcWalletManager {
-                    if authViewModel.isNewAccount && !settings.hasCompletedOnboarding {
-                        OnboardingFlowView(ndk: ndk) {
-                            settings.hasCompletedOnboarding = true
-                        }
-                        .environment(authViewModel)
-                        .environment(\.ndk, ndk)
-                        .environment(settings)
-                    } else {
-                        MainTabView(ndk: ndk, sparkWalletManager: sparkWalletManager, nwcWalletManager: nwcWalletManager)
-                            .environment(authViewModel)
+                } else if let authManager = authManager, let ndk = ndk {
+                    if !authManager.isAuthenticated {
+                        OnboardingView(authManager: authManager, ndk: ndk, settings: settings)
+                    } else if let sparkWalletManager = sparkWalletManager, let nwcWalletManager = nwcWalletManager {
+                        if settings.isNewAccount && !settings.hasCompletedOnboarding {
+                            OnboardingFlowView(ndk: ndk) {
+                                settings.hasCompletedOnboarding = true
+                                settings.isNewAccount = false
+                            }
+                            .environment(authManager)
                             .environment(\.ndk, ndk)
                             .environment(settings)
-                            .environment(relayCache)
-                            .environment(imageCache)
-                            .environment(publishingState)
+                        } else {
+                            MainTabView(ndk: ndk, sparkWalletManager: sparkWalletManager, nwcWalletManager: nwcWalletManager)
+                                .environment(authManager)
+                                .environment(\.ndk, ndk)
+                                .environment(settings)
+                                .environment(relayCache)
+                                .environment(imageCache)
+                                .environment(publishingState)
+                        }
                     }
                 }
             }
             .environment(settings)
             .environment(relayCache)
             .environment(imageCache)
-            .onChange(of: authViewModel.isLoggedIn) { _, isLoggedIn in
-                if isLoggedIn {
-                    ndk?.signer = authViewModel.signer
-                } else {
-                    ndk?.signer = nil
+            .onChange(of: authManager?.isAuthenticated) { _, isAuthenticated in
+                if isAuthenticated != true {
                     settings.hasCompletedOnboarding = false
+                    settings.isNewAccount = false
                 }
             }
             .onOpenURL { url in
@@ -154,16 +155,11 @@ struct OlasApp: App {
 
         let newNDK = NDK(relayURLs: relayUrls, cache: cache)
 
-        // Set NDK reference in AuthViewModel before restoring session
-        authViewModel.setNDK(newNDK)
+        // Create auth manager with NDK
+        let newAuthManager = NDKAuthManager(ndk: newNDK)
 
-        // Restore session if available
-        await authViewModel.restoreSession()
-
-        // Set signer if logged in
-        if authViewModel.isLoggedIn {
-            newNDK.signer = authViewModel.signer
-        }
+        // Restore session - NDKAuthManager automatically sets signer on NDK
+        await newAuthManager.initialize()
 
         // Connect in background - don't block UI for network
         Task {
@@ -184,6 +180,7 @@ struct OlasApp: App {
 
         await MainActor.run {
             self.ndk = newNDK
+            self.authManager = newAuthManager
             self.sparkWalletManager = sparkManager
             self.nwcWalletManager = nwcManager
             self.isInitialized = true

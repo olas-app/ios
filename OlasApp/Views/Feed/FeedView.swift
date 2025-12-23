@@ -5,7 +5,7 @@ import SwiftUI
 public struct FeedView: View {
     @State private var viewModel: FeedViewModel
     @Environment(RelayMetadataCache.self) private var relayMetadataCache
-    @Environment(AuthViewModel.self) private var authViewModel
+    @Environment(NDKAuthManager.self) private var authManager
     @EnvironmentObject private var muteListManager: MuteListManager
     private let ndk: NDK
 
@@ -73,7 +73,7 @@ public struct FeedView: View {
                 }
             }
             .navigationDestination(for: String.self) { pubkey in
-                ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: authViewModel.currentUser?.pubkey)
+                ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: authManager.activePubkey)
             }
         }
         .task {

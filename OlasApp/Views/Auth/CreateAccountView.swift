@@ -1,14 +1,18 @@
+import NDKSwiftCore
 import SwiftUI
 
 public struct CreateAccountView: View {
-    var authViewModel: AuthViewModel
+    var authManager: NDKAuthManager
+    var settings: SettingsManager
     @Environment(\.dismiss) private var dismiss
 
+    @State private var isLoading = false
     @State private var showError = false
     @State private var errorMessage = ""
 
-    public init(authViewModel: AuthViewModel) {
-        self.authViewModel = authViewModel
+    public init(authManager: NDKAuthManager, settings: SettingsManager) {
+        self.authManager = authManager
+        self.settings = settings
     }
 
     public var body: some View {
@@ -65,16 +69,10 @@ public struct CreateAccountView: View {
                 // Create button
                 Button {
                     Task {
-                        do {
-                            try await authViewModel.createAccount()
-                            dismiss()
-                        } catch {
-                            errorMessage = error.localizedDescription
-                            showError = true
-                        }
+                        await createAccount()
                     }
                 } label: {
-                    if authViewModel.isLoading {
+                    if isLoading {
                         ProgressView()
                             .frame(maxWidth: .infinity)
                             .padding()
@@ -94,7 +92,7 @@ public struct CreateAccountView: View {
                 )
                 .foregroundStyle(.white)
                 .cornerRadius(12)
-                .disabled(authViewModel.isLoading)
+                .disabled(isLoading)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 40)
             }
@@ -112,6 +110,21 @@ public struct CreateAccountView: View {
                 } message: {
                     Text(errorMessage)
                 }
+        }
+    }
+
+    private func createAccount() async {
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let signer = try NDKPrivateKeySigner.generate()
+            _ = try await authManager.addSession(signer)
+            settings.isNewAccount = true
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
         }
     }
 }

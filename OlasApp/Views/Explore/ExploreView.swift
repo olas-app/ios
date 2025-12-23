@@ -5,7 +5,7 @@ import SwiftUI
 public struct ExploreView: View {
     let ndk: NDK
 
-    @Environment(AuthViewModel.self) private var authViewModel
+    @Environment(NDKAuthManager.self) private var authManager
     @EnvironmentObject private var muteListManager: MuteListManager
     @Environment(SettingsManager.self) private var settings
     @State private var viewModel: ExploreViewModel?
@@ -41,7 +41,7 @@ public struct ExploreView: View {
                     .navigationBarTitleDisplayMode(.large)
                 #endif
                     .navigationDestination(for: String.self) { pubkey in
-                        ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: authViewModel.currentUser?.pubkey)
+                        ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: authManager.activePubkey)
                     }
 
                 if let post = selectedPost {

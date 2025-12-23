@@ -3,7 +3,7 @@ import SwiftUI
 
 public struct SettingsView: View {
     let ndk: NDK
-    @Environment(AuthViewModel.self) private var authViewModel
+    @Environment(NDKAuthManager.self) private var authManager
     @State private var blossomManager: NDKBlossomServerManager
     var sparkWalletManager: SparkWalletManager
     var nwcWalletManager: NWCWalletManager
@@ -95,7 +95,7 @@ public struct SettingsView: View {
 
             Section {
                 Button(role: .destructive) {
-                    Task { await authViewModel.logout() }
+                    authManager.logout()
                 } label: {
                     HStack {
                         Image(systemName: "rectangle.portrait.and.arrow.right")

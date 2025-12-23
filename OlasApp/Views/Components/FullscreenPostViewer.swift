@@ -70,13 +70,17 @@ struct FullscreenPostViewer: View {
             }
             .offset(y: dragOffset)
             .gesture(
+                // Dismiss gesture - only works when not zoomed
                 DragGesture()
                     .onChanged { value in
+                        // Only allow dismiss drag when not zoomed
+                        guard !isZoomed else { return }
                         if abs(value.translation.height) > abs(value.translation.width) {
                             dragOffset = value.translation.height
                         }
                     }
                     .onEnded { value in
+                        guard !isZoomed else { return }
                         if abs(value.translation.height) > 100 {
                             isPresented = false
                         } else {
@@ -138,55 +142,121 @@ struct FullscreenPostViewer: View {
     @State private var imageScale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
     @State private var imageOffset: CGSize = .zero
+    @State private var lastOffset: CGSize = .zero
+    @State private var zoomAnchor: UnitPoint = .center
+
+    private var isZoomed: Bool {
+        imageScale > 1.01
+    }
 
     private var imageContent: some View {
-        Group {
-            if let imageURL = image.primaryImageURL, let url = URL(string: imageURL) {
-                CachedAsyncImage(
-                    url: url,
-                    blurhash: image.primaryBlurhash,
-                    aspectRatio: image.primaryAspectRatio
-                ) { loadedImage in
-                    loadedImage
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .matchedGeometryEffect(id: "image-\(event.id)", in: namespace)
-                        .scaleEffect(imageScale)
-                        .offset(imageOffset)
-                } placeholder: {
-                    ProgressView()
-                        .tint(.white)
-                }
-            }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture(count: 2) {
-            if imageScale > 1 {
-                withAnimation(.spring()) {
-                    imageScale = 1.0
-                    imageOffset = .zero
-                }
-            } else {
-                handleDoubleTap()
-            }
-        }
-        .gesture(
-            MagnificationGesture()
-                .onChanged { value in
-                    let delta = value / lastScale
-                    lastScale = value
-                    imageScale = min(max(imageScale * delta, 1), 5)
-                }
-                .onEnded { _ in
-                    lastScale = 1.0
-                    if imageScale < 1.0 {
-                        withAnimation(.spring()) {
-                            imageScale = 1.0
-                            imageOffset = .zero
-                        }
+        GeometryReader { geometry in
+            let imageView = Group {
+                if let imageURL = image.primaryImageURL, let url = URL(string: imageURL) {
+                    CachedAsyncImage(
+                        url: url,
+                        blurhash: image.primaryBlurhash,
+                        aspectRatio: image.primaryAspectRatio
+                    ) { loadedImage in
+                        loadedImage
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .matchedGeometryEffect(id: "image-\(event.id)", in: namespace)
+                    } placeholder: {
+                        ProgressView()
+                            .tint(.white)
                     }
                 }
-        )
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .scaleEffect(imageScale, anchor: zoomAnchor)
+            .offset(imageOffset)
+            .gesture(
+                // Pan gesture - only active when zoomed
+                DragGesture()
+                    .onChanged { value in
+                        guard isZoomed else { return }
+                        imageOffset = CGSize(
+                            width: lastOffset.width + value.translation.width,
+                            height: lastOffset.height + value.translation.height
+                        )
+                    }
+                    .onEnded { _ in
+                        lastOffset = imageOffset
+                        constrainOffset(in: geometry.size)
+                    }
+            )
+            .gesture(
+                // Pinch-to-zoom with anchor point
+                MagnifyGesture()
+                    .onChanged { value in
+                        // Calculate anchor from gesture start location
+                        let anchor = UnitPoint(
+                            x: value.startAnchor.x,
+                            y: value.startAnchor.y
+                        )
+                        zoomAnchor = anchor
+
+                        let delta = value.magnification / lastScale
+                        lastScale = value.magnification
+                        let newScale = imageScale * delta
+                        imageScale = min(max(newScale, 1), 5)
+                    }
+                    .onEnded { _ in
+                        lastScale = 1.0
+                        if imageScale <= 1.0 {
+                            withAnimation(.spring(response: 0.3)) {
+                                imageScale = 1.0
+                                imageOffset = .zero
+                                lastOffset = .zero
+                                zoomAnchor = .center
+                            }
+                        } else {
+                            constrainOffset(in: geometry.size)
+                        }
+                    }
+            )
+            .onTapGesture(count: 2) { location in
+                if isZoomed {
+                    // Zoom out
+                    withAnimation(.spring(response: 0.3)) {
+                        imageScale = 1.0
+                        imageOffset = .zero
+                        lastOffset = .zero
+                        zoomAnchor = .center
+                    }
+                } else {
+                    // Zoom in at tap location
+                    let anchor = UnitPoint(
+                        x: location.x / geometry.size.width,
+                        y: location.y / geometry.size.height
+                    )
+                    zoomAnchor = anchor
+                    withAnimation(.spring(response: 0.3)) {
+                        imageScale = 2.5
+                    }
+                    handleDoubleTap()
+                }
+            }
+
+            imageView
+        }
+    }
+
+    private func constrainOffset(in size: CGSize) {
+        // Calculate max allowed offset based on zoom level
+        let scaledWidth = size.width * imageScale
+        let scaledHeight = size.height * imageScale
+        let maxOffsetX = max(0, (scaledWidth - size.width) / 2)
+        let maxOffsetY = max(0, (scaledHeight - size.height) / 2)
+
+        withAnimation(.spring(response: 0.2)) {
+            imageOffset = CGSize(
+                width: min(max(imageOffset.width, -maxOffsetX), maxOffsetX),
+                height: min(max(imageOffset.height, -maxOffsetY), maxOffsetY)
+            )
+            lastOffset = imageOffset
+        }
     }
 
     // MARK: - Bottom Overlay

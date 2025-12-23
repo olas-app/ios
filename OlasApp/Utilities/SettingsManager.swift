@@ -27,6 +27,12 @@ public final class SettingsManager {
         }
     }
 
+    public var isNewAccount: Bool = false {
+        didSet {
+            UserDefaults.standard.set(isNewAccount, forKey: "isNewAccount")
+        }
+    }
+
     public var walletType: WalletType = .spark {
         didSet {
             UserDefaults.standard.set(walletType.rawValue, forKey: "walletType")
@@ -35,6 +41,7 @@ public final class SettingsManager {
 
     public init() {
         self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+        self.isNewAccount = UserDefaults.standard.bool(forKey: "isNewAccount")
         if let stored = UserDefaults.standard.string(forKey: "walletType"),
            let type = WalletType(rawValue: stored) {
             self.walletType = type

@@ -3,7 +3,7 @@ import NDKSwiftCore
 import SwiftUI
 
 public struct MainTabView: View {
-    @Environment(AuthViewModel.self) private var authViewModel
+    @Environment(NDKAuthManager.self) private var authManager
     @State private var walletViewModel: WalletViewModel
     @StateObject private var muteListManager: MuteListManager
     @Environment(SettingsManager.self) private var settings
@@ -62,7 +62,7 @@ public struct MainTabView: View {
 
             // Profile
             NavigationStack {
-                if let pubkey = authViewModel.currentUser?.pubkey {
+                if let pubkey = authManager.activePubkey {
                     ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: pubkey, sparkWalletManager: sparkWalletManager, nwcWalletManager: nwcWalletManager)
                 } else {
                     Text("Not logged in")

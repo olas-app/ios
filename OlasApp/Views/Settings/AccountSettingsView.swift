@@ -3,7 +3,7 @@ import Security
 import SwiftUI
 
 struct AccountSettingsView: View {
-    @Environment(AuthViewModel.self) private var authViewModel
+    @Environment(NDKAuthManager.self) private var authManager
     @State private var showNsec = false
     @State private var nsec: String?
     @State private var npub: String?
@@ -146,42 +146,22 @@ struct AccountSettingsView: View {
     }
 
     private func loadKeys() {
-        // Get npub from currentUser (works for all signer types)
-        if let currentUser = authViewModel.currentUser {
-            npub = try? currentUser.npub
+        // Get npub from activePubkey
+        if let pubkey = authManager.activePubkey {
+            npub = try? Bech32.npub(from: pubkey)
         }
 
         // Check if using a private key signer or remote signer
-        if let privateKeySigner = authViewModel.signer as? NDKPrivateKeySigner {
+        if let privateKeySigner = authManager.activeSigner as? NDKPrivateKeySigner {
             // Local signer - show private key
             isRemoteSigner = false
             nsec = try? privateKeySigner.nsec
-        } else if authViewModel.signer is NDKBunkerSigner {
-            // Remote signer - load bunker URI from keychain if available
+        } else if authManager.activeSigner is NDKBunkerSigner {
+            // Remote signer
             isRemoteSigner = true
-            bunkerUri = loadBunkerUriFromKeychain()
+            // Note: bunker URI is managed by NDKAuthManager now, not stored separately
+            bunkerUri = nil
         }
-    }
-
-    private func loadBunkerUriFromKeychain() -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "com.olas.keychain",
-            kSecAttrAccount as String: "user_bunker",
-            kSecReturnData as String: true,
-        ]
-
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-
-        guard status == errSecSuccess,
-              let data = result as? Data,
-              let uri = String(data: data, encoding: .utf8)
-        else {
-            return nil
-        }
-
-        return uri
     }
 
     private func copyToClipboard(_ value: String, label: String) {

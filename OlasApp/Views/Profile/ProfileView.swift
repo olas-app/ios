@@ -186,31 +186,32 @@ public struct ProfileView: View {
 private struct ProfileBannerView: View {
     let profile: NDKProfile
 
+    private var gradientPlaceholder: some View {
+        LinearGradient(
+            colors: [Color(.systemGray4), Color(.systemGray5)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
     var body: some View {
-        Group {
-            if let bannerURL = profile.bannerURL {
-                AsyncImage(url: bannerURL) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    LinearGradient(
-                        colors: [Color(.systemGray4), Color(.systemGray5)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+        // Use Color.clear as fixed-size base to prevent .fill from expanding parent
+        Color.clear
+            .frame(height: 180)
+            .background {
+                if let bannerURL = profile.bannerURL {
+                    AsyncImage(url: bannerURL) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        gradientPlaceholder
+                    }
+                } else {
+                    gradientPlaceholder
                 }
-            } else {
-                LinearGradient(
-                    colors: [Color(.systemGray4), Color(.systemGray5)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
             }
-        }
-        .frame(height: 180)
-        .frame(maxWidth: .infinity)
-        .clipped()
+            .clipped()
     }
 }
 
@@ -218,43 +219,41 @@ private struct ProfileAvatarView: View {
     let profile: NDKProfile
 
     var body: some View {
-        Group {
-            if let pictureURL = profile.pictureURL {
-                AsyncImage(url: pictureURL) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    avatarPlaceholder
+        // Use Color.clear as fixed-size base to prevent .fill from expanding parent
+        Color.clear
+            .frame(width: 100, height: 100)
+            .background {
+                if let pictureURL = profile.pictureURL {
+                    AsyncImage(url: pictureURL) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        avatarPlaceholderContent
+                    }
+                } else {
+                    avatarPlaceholderContent
                 }
-                .frame(width: 100, height: 100)
-                .clipShape(Circle())
-            } else {
-                avatarPlaceholder
             }
-        }
-        .overlay(
-            Circle()
-                .stroke(Color(.systemBackground), lineWidth: 4)
-        )
-        .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+            .clipShape(Circle())
+            .overlay(
+                Circle()
+                    .stroke(Color(.systemBackground), lineWidth: 4)
+            )
+            .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
     }
 
-    private var avatarPlaceholder: some View {
-        Circle()
-            .fill(
-                LinearGradient(
-                    colors: [OlasTheme.Colors.accent.opacity(0.6), OlasTheme.Colors.accent],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .frame(width: 100, height: 100)
-            .overlay(
-                Text(String(profile.displayName.prefix(1)).uppercased())
-                    .font(.system(size: 40, weight: .bold))
-                    .foregroundStyle(.white)
-            )
+    private var avatarPlaceholderContent: some View {
+        LinearGradient(
+            colors: [OlasTheme.Colors.accent.opacity(0.6), OlasTheme.Colors.accent],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .overlay(
+            Text(String(profile.displayName.prefix(1)).uppercased())
+                .font(.system(size: 40, weight: .bold))
+                .foregroundStyle(.white)
+        )
     }
 }
 

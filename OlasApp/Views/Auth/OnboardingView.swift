@@ -1,14 +1,19 @@
+import NDKSwiftCore
 import SwiftUI
 
 public struct OnboardingView: View {
-    var authViewModel: AuthViewModel
+    var authManager: NDKAuthManager
+    var ndk: NDK
+    var settings: SettingsManager
     @State private var showLogin = false
     @State private var showCreateAccount = false
     @State private var animateBlobs = false
     @State private var logoGlow = false
 
-    public init(authViewModel: AuthViewModel) {
-        self.authViewModel = authViewModel
+    public init(authManager: NDKAuthManager, ndk: NDK, settings: SettingsManager) {
+        self.authManager = authManager
+        self.ndk = ndk
+        self.settings = settings
     }
 
     public var body: some View {
@@ -84,10 +89,10 @@ public struct OnboardingView: View {
             logoGlow = true
         }
         .sheet(isPresented: $showLogin) {
-            LoginView(authViewModel: authViewModel)
+            LoginView(authManager: authManager, ndk: ndk)
         }
         .sheet(isPresented: $showCreateAccount) {
-            CreateAccountView(authViewModel: authViewModel)
+            CreateAccountView(authManager: authManager, settings: settings)
         }
     }
 }
