@@ -88,7 +88,7 @@ public struct SettingsView: View {
             }
 
             Section("Privacy & Security") {
-                NavigationLink(destination: PrivacySettingsView()) {
+                NavigationLink(destination: PrivacySettingsView(ndk: ndk)) {
                     SettingsRow(icon: "lock.shield", title: "Privacy", color: .orange)
                 }
             }

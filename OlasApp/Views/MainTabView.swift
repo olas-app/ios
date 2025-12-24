@@ -85,7 +85,13 @@ public struct MainTabView: View {
         }
         .task {
             await walletViewModel.loadWallet()
+            // Initialize mute list sources from settings and start subscription
+            muteListManager.updateMuteListSources(settings.muteListSources)
             muteListManager.startSubscription()
+        }
+        .onChange(of: settings.muteListSources) { _, newSources in
+            // Sync mute list manager when settings change
+            muteListManager.updateMuteListSources(newSources)
         }
         .environment(walletViewModel)
         .environmentObject(muteListManager)

@@ -3,20 +3,51 @@ import Combine
 import NDKSwiftCore
 import SwiftUI
 
+/// Manages mute lists from multiple sources:
+/// 1. The current user's personal mute list (for muting/unmuting actions)
+/// 2. Centralized mute lists from configurable pubkeys (for content moderation)
+///
+/// Events from authors appearing in ANY of these mute lists will be filtered out.
 @MainActor
 public final class MuteListManager: ObservableObject {
+    /// Combined set of all muted pubkeys from all sources
     @Published public private(set) var mutedPubkeys: Set<String> = []
 
-    private let ndk: NDK
-    private var subscriptionTask: Task<Void, Never>?
+    /// The current user's personal mute list (used for mute/unmute actions)
+    @Published public private(set) var userMutedPubkeys: Set<String> = []
 
-    public init(ndk: NDK) {
+    /// Pubkeys whose mute lists we subscribe to for centralized moderation
+    public private(set) var muteListSources: [String]
+
+    private let ndk: NDK
+    private var userSubscriptionTask: Task<Void, Never>?
+    private var centralizedSubscriptionTask: Task<Void, Never>?
+
+    /// Muted pubkeys per source (for tracking/debugging)
+    private var mutedBySource: [String: Set<String>] = [:]
+
+    public init(ndk: NDK, muteListSources: [String] = OlasConstants.defaultMuteListSources) {
         self.ndk = ndk
+        self.muteListSources = muteListSources
     }
 
+    /// Updates the mute list sources and restarts subscriptions
+    public func updateMuteListSources(_ sources: [String]) {
+        muteListSources = sources
+        stopCentralizedSubscription()
+        startCentralizedSubscription()
+    }
+
+    /// Starts all mute list subscriptions (user + centralized sources)
     public func startSubscription() {
-        subscriptionTask?.cancel()
-        subscriptionTask = Task {
+        startUserSubscription()
+        startCentralizedSubscription()
+    }
+
+    /// Starts subscription to the current user's mute list
+    private func startUserSubscription() {
+        userSubscriptionTask?.cancel()
+        userSubscriptionTask = Task {
             guard let currentUser = await ndk.currentUser else { return }
 
             let filter = NDKFilter(
@@ -30,43 +61,107 @@ public final class MuteListManager: ObservableObject {
             for await events in subscription.events {
                 guard !Task.isCancelled else { break }
                 for event in events {
-                    parseMuteList(from: event)
+                    parseUserMuteList(from: event)
+                }
+            }
+        }
+    }
+
+    /// Starts open subscription to centralized mute list sources
+    private func startCentralizedSubscription() {
+        guard !muteListSources.isEmpty else { return }
+
+        centralizedSubscriptionTask?.cancel()
+        centralizedSubscriptionTask = Task {
+            let filter = NDKFilter(
+                authors: muteListSources,
+                kinds: [OlasConstants.EventKinds.muteList]
+            )
+
+            // Keep subscription open with network priority to get real-time updates
+            let subscription = ndk.subscribe(filter: filter, cachePolicy: .cacheWithNetwork)
+
+            for await events in subscription.events {
+                guard !Task.isCancelled else { break }
+                for event in events {
+                    parseCentralizedMuteList(from: event)
                 }
             }
         }
     }
 
     public func stopSubscription() {
-        subscriptionTask?.cancel()
-        subscriptionTask = nil
+        stopUserSubscription()
+        stopCentralizedSubscription()
     }
 
-    private func parseMuteList(from event: NDKEvent) {
+    private func stopUserSubscription() {
+        userSubscriptionTask?.cancel()
+        userSubscriptionTask = nil
+    }
+
+    private func stopCentralizedSubscription() {
+        centralizedSubscriptionTask?.cancel()
+        centralizedSubscriptionTask = nil
+    }
+
+    /// Parses the current user's mute list
+    private func parseUserMuteList(from event: NDKEvent) {
         var pubkeys = Set<String>()
         for tag in event.tags {
             if tag.first == "p", tag.count > 1 {
                 pubkeys.insert(tag[1])
             }
         }
-        mutedPubkeys = pubkeys
+        userMutedPubkeys = pubkeys
+        recalculateMutedPubkeys()
+    }
+
+    /// Parses a centralized mute list from a source pubkey
+    private func parseCentralizedMuteList(from event: NDKEvent) {
+        var pubkeys = Set<String>()
+        for tag in event.tags {
+            if tag.first == "p", tag.count > 1 {
+                pubkeys.insert(tag[1])
+            }
+        }
+        mutedBySource[event.pubkey] = pubkeys
+        recalculateMutedPubkeys()
+    }
+
+    /// Recalculates the combined muted pubkeys from all sources
+    private func recalculateMutedPubkeys() {
+        var combined = userMutedPubkeys
+        for (_, pubkeys) in mutedBySource {
+            combined.formUnion(pubkeys)
+        }
+        mutedPubkeys = combined
     }
 
     public func mute(_ pubkey: String) async throws {
-        mutedPubkeys.insert(pubkey)
+        userMutedPubkeys.insert(pubkey)
+        recalculateMutedPubkeys()
         try await publishMuteList()
     }
 
     public func unmute(_ pubkey: String) async throws {
-        mutedPubkeys.remove(pubkey)
+        userMutedPubkeys.remove(pubkey)
+        recalculateMutedPubkeys()
         try await publishMuteList()
     }
 
+    /// Checks if a pubkey is muted by ANY source
     public func isMuted(_ pubkey: String) -> Bool {
         mutedPubkeys.contains(pubkey)
     }
 
+    /// Checks if a pubkey is muted by the current user specifically
+    public func isMutedByUser(_ pubkey: String) -> Bool {
+        userMutedPubkeys.contains(pubkey)
+    }
+
     private func publishMuteList() async throws {
-        let pubkeys = mutedPubkeys
+        let pubkeys = userMutedPubkeys
         _ = try await ndk.publish { builder in
             var b = builder
                 .kind(OlasConstants.EventKinds.muteList)

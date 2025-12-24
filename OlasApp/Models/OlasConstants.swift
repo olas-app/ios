@@ -14,6 +14,14 @@ public enum OlasConstants {
         "https://nostr.build",
     ]
 
+    // MARK: - Centralized Mute List Sources
+
+    /// Default pubkeys whose mute lists are aggregated for content filtering.
+    /// Events from authors muted by ANY of these pubkeys will be hidden.
+    public static let defaultMuteListSources: [String] = [
+        "fa984bd7dbb282f07e16e7ae87b26a2a7b9b90b7246a44771f0cf5ae58018f52"
+    ]
+
     public enum EventKinds {
         public static let image: NDKSwiftCore.Kind = 20
         public static let shortVideo: NDKSwiftCore.Kind = 22 // NIP-71 short-form video

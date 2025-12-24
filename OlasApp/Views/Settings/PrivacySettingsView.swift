@@ -1,6 +1,9 @@
+import NDKSwiftCore
 import SwiftUI
 
 struct PrivacySettingsView: View {
+    let ndk: NDK
+
     @AppStorage("hideReactionCount") private var hideReactionCount = false
     @AppStorage("hideFollowerCount") private var hideFollowerCount = false
 
@@ -12,6 +15,15 @@ struct PrivacySettingsView: View {
             }
 
             Section {
+                NavigationLink {
+                    MuteListSourcesView(ndk: ndk)
+                } label: {
+                    HStack {
+                        Image(systemName: "eye.slash.circle")
+                        Text("Mute List Sources")
+                    }
+                }
+
                 NavigationLink {
                     ComingSoonView(feature: "Blocked Users")
                 } label: {
