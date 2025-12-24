@@ -6,7 +6,7 @@ public struct ExploreView: View {
     let ndk: NDK
 
     @Environment(NDKAuthManager.self) private var authManager
-    @EnvironmentObject private var muteListManager: MuteListManager
+    @Environment(MuteListManager.self) private var muteListManager
     @Environment(SettingsManager.self) private var settings
     @State private var viewModel: ExploreViewModel?
     @State private var selectedPost: NDKEvent?

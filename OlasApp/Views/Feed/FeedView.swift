@@ -6,7 +6,7 @@ public struct FeedView: View {
     @State private var viewModel: FeedViewModel
     @Environment(RelayMetadataCache.self) private var relayMetadataCache
     @Environment(NDKAuthManager.self) private var authManager
-    @EnvironmentObject private var muteListManager: MuteListManager
+    @Environment(MuteListManager.self) private var muteListManager
     private let ndk: NDK
 
     @State private var navigationPath = NavigationPath()

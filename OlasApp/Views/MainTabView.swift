@@ -5,7 +5,7 @@ import SwiftUI
 public struct MainTabView: View {
     @Environment(NDKAuthManager.self) private var authManager
     @State private var walletViewModel: WalletViewModel
-    @StateObject private var muteListManager: MuteListManager
+    @State private var muteListManager: MuteListManager
     @Environment(SettingsManager.self) private var settings
     @Environment(PublishingState.self) private var publishingState
     @State private var selectedTab = 0
@@ -18,7 +18,7 @@ public struct MainTabView: View {
     public init(ndk: NDK, sparkWalletManager: SparkWalletManager, nwcWalletManager: NWCWalletManager) {
         self.ndk = ndk
         self._walletViewModel = State(initialValue: WalletViewModel(ndk: ndk))
-        _muteListManager = StateObject(wrappedValue: MuteListManager(ndk: ndk))
+        self._muteListManager = State(initialValue: MuteListManager(ndk: ndk))
         self.sparkWalletManager = sparkWalletManager
         self.nwcWalletManager = nwcWalletManager
     }
@@ -94,7 +94,7 @@ public struct MainTabView: View {
             muteListManager.updateMuteListSources(newSources)
         }
         .environment(walletViewModel)
-        .environmentObject(muteListManager)
+        .environment(muteListManager)
         .environment(sparkWalletManager)
         .environment(nwcWalletManager)
         .overlay(alignment: .top) {

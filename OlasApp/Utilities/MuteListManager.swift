@@ -1,5 +1,4 @@
 // MuteListManager.swift
-import Combine
 import NDKSwiftCore
 import SwiftUI
 
@@ -9,12 +8,13 @@ import SwiftUI
 ///
 /// Events from authors appearing in ANY of these mute lists will be filtered out.
 @MainActor
-public final class MuteListManager: ObservableObject {
+@Observable
+public final class MuteListManager {
     /// Combined set of all muted pubkeys from all sources
-    @Published public private(set) var mutedPubkeys: Set<String> = []
+    public private(set) var mutedPubkeys: Set<String> = []
 
     /// The current user's personal mute list (used for mute/unmute actions)
-    @Published public private(set) var userMutedPubkeys: Set<String> = []
+    public private(set) var userMutedPubkeys: Set<String> = []
 
     /// Pubkeys whose mute lists we subscribe to for centralized moderation
     public private(set) var muteListSources: [String]
@@ -33,8 +33,15 @@ public final class MuteListManager: ObservableObject {
 
     /// Updates the mute list sources and restarts subscriptions
     public func updateMuteListSources(_ sources: [String]) {
+        // Remove stale entries from sources that are no longer active
+        let removedSources = Set(muteListSources).subtracting(sources)
+        for source in removedSources {
+            mutedBySource.removeValue(forKey: source)
+        }
+
         muteListSources = sources
         stopCentralizedSubscription()
+        recalculateMutedPubkeys()
         startCentralizedSubscription()
     }
 
@@ -158,6 +165,25 @@ public final class MuteListManager: ObservableObject {
     /// Checks if a pubkey is muted by the current user specifically
     public func isMutedByUser(_ pubkey: String) -> Bool {
         userMutedPubkeys.contains(pubkey)
+    }
+
+    /// Returns the set of pubkeys muted by a specific source
+    public func mutedPubkeys(bySource source: String) -> Set<String> {
+        mutedBySource[source] ?? []
+    }
+
+    /// Returns count of pubkeys muted by a specific source
+    public func mutedCount(bySource source: String) -> Int {
+        mutedBySource[source]?.count ?? 0
+    }
+
+    /// Returns all pubkeys muted by centralized sources (not the user)
+    public var centralizedMutedPubkeys: Set<String> {
+        var combined = Set<String>()
+        for (_, pubkeys) in mutedBySource {
+            combined.formUnion(pubkeys)
+        }
+        return combined
     }
 
     private func publishMuteList() async throws {

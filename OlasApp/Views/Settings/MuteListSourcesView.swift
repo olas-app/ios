@@ -9,23 +9,24 @@ struct MuteListSourcesView: View {
     let ndk: NDK
 
     @Environment(SettingsManager.self) private var settings
-    @EnvironmentObject private var muteListManager: MuteListManager
+    @Environment(MuteListManager.self) private var muteListManager
 
     @State private var showAddSheet = false
-    @State private var sourceToDelete: String?
 
     var body: some View {
         List {
             Section {
                 ForEach(settings.muteListSources, id: \.self) { pubkey in
-                    MuteSourceRow(ndk: ndk, pubkey: pubkey)
+                    MuteSourceRow(ndk: ndk, pubkey: pubkey, mutedCount: muteListManager.mutedCount(bySource: pubkey))
                         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                             Button(role: .destructive) {
-                                removeSource(pubkey)
+                                settings.removeMuteListSource(pubkey)
                             } label: {
                                 Label("Remove", systemImage: "trash")
                             }
                         }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityHint("Swipe left to remove this mute source")
                 }
 
                 Button {
@@ -34,6 +35,7 @@ struct MuteListSourcesView: View {
                     Label("Add Source", systemImage: "plus.circle.fill")
                         .foregroundStyle(OlasTheme.Colors.accent)
                 }
+                .accessibilityHint("Add a new account whose mute list will filter your feed")
             } header: {
                 Text("Mute List Sources")
             } footer: {
@@ -43,36 +45,22 @@ struct MuteListSourcesView: View {
             if settings.muteListSources != OlasConstants.defaultMuteListSources {
                 Section {
                     Button {
-                        resetToDefaults()
+                        settings.resetMuteListSourcesToDefaults()
                     } label: {
                         Label("Reset to Defaults", systemImage: "arrow.counterclockwise")
                             .foregroundStyle(.secondary)
                     }
+                    .accessibilityHint("Restore the default mute list sources")
                 }
             }
         }
         .navigationTitle("Mute Sources")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showAddSheet) {
-            AddMuteSourceSheet(ndk: ndk) { pubkey in
-                addSource(pubkey)
+            AddMuteSourceSheet(ndk: ndk, existingSources: settings.muteListSources) { pubkey in
+                settings.addMuteListSource(pubkey)
             }
         }
-    }
-
-    private func addSource(_ pubkey: String) {
-        settings.addMuteListSource(pubkey)
-        muteListManager.updateMuteListSources(settings.muteListSources)
-    }
-
-    private func removeSource(_ pubkey: String) {
-        settings.removeMuteListSource(pubkey)
-        muteListManager.updateMuteListSources(settings.muteListSources)
-    }
-
-    private func resetToDefaults() {
-        settings.resetMuteListSourcesToDefaults()
-        muteListManager.updateMuteListSources(settings.muteListSources)
     }
 }
 
@@ -82,6 +70,7 @@ struct MuteListSourcesView: View {
 private struct MuteSourceRow: View {
     let ndk: NDK
     let pubkey: String
+    let mutedCount: Int
 
     var body: some View {
         HStack(spacing: 12) {
@@ -99,12 +88,23 @@ private struct MuteSourceRow: View {
             }
 
             Spacer()
+
+            if mutedCount > 0 {
+                Text("\(mutedCount)")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color(.tertiarySystemFill))
+                    .clipShape(Capsule())
+                    .accessibilityLabel("\(mutedCount) muted accounts")
+            }
         }
         .padding(.vertical, 4)
     }
 
     private var formattedPubkey: String {
-        if let npub = try? Bech32.npub(pubkey) {
+        if let npub = try? Bech32.npub(from: pubkey) {
             return String(npub.prefix(16)) + "..." + String(npub.suffix(8))
         }
         return String(pubkey.prefix(12)) + "..."
@@ -116,6 +116,7 @@ private struct MuteSourceRow: View {
 /// Sheet for adding a new mute source via NIP-05 or npub
 private struct AddMuteSourceSheet: View {
     let ndk: NDK
+    let existingSources: [String]
     let onAdd: (String) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -125,10 +126,18 @@ private struct AddMuteSourceSheet: View {
     @State private var resolvedPubkey: String?
     @State private var errorMessage: String?
 
+    private var isDuplicate: Bool {
+        guard let pubkey = resolvedPubkey else { return false }
+        return existingSources.contains(pubkey)
+    }
+
+    private var canAdd: Bool {
+        resolvedPubkey != nil && !isDuplicate
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
-                // Input field
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Enter NIP-05 or npub")
                         .font(.subheadline)
@@ -141,26 +150,35 @@ private struct AddMuteSourceSheet: View {
                         .onSubmit {
                             resolveInput()
                         }
+                        .accessibilityLabel("NIP-05 address or npub")
+                        .accessibilityHint("Enter the NIP-05 address like user@domain.com or an npub")
                 }
                 .padding(.horizontal)
 
-                // Resolved preview
                 if isResolving {
                     ProgressView("Resolving...")
                         .padding()
                 } else if let pubkey = resolvedPubkey {
-                    ResolvedUserPreview(ndk: ndk, pubkey: pubkey)
-                        .padding(.horizontal)
+                    VStack(spacing: 8) {
+                        ResolvedUserPreview(ndk: ndk, pubkey: pubkey, isDuplicate: isDuplicate)
+                            .padding(.horizontal)
+
+                        if isDuplicate {
+                            Text("This source is already in your list")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                        }
+                    }
                 } else if let error = errorMessage {
                     Text(error)
                         .font(.subheadline)
                         .foregroundStyle(.red)
                         .padding()
+                        .accessibilityLabel("Error: \(error)")
                 }
 
                 Spacer()
 
-                // Add button
                 Button {
                     if let pubkey = resolvedPubkey {
                         onAdd(pubkey)
@@ -171,13 +189,15 @@ private struct AddMuteSourceSheet: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(resolvedPubkey != nil ? OlasTheme.Colors.accent : Color.gray)
+                        .background(OlasTheme.Colors.accent)
                         .foregroundStyle(.white)
                         .cornerRadius(12)
                 }
-                .disabled(resolvedPubkey == nil)
+                .disabled(!canAdd)
+                .opacity(canAdd ? 1.0 : 0.5)
                 .padding(.horizontal)
                 .padding(.bottom)
+                .accessibilityHint(isDuplicate ? "Cannot add: this source already exists" : "Add this account as a mute source")
             }
             .navigationTitle("Add Mute Source")
             .navigationBarTitleDisplayMode(.inline)
@@ -189,12 +209,8 @@ private struct AddMuteSourceSheet: View {
                 }
             }
             .onChange(of: inputText) { _, _ in
-                // Clear previous resolution when input changes
                 resolvedPubkey = nil
                 errorMessage = nil
-            }
-            .onSubmit {
-                resolveInput()
             }
         }
     }
@@ -210,21 +226,16 @@ private struct AddMuteSourceSheet: View {
         Task {
             do {
                 let pubkey = try await resolveToPublicKey(input)
-                await MainActor.run {
-                    resolvedPubkey = pubkey
-                    isResolving = false
-                }
+                resolvedPubkey = pubkey
+                isResolving = false
             } catch {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    isResolving = false
-                }
+                errorMessage = error.localizedDescription
+                isResolving = false
             }
         }
     }
 
     private func resolveToPublicKey(_ input: String) async throws -> String {
-        // Check if it's an npub
         if input.hasPrefix("npub1") {
             if let user = try? NDKUser(npub: input, ndk: ndk) {
                 return user.pubkey
@@ -232,12 +243,10 @@ private struct AddMuteSourceSheet: View {
             throw ResolutionError.invalidNpub
         }
 
-        // Check if it's a hex pubkey
         if input.count == 64, input.allSatisfy({ $0.isHexDigit }) {
             return input
         }
 
-        // Try NIP-05 resolution
         let nip05 = input.contains("@") ? input : "_@\(input)"
         if let user = try? await NDKUser.fromNip05(nip05, ndk: ndk) {
             return user.pubkey
@@ -253,6 +262,7 @@ private struct AddMuteSourceSheet: View {
 private struct ResolvedUserPreview: View {
     let ndk: NDK
     let pubkey: String
+    let isDuplicate: Bool
 
     var body: some View {
         HStack(spacing: 12) {
@@ -263,7 +273,7 @@ private struct ResolvedUserPreview: View {
                 NDKUIDisplayName(ndk: ndk, pubkey: pubkey)
                     .font(.headline)
 
-                if let npub = try? Bech32.npub(pubkey) {
+                if let npub = try? Bech32.npub(from: pubkey) {
                     Text(String(npub.prefix(20)) + "...")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -272,13 +282,15 @@ private struct ResolvedUserPreview: View {
 
             Spacer()
 
-            Image(systemName: "checkmark.circle.fill")
+            Image(systemName: isDuplicate ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
                 .font(.title2)
-                .foregroundStyle(.green)
+                .foregroundStyle(isDuplicate ? .orange : .green)
+                .accessibilityLabel(isDuplicate ? "Already added" : "Ready to add")
         }
         .padding()
         .background(Color(.secondarySystemBackground))
         .cornerRadius(12)
+        .accessibilityElement(children: .combine)
     }
 }
 

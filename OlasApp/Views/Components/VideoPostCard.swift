@@ -15,7 +15,7 @@ public struct VideoPostCard: View {
     @State private var showReportSheet = false
     @State private var loopObserver: NSObjectProtocol?
 
-    @EnvironmentObject private var muteListManager: MuteListManager
+    @Environment(MuteListManager.self) private var muteListManager
 
     public init(event: NDKEvent, ndk: NDK, onProfileTap: ((String) -> Void)? = nil) {
         self.event = event

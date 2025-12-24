@@ -25,7 +25,7 @@ struct PrivacySettingsView: View {
                 }
 
                 NavigationLink {
-                    ComingSoonView(feature: "Blocked Users")
+                    BlockedUsersView(ndk: ndk)
                 } label: {
                     HStack {
                         Image(systemName: "person.crop.circle.badge.xmark")
