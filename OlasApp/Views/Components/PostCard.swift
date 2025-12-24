@@ -12,7 +12,7 @@ public struct PostCard: View, Equatable {
     @State private var showFullscreenImage = false
     @State private var showReportSheet = false
 
-    @EnvironmentObject private var muteListManager: MuteListManager
+    @Environment(MuteListManager.self) private var muteListManager
 
     public init(event: NDKEvent, ndk: NDK, onProfileTap: ((String) -> Void)? = nil) {
         self.event = event
