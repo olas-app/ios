@@ -6,7 +6,6 @@ import SwiftUI
 struct OlasApp: App {
     @State private var settings = SettingsManager()
     @State private var relayCache = RelayMetadataCache()
-    @State private var imageCache = ImageCache()
     @State private var publishingState = PublishingState()
     @State private var ndk: NDK?
     @State private var authManager: NDKAuthManager?
@@ -41,7 +40,6 @@ struct OlasApp: App {
                                 .environment(\.ndk, ndk)
                                 .environment(settings)
                                 .environment(relayCache)
-                                .environment(imageCache)
                                 .environment(publishingState)
                         }
                     }
@@ -49,7 +47,6 @@ struct OlasApp: App {
             }
             .environment(settings)
             .environment(relayCache)
-            .environment(imageCache)
             .onChange(of: authManager?.isAuthenticated) { _, isAuthenticated in
                 if isAuthenticated != true {
                     settings.hasCompletedOnboarding = false

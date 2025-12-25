@@ -1,4 +1,5 @@
 // PostCard.swift
+import Kingfisher
 import NDKSwiftCore
 import NDKSwiftUI
 import SwiftUI
@@ -138,12 +139,9 @@ public struct PostCard: View, Equatable {
                         CachedAsyncImage(
                             url: url,
                             blurhash: image.primaryBlurhash,
-                            aspectRatio: image.primaryAspectRatio
-                        ) { loadedImage in
-                            loadedImage
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        } placeholder: {
+                            aspectRatio: image.primaryAspectRatio,
+                            contentMode: .fill
+                        ) {
                             Rectangle()
                                 .fill(Color.gray.opacity(0.1))
                                 .overlay(
@@ -293,6 +291,7 @@ struct FullscreenImageViewer: View {
     @State private var lastScale: CGFloat = 1.0
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
+    @State private var blurhashImage: UIImage?
     @GestureState private var dragOffset: CGSize = .zero
 
     var body: some View {
@@ -300,59 +299,65 @@ struct FullscreenImageViewer: View {
             ZStack {
                 Color.black.ignoresSafeArea()
 
-                CachedAsyncImage(url: url, blurhash: blurhash, aspectRatio: aspectRatio) { loadedImage in
-                    loadedImage
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .scaleEffect(scale)
-                        .offset(x: offset.width + dragOffset.width, y: offset.height + dragOffset.height)
-                        .gesture(
-                            MagnificationGesture()
-                                .onChanged { value in
-                                    let delta = value / lastScale
-                                    lastScale = value
-                                    scale = min(max(scale * delta, 1), 5)
-                                }
-                                .onEnded { _ in
-                                    lastScale = 1.0
-                                    if scale < 1.0 {
-                                        withAnimation(.spring()) {
-                                            scale = 1.0
-                                            offset = .zero
-                                        }
+                KFImage(url)
+                    .placeholder {
+                        if let blurhashImage {
+                            Image(uiImage: blurhashImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                        } else {
+                            ProgressView()
+                                .tint(.white)
+                        }
+                    }
+                    .fade(duration: 0.2)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .scaleEffect(scale)
+                    .offset(x: offset.width + dragOffset.width, y: offset.height + dragOffset.height)
+                    .gesture(
+                        MagnificationGesture()
+                            .onChanged { value in
+                                let delta = value / lastScale
+                                lastScale = value
+                                scale = min(max(scale * delta, 1), 5)
+                            }
+                            .onEnded { _ in
+                                lastScale = 1.0
+                                if scale < 1.0 {
+                                    withAnimation(.spring()) {
+                                        scale = 1.0
+                                        offset = .zero
                                     }
-                                }
-                        )
-                        .simultaneousGesture(
-                            DragGesture()
-                                .updating($dragOffset) { value, state, _ in
-                                    if scale > 1 {
-                                        state = value.translation
-                                    }
-                                }
-                                .onEnded { value in
-                                    if scale > 1 {
-                                        offset.width += value.translation.width
-                                        offset.height += value.translation.height
-                                    } else if abs(value.translation.height) > 100 {
-                                        isPresented = false
-                                    }
-                                }
-                        )
-                        .onTapGesture(count: 2) {
-                            withAnimation(.spring()) {
-                                if scale > 1 {
-                                    scale = 1.0
-                                    offset = .zero
-                                } else {
-                                    scale = 2.5
                                 }
                             }
+                    )
+                    .simultaneousGesture(
+                        DragGesture()
+                            .updating($dragOffset) { value, state, _ in
+                                if scale > 1 {
+                                    state = value.translation
+                                }
+                            }
+                            .onEnded { value in
+                                if scale > 1 {
+                                    offset.width += value.translation.width
+                                    offset.height += value.translation.height
+                                } else if abs(value.translation.height) > 100 {
+                                    isPresented = false
+                                }
+                            }
+                    )
+                    .onTapGesture(count: 2) {
+                        withAnimation(.spring()) {
+                            if scale > 1 {
+                                scale = 1.0
+                                offset = .zero
+                            } else {
+                                scale = 2.5
+                            }
                         }
-                } placeholder: {
-                    ProgressView()
-                        .tint(.white)
-                }
+                    }
             }
         }
         .overlay(alignment: .topTrailing) {
@@ -366,5 +371,25 @@ struct FullscreenImageViewer: View {
             }
         }
         .statusBarHidden()
+        .onAppear {
+            decodeBlurhash()
+        }
+    }
+
+    private func decodeBlurhash() {
+        guard blurhashImage == nil, let blurhash, !blurhash.isEmpty else { return }
+
+        let size: CGSize
+        if let aspectRatio, aspectRatio > 0 {
+            if aspectRatio > 1 {
+                size = CGSize(width: 32, height: 32 / aspectRatio)
+            } else {
+                size = CGSize(width: 32 * aspectRatio, height: 32)
+            }
+        } else {
+            size = CGSize(width: 32, height: 32)
+        }
+
+        blurhashImage = BlurhashDecoder.decode(blurhash, size: size)
     }
 }

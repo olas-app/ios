@@ -142,12 +142,9 @@ public struct VideoPostCard: View {
                 CachedAsyncImage(
                     url: thumbnailURL,
                     blurhash: video.primaryBlurhash,
-                    aspectRatio: video.primaryAspectRatio
-                ) { loadedImage in
-                    loadedImage
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                } placeholder: {
+                    aspectRatio: video.primaryAspectRatio,
+                    contentMode: .fit
+                ) {
                     videoPlaceholder
                 }
             } else {

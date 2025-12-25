@@ -196,12 +196,9 @@ private struct PostThumbnail: View {
         CachedAsyncImage(
             url: url,
             blurhash: blurhash,
-            aspectRatio: 1
-        ) { loadedImage in
-            loadedImage
-                .resizable()
-                .scaledToFill()
-        } placeholder: {
+            aspectRatio: 1,
+            contentMode: .fill
+        ) {
             Rectangle()
                 .fill(Color.gray.opacity(0.1))
         }

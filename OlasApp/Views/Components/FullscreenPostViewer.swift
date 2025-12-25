@@ -1,4 +1,5 @@
 import AVKit
+import Kingfisher
 import NDKSwiftCore
 import NDKSwiftUI
 import SwiftUI
@@ -144,6 +145,7 @@ struct FullscreenPostViewer: View {
     @State private var imageOffset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
     @State private var zoomAnchor: UnitPoint = .center
+    @State private var blurhashImage: UIImage?
 
     private var isZoomed: Bool {
         imageScale > 1.01
@@ -153,19 +155,24 @@ struct FullscreenPostViewer: View {
         GeometryReader { geometry in
             let imageView = Group {
                 if let imageURL = image.primaryImageURL, let url = URL(string: imageURL) {
-                    CachedAsyncImage(
-                        url: url,
-                        blurhash: image.primaryBlurhash,
-                        aspectRatio: image.primaryAspectRatio
-                    ) { loadedImage in
-                        loadedImage
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .matchedGeometryEffect(id: "image-\(event.id)", in: namespace)
-                    } placeholder: {
-                        ProgressView()
-                            .tint(.white)
-                    }
+                    KFImage(url)
+                        .placeholder {
+                            if let blurhashImage {
+                                Image(uiImage: blurhashImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                            } else {
+                                ProgressView()
+                                    .tint(.white)
+                            }
+                        }
+                        .fade(duration: 0.2)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .matchedGeometryEffect(id: "image-\(event.id)", in: namespace)
+                        .onAppear {
+                            decodeBlurhash()
+                        }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -257,6 +264,22 @@ struct FullscreenPostViewer: View {
             )
             lastOffset = imageOffset
         }
+    }
+
+    private func decodeBlurhash() {
+        guard blurhashImage == nil,
+              let blurhash = image.primaryBlurhash,
+              !blurhash.isEmpty else { return }
+
+        let aspectRatio = image.primaryAspectRatio ?? 1.0
+        let size: CGSize
+        if aspectRatio > 1 {
+            size = CGSize(width: 32, height: 32 / aspectRatio)
+        } else {
+            size = CGSize(width: 32 * aspectRatio, height: 32)
+        }
+
+        blurhashImage = BlurhashDecoder.decode(blurhash, size: size)
     }
 
     // MARK: - Bottom Overlay

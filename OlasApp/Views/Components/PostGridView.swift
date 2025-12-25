@@ -170,17 +170,14 @@ private struct ThumbnailImageView: View {
         CachedAsyncImage(
             url: url,
             blurhash: blurhash,
-            aspectRatio: 1
-        ) { loadedImage in
-            loadedImage
-                .resizable()
-                .scaledToFill()
-                .frame(width: cellWidth, height: cellWidth)
-                .clipped()
-                .matchedGeometryEffect(id: "image-\(eventId)", in: namespace)
-        } placeholder: {
+            aspectRatio: 1,
+            contentMode: .fill
+        ) {
             LoadingPlaceholder()
         }
+        .frame(width: cellWidth, height: cellWidth)
+        .clipped()
+        .matchedGeometryEffect(id: "image-\(eventId)", in: namespace)
         .accessibilityLabel(accessibilityLabel)
     }
 }
