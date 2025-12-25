@@ -37,9 +37,12 @@ public struct PostPublishingService {
             }
         }
 
-        // Compress
+        // Compress and strip EXIF metadata for privacy (removes GPS, camera info, etc.)
         await onProgress("Starting upload...", 0.1)
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+        guard let imageData = ImageMetadataStripper.jpegDataWithoutMetadata(
+            from: image,
+            compressionQuality: 0.8
+        ) else {
             throw PostError.imageCompressionFailed
         }
 
