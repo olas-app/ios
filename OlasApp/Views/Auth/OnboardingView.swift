@@ -6,9 +6,10 @@ public struct OnboardingView: View {
     var ndk: NDK
     var settings: SettingsManager
     @State private var showLogin = false
-    @State private var showCreateAccount = false
     @State private var animateBlobs = false
     @State private var logoGlow = false
+    @State private var showError = false
+    @State private var errorMessage = ""
 
     public init(authManager: NDKAuthManager, ndk: NDK, settings: SettingsManager) {
         self.authManager = authManager
@@ -52,7 +53,7 @@ public struct OnboardingView: View {
                 // Buttons
                 VStack(spacing: 12) {
                     Button {
-                        showCreateAccount = true
+                        Task { await createAccount() }
                     } label: {
                         Text("Create Account")
                             .font(.system(size: 17, weight: .semibold))
@@ -91,8 +92,21 @@ public struct OnboardingView: View {
         .sheet(isPresented: $showLogin) {
             LoginView(authManager: authManager, ndk: ndk)
         }
-        .sheet(isPresented: $showCreateAccount) {
-            CreateAccountView(authManager: authManager, settings: settings)
+        .alert("Error", isPresented: $showError) {
+            Button("OK") {}
+        } message: {
+            Text(errorMessage)
+        }
+    }
+
+    private func createAccount() async {
+        do {
+            let signer = try NDKPrivateKeySigner.generate()
+            _ = try await authManager.addSession(signer)
+            settings.isNewAccount = true
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
         }
     }
 }
