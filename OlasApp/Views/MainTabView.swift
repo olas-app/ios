@@ -99,38 +99,60 @@ public struct MainTabView: View {
         .environment(nwcWalletManager)
         .overlay(alignment: .top) {
             if publishingState.isPublishing || publishingState.error != nil {
-                HStack(spacing: 12) {
-                    if publishingState.error != nil {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.red)
-                    } else {
-                        ProgressView()
-                            .tint(.white)
+                VStack(spacing: 8) {
+                    HStack(spacing: 12) {
+                        if publishingState.error != nil {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.red)
+                        } else {
+                            Image(systemName: "arrow.up.circle.fill")
+                                .foregroundStyle(.white)
+                        }
+
+                        Text(publishingState.publishingStatus)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(.white)
+
+                        Spacer()
+
+                        if publishingState.error != nil {
+                            Button {
+                                publishingState.dismissError()
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundStyle(.white.opacity(0.8))
+                            }
+                        }
                     }
 
-                    Text(publishingState.publishingStatus)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.white)
+                    // Progress bar
+                    if publishingState.error == nil {
+                        GeometryReader { geometry in
+                            ZStack(alignment: .leading) {
+                                // Background track
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(Color.white.opacity(0.3))
+                                    .frame(height: 4)
 
-                    Spacer()
-
-                    if publishingState.error != nil {
-                        Button {
-                            publishingState.dismissError()
-                        } label: {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundStyle(.white.opacity(0.8))
+                                // Progress fill
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(Color.white)
+                                    .frame(width: geometry.size.width * publishingState.publishingProgress, height: 4)
+                                    .animation(.easeOut(duration: 0.2), value: publishingState.publishingProgress)
+                            }
                         }
+                        .frame(height: 4)
                     }
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
                 .background {
-                    Capsule()
+                    RoundedRectangle(cornerRadius: 16)
                         .fill(Color.black.opacity(0.9))
                         .shadow(radius: 4)
                 }
+                .padding(.horizontal, 16)
                 .padding(.top, 8)
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .animation(.spring(response: 0.4, dampingFraction: 0.8), value: publishingState.isPublishing)
