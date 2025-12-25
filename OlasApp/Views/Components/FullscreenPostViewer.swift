@@ -1,5 +1,4 @@
 import AVKit
-import Kingfisher
 import NDKSwiftCore
 import NDKSwiftUI
 import SwiftUI

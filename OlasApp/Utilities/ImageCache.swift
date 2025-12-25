@@ -1,4 +1,4 @@
-import Kingfisher
+import NDKSwiftUI
 import SwiftUI
 import UIKit
 import UnifiedBlurHash
@@ -25,7 +25,7 @@ struct CachedAsyncImage<Placeholder: View>: View {
     let url: URL?
     let blurhash: String?
     let aspectRatio: CGFloat?
-    let contentMode: ContentMode
+    let contentMode: SwiftUI.ContentMode
     let placeholder: () -> Placeholder
 
     @State private var blurhashImage: UIImage?
@@ -34,7 +34,7 @@ struct CachedAsyncImage<Placeholder: View>: View {
         url: URL?,
         blurhash: String? = nil,
         aspectRatio: CGFloat? = nil,
-        contentMode: ContentMode = .fill,
+        contentMode: SwiftUI.ContentMode = .fill,
         @ViewBuilder placeholder: @escaping () -> Placeholder
     ) {
         self.url = url
@@ -94,15 +94,13 @@ extension CachedAsyncImage where Placeholder == ProgressView<EmptyView, EmptyVie
         url: URL?,
         blurhash: String? = nil,
         aspectRatio: CGFloat? = nil,
-        contentMode: ContentMode = .fill
+        contentMode: SwiftUI.ContentMode = .fill
     ) {
-        self.init(
-            url: url,
-            blurhash: blurhash,
-            aspectRatio: aspectRatio,
-            contentMode: contentMode,
-            placeholder: { ProgressView() }
-        )
+        self.url = url
+        self.blurhash = blurhash
+        self.aspectRatio = aspectRatio
+        self.contentMode = contentMode
+        self.placeholder = { ProgressView() }
     }
 }
 
@@ -111,35 +109,12 @@ extension CachedAsyncImage where Placeholder == EmptyView {
         url: URL?,
         blurhash: String? = nil,
         aspectRatio: CGFloat? = nil,
-        contentMode: ContentMode = .fill
+        contentMode: SwiftUI.ContentMode = .fill
     ) {
-        self.init(
-            url: url,
-            blurhash: blurhash,
-            aspectRatio: aspectRatio,
-            contentMode: contentMode,
-            placeholder: { EmptyView() }
-        )
-    }
-}
-
-// MARK: - Legacy API Support
-
-extension CachedAsyncImage {
-    /// Legacy initializer that accepts a content closure (ignored - use modifiers on CachedAsyncImage instead)
-    init<Content: View>(
-        url: URL?,
-        blurhash: String? = nil,
-        aspectRatio: CGFloat? = nil,
-        @ViewBuilder content: @escaping (Image) -> Content,
-        @ViewBuilder placeholder: @escaping () -> Placeholder
-    ) {
-        self.init(
-            url: url,
-            blurhash: blurhash,
-            aspectRatio: aspectRatio,
-            contentMode: .fill,
-            placeholder: placeholder
-        )
+        self.url = url
+        self.blurhash = blurhash
+        self.aspectRatio = aspectRatio
+        self.contentMode = contentMode
+        self.placeholder = { EmptyView() }
     }
 }

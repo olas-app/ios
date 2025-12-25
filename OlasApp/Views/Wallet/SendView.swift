@@ -1,6 +1,5 @@
 // SendView.swift - Cashu Wallet Send (Dual Lightning/Ecash)
 import NDKSwiftCore
-import NDKSwiftUI
 import SwiftUI
 
 struct SendView: View {
@@ -43,15 +42,10 @@ struct SendView: View {
                 }
             }
             .sheet(isPresented: $showScanner) {
-                NDKUIQRScanner(
-                    onScan: { result in
-                        handleScannedCode(result)
-                        showScanner = false
-                    },
-                    onDismiss: {
-                        showScanner = false
-                    }
-                )
+                QRScannerView(onScan: { result in
+                    handleScannedCode(result)
+                    showScanner = false
+                })
             }
             .alert("Error", isPresented: .init(
                 get: { error != nil },
