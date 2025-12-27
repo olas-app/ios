@@ -51,6 +51,10 @@ struct DeveloperToolsView: View {
                 NavigationLink(destination: ProfileManagerInspectorView(ndk: ndk)) {
                     ToolRow(icon: "person.crop.circle.badge.checkmark", title: "Profile Manager", subtitle: "Profile cache and metadata", color: .cyan)
                 }
+
+                NavigationLink(destination: ImageCacheInspectorView()) {
+                    ToolRow(icon: "photo.stack", title: "Image Cache", subtitle: "Kingfisher memory and disk cache", color: .pink)
+                }
             }
 
             Section("Logging") {
