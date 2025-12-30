@@ -291,7 +291,7 @@ struct FullscreenPostViewer: View {
                     .clipShape(Circle())
 
                 VStack(alignment: .leading, spacing: 2) {
-                    NDKUIDisplayName(ndk: ndk, pubkey: event.pubkey)
+                    Text(ndk.profile(for: event.pubkey).displayName)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.white)
 

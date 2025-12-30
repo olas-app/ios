@@ -134,16 +134,16 @@ class ExploreViewModel {
 
     private func tryNip05Resolution(_ query: String) async {
         let nip05 = query.contains("@") ? query : "_@\(query)"
-        guard let user = try? await NDKUser.fromNip05(nip05, ndk: ndk) else { return }
+        guard let pubkey = try? await ndk.resolveNip05(nip05) else { return }
         // Add to results if not already present
-        if !userResults.contains(where: { $0.pubkey == user.pubkey }) {
-            userResults.insert(SearchUserResult(pubkey: user.pubkey), at: 0)
+        if !userResults.contains(where: { $0.pubkey == pubkey }) {
+            userResults.insert(SearchUserResult(pubkey: pubkey), at: 0)
         }
     }
 
     private func searchByNpub(_ npub: String) async {
-        guard let user = try? NDKUser(npub: npub, ndk: ndk) else { return }
-        userResults = [SearchUserResult(pubkey: user.pubkey)]
+        guard let pubkey = try? Bech32.pubkey(from: npub) else { return }
+        userResults = [SearchUserResult(pubkey: pubkey)]
     }
 
     private func searchUsersByName(_ query: String) async {

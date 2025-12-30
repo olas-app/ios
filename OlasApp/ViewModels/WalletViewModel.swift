@@ -263,8 +263,8 @@ public final class WalletViewModel {
         case let .mintsRemoved(removed):
             configuredMints.removeAll { removed.contains($0) }
 
-        case .blacklistUpdated:
-            // Could update UI to show blacklisted mints
+        case .blocklistUpdated:
+            // Could update UI to show blocklisted mints
             break
 
         case .nutzapReceived:
@@ -285,11 +285,9 @@ public final class WalletViewModel {
 
     /// Send a zap (nutzap or Lightning) to an event
     public func zap(event: NDKEvent, amount: Int64, comment: String? = nil) async throws {
-        let recipient = NDKUser(pubkey: event.pubkey, ndk: ndk)
-
         _ = try await ndk.zapManager.zap(
             event: event,
-            to: recipient,
+            to: event.pubkey,
             amountSats: amount,
             comment: comment,
             preferredType: nil,

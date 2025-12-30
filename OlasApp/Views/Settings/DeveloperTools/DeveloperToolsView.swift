@@ -121,7 +121,7 @@ struct DeveloperToolsView: View {
             cachePath = nil
         }
 
-        relayCount = await ndk.relays.count
+        relayCount = await MainActor.run { ndk.relays.count }
         if let signer = ndk.signer {
             signerPubkey = try? await signer.pubkey
         }

@@ -8,6 +8,7 @@ final class CollectionsManager {
     private(set) var isLoading = false
 
     private let ndk: NDK
+    public var userPubkey: String?
     private var subscriptionTask: Task<Void, Never>?
 
     init(ndk: NDK) {
@@ -17,11 +18,11 @@ final class CollectionsManager {
     func startSubscription() {
         subscriptionTask?.cancel()
         subscriptionTask = Task {
-            guard let currentUser = await ndk.currentUser else { return }
+            guard let pubkey = userPubkey else { return }
             isLoading = true
 
             let filter = NDKFilter(
-                authors: [currentUser.pubkey],
+                authors: [pubkey],
                 kinds: [OlasConstants.EventKinds.pictureCurationSet]
             )
 

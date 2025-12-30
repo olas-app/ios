@@ -96,7 +96,7 @@ struct SearchUserRow: View {
                     .clipShape(Circle())
 
                 VStack(alignment: .leading, spacing: 2) {
-                    NDKUIDisplayName(ndk: ndk, pubkey: user.pubkey)
+                    Text(ndk.profile(for: user.pubkey).displayName)
                         .font(.subheadline.weight(.semibold))
 
                     Text(String(user.pubkey.prefix(16)) + "...")
@@ -168,7 +168,7 @@ struct SearchPostRow: View {
             // Content
             VStack(alignment: .leading, spacing: 4) {
                 if let ndk = ndk {
-                    NDKUIDisplayName(ndk: ndk, pubkey: event.pubkey)
+                    Text(ndk.profile(for: event.pubkey).displayName)
                         .font(.subheadline.weight(.semibold))
                 }
 

@@ -151,7 +151,7 @@ struct CommentRow: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
-                    NDKUIDisplayName(ndk: ndk, pubkey: comment.pubkey)
+                    Text(ndk.profile(for: comment.pubkey).displayName)
                         .font(.subheadline.weight(.semibold))
 
                     NDKUIRelativeTime(timestamp: comment.createdAt)

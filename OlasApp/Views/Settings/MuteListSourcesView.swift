@@ -78,7 +78,7 @@ private struct MuteSourceRow: View {
                 .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 2) {
-                NDKUIDisplayName(ndk: ndk, pubkey: pubkey)
+                Text(ndk.profile(for: pubkey).displayName)
                     .font(.subheadline.weight(.semibold))
 
                 Text(formattedPubkey)
@@ -237,8 +237,8 @@ private struct AddMuteSourceSheet: View {
 
     private func resolveToPublicKey(_ input: String) async throws -> String {
         if input.hasPrefix("npub1") {
-            if let user = try? NDKUser(npub: input, ndk: ndk) {
-                return user.pubkey
+            if let pubkey = try? Bech32.pubkey(from: input) {
+                return pubkey
             }
             throw ResolutionError.invalidNpub
         }
@@ -248,8 +248,8 @@ private struct AddMuteSourceSheet: View {
         }
 
         let nip05 = input.contains("@") ? input : "_@\(input)"
-        if let user = try? await NDKUser.fromNip05(nip05, ndk: ndk) {
-            return user.pubkey
+        if let pubkey = try? await ndk.resolveNip05(nip05) {
+            return pubkey
         }
 
         throw ResolutionError.nip05NotFound
@@ -270,7 +270,7 @@ private struct ResolvedUserPreview: View {
                 .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 4) {
-                NDKUIDisplayName(ndk: ndk, pubkey: pubkey)
+                Text(ndk.profile(for: pubkey).displayName)
                     .font(.headline)
 
                 if let npub = try? Bech32.npub(from: pubkey) {

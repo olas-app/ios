@@ -20,6 +20,7 @@ public final class MuteListManager {
     public private(set) var muteListSources: [String]
 
     private let ndk: NDK
+    public var userPubkey: String?
     private var userSubscriptionTask: Task<Void, Never>?
     private var centralizedSubscriptionTask: Task<Void, Never>?
 
@@ -55,10 +56,10 @@ public final class MuteListManager {
     private func startUserSubscription() {
         userSubscriptionTask?.cancel()
         userSubscriptionTask = Task {
-            guard let currentUser = await ndk.currentUser else { return }
+            guard let pubkey = userPubkey else { return }
 
             let filter = NDKFilter(
-                authors: [currentUser.pubkey],
+                authors: [pubkey],
                 kinds: [OlasConstants.EventKinds.muteList],
                 limit: 1
             )

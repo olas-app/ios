@@ -70,17 +70,15 @@ struct RelaySettingsView: View {
         }
     }
 
+    @MainActor
     private func loadRelays() async {
         isLoading = true
         defer { isLoading = false }
 
-        let poolRelays = await ndk.relays
         var infos: [RelayInfo] = []
 
-        for relay in poolRelays {
-            let state = await relay.connectionState
-            let isConnected = state == .connected || state == .authenticated
-            infos.append(RelayInfo(url: relay.url, isConnected: isConnected))
+        for relay in ndk.relays {
+            infos.append(RelayInfo(url: relay.url, isConnected: relay.ui.isConnected))
         }
 
         relays = infos.sorted { $0.url < $1.url }

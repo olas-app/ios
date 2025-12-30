@@ -86,6 +86,7 @@ public struct MainTabView: View {
         .task {
             await walletViewModel.loadWallet()
             // Initialize mute list sources from settings and start subscription
+            muteListManager.userPubkey = authManager.activePubkey
             muteListManager.updateMuteListSources(settings.muteListSources)
             muteListManager.startSubscription()
         }

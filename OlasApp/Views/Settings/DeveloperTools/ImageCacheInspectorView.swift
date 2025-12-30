@@ -24,12 +24,6 @@ struct ImageCacheInspectorView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                LabeledContent("Cost Limit per Entry") {
-                    Text(formatBytes(cache.memoryStorage.config.costLimit))
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                }
-
                 LabeledContent("Expiration") {
                     Text(formatExpiration(cache.memoryStorage.config.expiration))
                         .font(.system(.body, design: .monospaced))
@@ -130,7 +124,8 @@ struct ImageCacheInspectorView: View {
 
     private func refreshStats() async {
         isCalculating = true
-        memoryCount = cache.memoryStorage.storage.count
+        // Memory count not directly accessible in newer Kingfisher versions
+        memoryCount = 0
 
         diskSize = await withCheckedContinuation { continuation in
             cache.calculateDiskStorageSize { result in

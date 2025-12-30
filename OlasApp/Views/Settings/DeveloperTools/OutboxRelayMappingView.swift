@@ -109,7 +109,7 @@ struct OutboxRelayMappingView: View {
         }
 
         // Load relay states for matching NDK relays
-        let ndkRelays = await ndk.relays
+        let ndkRelays = await MainActor.run { ndk.relays }
         for relay in ndkRelays {
             let state = NDKRelay.State(
                 connectionState: await relay.connectionState,

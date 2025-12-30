@@ -127,20 +127,16 @@ struct FollowPackCardView: View {
 
     private func loadProfiles() async {
         // Load creator profile
-        for await metadata in await ndk.profileManager.subscribe(for: followPack.creatorPubkey, maxAge: 3600) {
-            await MainActor.run {
-                self.creatorProfile = metadata
-            }
-            break
+        let creatorProfileObj = await MainActor.run { ndk.profile(for: followPack.creatorPubkey) }
+        await MainActor.run {
+            self.creatorProfile = creatorProfileObj.metadata
         }
 
         // Load first 5 member profiles
         for pubkey in followPack.pubkeys.prefix(5) {
-            for await metadata in await ndk.profileManager.subscribe(for: pubkey, maxAge: 3600) {
-                await MainActor.run {
-                    self.memberProfiles[pubkey] = metadata
-                }
-                break
+            let profileObj = await MainActor.run { ndk.profile(for: pubkey) }
+            await MainActor.run {
+                self.memberProfiles[pubkey] = profileObj.metadata
             }
         }
     }

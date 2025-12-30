@@ -126,7 +126,7 @@ private struct BlockedUserRow: View {
                 .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 2) {
-                NDKUIDisplayName(ndk: ndk, pubkey: pubkey)
+                Text(ndk.profile(for: pubkey).displayName)
                     .font(.subheadline.weight(.semibold))
 
                 if let source = source {
@@ -163,7 +163,7 @@ private struct SourceLabel: View {
         HStack(spacing: 4) {
             Text("via")
                 .foregroundStyle(.secondary)
-            NDKUIDisplayName(ndk: ndk, pubkey: sourcePubkey)
+            Text(ndk.profile(for: sourcePubkey).displayName)
                 .foregroundStyle(OlasTheme.Colors.accent)
         }
         .font(.caption)

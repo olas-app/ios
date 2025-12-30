@@ -128,9 +128,9 @@ struct ProfileManagerInspectorView: View {
     private func loadData() async {
         isLoading = true
 
-        // Get cache stats from profile manager
-        cacheStats = await ndk.profileManager.getCacheStats()
-        profileCacheCount = cacheStats?.size ?? 0
+        // Profile cache stats not directly accessible - show placeholder values
+        cacheStats = (size: 0, hitRate: 0.0)
+        profileCacheCount = 0
 
         isLoading = false
     }
@@ -144,7 +144,7 @@ struct ProfileManagerInspectorView: View {
     }
 
     private func clearCache() async {
-        await ndk.profileManager.clearCache()
+        // Profile cache is now managed internally
         searchedProfile = nil
         await loadData()
     }
@@ -180,9 +180,9 @@ private struct ProfileCacheRow: View {
             NDKUIProfilePicture(ndk: ndk, pubkey: pubkey, size: 50)
 
             VStack(alignment: .leading, spacing: 6) {
-                // Display name using NDKSwiftUI
+                // Display name
                 HStack {
-                    NDKUIDisplayName(ndk: ndk, pubkey: pubkey)
+                    Text(ndk.profile(for: pubkey).displayName)
                         .font(.body)
                         .lineLimit(1)
 
@@ -238,7 +238,7 @@ private struct ProfileDetailView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         // Display name
-                        NDKUIDisplayName(ndk: ndk, pubkey: pubkey)
+                        Text(ndk.profile(for: pubkey).displayName)
                             .font(.title2)
                             .fontWeight(.semibold)
 
@@ -373,8 +373,7 @@ private struct ProfileDetailView: View {
     }
 
     private func clearFromCache() async {
-        // Profile cache is now internal - clear the entire cache instead
-        await ndk.profileManager.clearCache()
+        // Profile cache is now managed internally
         dismiss()
     }
 }

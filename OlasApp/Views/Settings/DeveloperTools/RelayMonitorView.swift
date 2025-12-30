@@ -140,7 +140,7 @@ struct RelayMonitorView: View {
     }
 
     private func loadRelayStates() async {
-        relays = await ndk.relays
+        relays = await MainActor.run { ndk.relays }
         for relay in relays {
             let state = NDKRelay.State(
                 connectionState: await relay.connectionState,

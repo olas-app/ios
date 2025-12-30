@@ -262,7 +262,7 @@ struct SuggestedUserCard: View {
                     .clipShape(Circle())
 
                 VStack(spacing: 2) {
-                    NDKUIDisplayName(ndk: ndk, pubkey: user.pubkey)
+                    Text(ndk.profile(for: user.pubkey).displayName)
                         .font(.subheadline.weight(.semibold))
                         .lineLimit(1)
 

@@ -72,7 +72,7 @@ public struct PostCard: View, Equatable {
                 Button {
                     onProfileTap?(event.pubkey)
                 } label: {
-                    NDKUIDisplayName(ndk: ndk, pubkey: event.pubkey)
+                    Text(ndk.profile(for: event.pubkey).displayName)
                         .font(.subheadline.weight(.semibold))
                 }
                 .buttonStyle(.plain)
