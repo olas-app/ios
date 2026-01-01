@@ -22,6 +22,7 @@ public enum OlasTheme {
         // Feedback colors
         public static let zapGold = Color(hex: "FFB800")
         public static let heartRed = Color(hex: "FF4757")
+        public static let repostGreen = Color(hex: "00C853")
         public static let success = Color(hex: "2ED573")
     }
 

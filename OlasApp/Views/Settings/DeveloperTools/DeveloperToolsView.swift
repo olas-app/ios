@@ -112,16 +112,17 @@ struct DeveloperToolsView: View {
         isLoading = true
 
         if let cache = ndk.cache as? NDKNostrDBCache {
-            stats = cache.getStats()
-            databaseSize = cache.getDatabaseSize()
-            cachePath = cache.getCachePath()
+            stats = await cache.getStats()
+            databaseSize = await cache.getDatabaseSize()
+            cachePath = await cache.getCachePath()
         } else {
             stats = nil
             databaseSize = 0
             cachePath = nil
         }
 
-        relayCount = await MainActor.run { ndk.relays.count }
+        let relays = await ndk.relays
+        relayCount = relays.count
         if let signer = ndk.signer {
             signerPubkey = try? await signer.pubkey
         }

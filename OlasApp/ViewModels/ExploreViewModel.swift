@@ -134,10 +134,35 @@ class ExploreViewModel {
 
     private func tryNip05Resolution(_ query: String) async {
         let nip05 = query.contains("@") ? query : "_@\(query)"
-        guard let pubkey = try? await ndk.resolveNip05(nip05) else { return }
+        guard let pubkey = await resolveNip05(nip05) else { return }
         // Add to results if not already present
         if !userResults.contains(where: { $0.pubkey == pubkey }) {
             userResults.insert(SearchUserResult(pubkey: pubkey), at: 0)
+        }
+    }
+
+    private func resolveNip05(_ identifier: String) async -> String? {
+        let parts = identifier.split(separator: "@")
+        guard parts.count == 2 else { return nil }
+
+        let name = String(parts[0])
+        let domain = String(parts[1])
+
+        guard let url = URL(string: "https://\(domain)/.well-known/nostr.json?name=\(name)") else {
+            return nil
+        }
+
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let names = json["names"] as? [String: String],
+                  let pubkey = names[name]
+            else {
+                return nil
+            }
+            return pubkey
+        } catch {
+            return nil
         }
     }
 

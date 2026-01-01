@@ -196,16 +196,32 @@ public struct PostCard: View, Equatable {
 
             CommentButton(event: event)
 
+            RepostButton(event: event)
+
             ZapButton(event: event, ndk: ndk)
 
             Spacer()
 
             ShareButton {
-                // Share action
+                sharePost()
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+
+    private func sharePost() {
+        guard let nevent = try? Bech32.nevent(eventId: event.id, author: event.pubkey, kind: event.kind) else {
+            return
+        }
+        let url = "https://njump.me/\(nevent)"
+        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootVC = windowScene.windows.first?.rootViewController
+        {
+            rootVC.present(activityVC, animated: true)
+        }
     }
 
     private var postCaption: some View {
@@ -227,16 +243,9 @@ public struct PostCard: View, Equatable {
         // Show animation
         showLikeAnimation = true
 
-        // Publish reaction - LikeButton will pick it up via subscription
+        // Publish reaction using NDK's react method - LikeButton's ReactionState will pick it up via subscription
         Task {
-            try? await ndk.publish { builder in
-                builder
-                    .kind(OlasConstants.EventKinds.reaction)
-                    .content("+")
-                    .tag(["e", event.id])
-                    .tag(["p", event.pubkey])
-                    .tag(["k", "\(event.kind)"])
-            }
+            _ = try? await ndk.react(to: event, with: "+")
         }
     }
 

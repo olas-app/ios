@@ -1,4 +1,5 @@
 import NDKSwiftCore
+import NDKSwiftUI
 import SwiftUI
 
 struct LikeAnimation: View {
@@ -65,8 +66,7 @@ struct LikeButton: View {
     let event: NDKEvent
     @Environment(\.ndk) private var ndk
 
-    @State private var isLiked = false
-    @State private var likeCount = 0
+    @State private var reactionState: ReactionState?
     @State private var animateHeart = false
 
     var body: some View {
@@ -74,19 +74,19 @@ struct LikeButton: View {
             Task { await toggleLike() }
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: isLiked ? "heart.fill" : "heart")
+                Image(systemName: reactionState?.hasReacted == true ? "heart.fill" : "heart")
                     .font(.system(size: 22, weight: .medium))
-                    .foregroundStyle(isLiked ? OlasTheme.Colors.heartRed : .primary)
+                    .foregroundStyle(reactionState?.hasReacted == true ? OlasTheme.Colors.heartRed : .primary)
                     .scaleEffect(animateHeart ? 1.2 : 1.0)
 
-                if likeCount > 0 {
-                    Text("\(likeCount)")
+                if let count = reactionState?.count, count > 0 {
+                    Text("\(count)")
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
                 }
             }
         }
-        .buttonStyle(HeartButtonStyle(isLiked: isLiked))
+        .buttonStyle(HeartButtonStyle(isLiked: reactionState?.hasReacted ?? false))
         .onChange(of: animateHeart) { _, newValue in
             if newValue {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
@@ -97,76 +97,29 @@ struct LikeButton: View {
             }
         }
         .task {
-            await loadReactionCount()
+            guard let ndk else { return }
+            let state = ReactionState(ndk: ndk, event: event)
+            reactionState = state
+            await state.start()
         }
     }
 
     private func toggleLike() async {
+        guard let reactionState else { return }
+
         triggerHaptic()
 
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
-            isLiked.toggle()
-            if isLiked {
+        // Animate the heart
+        if !reactionState.hasReacted {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
                 animateHeart = true
-                likeCount += 1
-            } else {
-                likeCount = max(0, likeCount - 1)
             }
         }
-
-        if isLiked {
-            await publishReaction()
-        }
-    }
-
-    private func publishReaction() async {
-        guard let ndk else { return }
 
         do {
-            _ = try await ndk.publish { builder in
-                builder
-                    .kind(OlasConstants.EventKinds.reaction)
-                    .content("+")
-                    .tag(["e", event.id])
-                    .tag(["p", event.pubkey])
-                    .tag(["k", "\(event.kind)"])
-            }
+            try await reactionState.toggle()
         } catch {
-            withAnimation {
-                isLiked = false
-                likeCount = max(0, likeCount - 1)
-            }
-        }
-    }
-
-    private func loadReactionCount() async {
-        guard let ndk,
-              let currentUserPubkey = await ndk.activePubkey
-        else {
-            return
-        }
-
-        let reactionFilter = NDKFilter(
-            kinds: [OlasConstants.EventKinds.reaction],
-            events: [event.id],
-            limit: 500
-        )
-
-        let subscription = ndk.subscribe(filter: reactionFilter)
-
-        for await reactionEvents in subscription.events {
-            guard !Task.isCancelled else { break }
-
-            for reactionEvent in reactionEvents {
-                if reactionEvent.content == "+" {
-                    likeCount += 1
-
-                    // Check if this is the current user's reaction
-                    if reactionEvent.pubkey == currentUserPubkey {
-                        isLiked = true
-                    }
-                }
-            }
+            // Toggle failed - state remains unchanged
         }
     }
 
@@ -442,7 +395,7 @@ struct ZapButton: View {
         var total: Int64 = 0
 
         do {
-            for try await zapInfo in ndk.zapManager.subscribeToZaps(for: event, pubkey: nil) {
+            for try await zapInfo in ndk.zapManager.subscribeToZaps(for: event, user: nil) {
                 total += zapInfo.amountSats
 
                 await MainActor.run {
@@ -481,5 +434,168 @@ struct ShareButton: View {
                 .font(.system(size: 20, weight: .medium))
         }
         .foregroundStyle(.primary)
+    }
+}
+
+struct RepostButton: View {
+    let event: NDKEvent
+    @Environment(\.ndk) private var ndk
+
+    @State private var repostState: RepostState?
+    @State private var showRepostMenu = false
+    @State private var showQuoteComposer = false
+    @State private var quoteContent = ""
+    @State private var isAnimating = false
+
+    var body: some View {
+        Button {
+            triggerHaptic()
+            showRepostMenu = true
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.2.squarepath")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(repostState?.hasReposted == true ? OlasTheme.Colors.repostGreen : .primary)
+                    .scaleEffect(isAnimating ? 1.2 : 1.0)
+                    .rotationEffect(.degrees(isAnimating ? 15 : 0))
+
+                if let count = repostState?.count, count > 0 {
+                    Text("\(count)")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .confirmationDialog("Repost", isPresented: $showRepostMenu) {
+            Button {
+                Task { await toggleRepost() }
+            } label: {
+                if repostState?.hasReposted == true {
+                    Label("Undo Repost", systemImage: "arrow.uturn.backward")
+                } else {
+                    Label("Repost", systemImage: "arrow.2.squarepath")
+                }
+            }
+
+            Button {
+                showQuoteComposer = true
+            } label: {
+                Label("Quote", systemImage: "quote.bubble")
+            }
+
+            Button("Cancel", role: .cancel) {}
+        }
+        .sheet(isPresented: $showQuoteComposer) {
+            quoteComposerSheet
+        }
+        .task {
+            guard let ndk else { return }
+            let state = RepostState(ndk: ndk, event: event)
+            repostState = state
+            await state.start()
+        }
+    }
+
+    private var quoteComposerSheet: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                // Original post preview
+                VStack(alignment: .leading, spacing: 8) {
+                    if let ndk {
+                        HStack(spacing: 8) {
+                            NDKUIProfilePicture(ndk: ndk, pubkey: event.pubkey, size: 24)
+                                .clipShape(Circle())
+
+                            Text(ndk.profile(for: event.pubkey).displayName)
+                                .font(.subheadline.weight(.medium))
+
+                            Spacer()
+                        }
+                    }
+
+                    Text(event.content)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                }
+                .padding()
+                .background(Color.secondary.opacity(0.1))
+                .cornerRadius(12)
+                .padding(.horizontal)
+
+                // Quote input
+                TextField("Add a comment...", text: $quoteContent, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .padding()
+                    .lineLimit(5...10)
+
+                Spacer()
+            }
+            .padding(.top)
+            .navigationTitle("Quote Post")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        showQuoteComposer = false
+                        quoteContent = ""
+                    }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Post") {
+                        Task { await postQuote() }
+                    }
+                    .disabled(quoteContent.isEmpty)
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
+    private func toggleRepost() async {
+        guard let repostState else { return }
+
+        withAnimation(.spring(response: 0.2, dampingFraction: 0.5)) {
+            isAnimating = true
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            withAnimation {
+                isAnimating = false
+            }
+        }
+
+        do {
+            try await repostState.toggle()
+
+            let feedback = UINotificationFeedbackGenerator()
+            feedback.notificationOccurred(.success)
+        } catch {
+            let feedback = UINotificationFeedbackGenerator()
+            feedback.notificationOccurred(.error)
+        }
+    }
+
+    private func postQuote() async {
+        guard let repostState, !quoteContent.isEmpty else { return }
+
+        do {
+            try await repostState.quote(content: quoteContent)
+
+            showQuoteComposer = false
+            quoteContent = ""
+
+            let feedback = UINotificationFeedbackGenerator()
+            feedback.notificationOccurred(.success)
+        } catch {
+            let feedback = UINotificationFeedbackGenerator()
+            feedback.notificationOccurred(.error)
+        }
+    }
+
+    private func triggerHaptic() {
+        let impact = UIImpactFeedbackGenerator(style: .light)
+        impact.impactOccurred()
     }
 }
