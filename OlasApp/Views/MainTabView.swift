@@ -24,60 +24,67 @@ public struct MainTabView: View {
     }
 
     public var body: some View {
-        TabView(selection: $selectedTab) {
-            FeedView(ndk: ndk, settings: settings)
-                .tabItem {
-                    Label("Home", systemImage: selectedTab == 0 ? "wave.3.up.circle.fill" : "wave.3.up.circle")
-                }
-                .tag(0)
+        ZStack(alignment: .bottom) {
+            TabView(selection: $selectedTab) {
+                FeedView(ndk: ndk, settings: settings)
+                    .tabItem {
+                        Label("Home", systemImage: selectedTab == 0 ? "wave.3.up.circle.fill" : "wave.3.up.circle")
+                    }
+                    .tag(0)
 
-            ExploreView(ndk: ndk)
-                .tabItem {
-                    Label("Explore", systemImage: selectedTab == 1 ? "magnifyingglass.circle.fill" : "magnifyingglass.circle")
-                }
-                .tag(1)
+                ExploreView(ndk: ndk)
+                    .tabItem {
+                        Label("Explore", systemImage: selectedTab == 1 ? "magnifyingglass.circle.fill" : "magnifyingglass.circle")
+                    }
+                    .tag(1)
 
-            // Create - triggers sheet
-            Color.clear
+                // Wallet - show Spark, Cashu, or NWC based on settings
+                Group {
+                    switch settings.walletType {
+                    case .spark:
+                        SparkWalletView(walletManager: sparkWalletManager)
+                    case .cashu:
+                        WalletView(ndk: ndk, walletViewModel: walletViewModel)
+                    case .nwc:
+                        NWCWalletView(walletManager: nwcWalletManager)
+                    }
+                }
                 .tabItem {
-                    Label("", systemImage: "plus.app.fill")
+                    Label("Wallet", systemImage: selectedTab == 2 ? "creditcard.fill" : "creditcard")
                 }
                 .tag(2)
 
-            // Wallet - show Spark, Cashu, or NWC based on settings
-            Group {
-                switch settings.walletType {
-                case .spark:
-                    SparkWalletView(walletManager: sparkWalletManager)
-                case .cashu:
-                    WalletView(ndk: ndk, walletViewModel: walletViewModel)
-                case .nwc:
-                    NWCWalletView(walletManager: nwcWalletManager)
+                // Profile
+                NavigationStack {
+                    if let pubkey = authManager.activePubkey {
+                        ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: pubkey, sparkWalletManager: sparkWalletManager, nwcWalletManager: nwcWalletManager)
+                    } else {
+                        Text("Not logged in")
+                    }
                 }
+                .tabItem {
+                    Label("Profile", systemImage: selectedTab == 3 ? "person.fill" : "person")
+                }
+                .tag(3)
             }
-            .tabItem {
-                Label("Wallet", systemImage: selectedTab == 3 ? "creditcard.fill" : "creditcard")
-            }
-            .tag(3)
+            .tint(.primary)
 
-            // Profile
-            NavigationStack {
-                if let pubkey = authManager.activePubkey {
-                    ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: pubkey, sparkWalletManager: sparkWalletManager, nwcWalletManager: nwcWalletManager)
-                } else {
-                    Text("Not logged in")
+            // FAB - only visible on Home tab
+            if selectedTab == 0 {
+                Button {
+                    showCreatePost = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 56, height: 56)
+                        .background(Color.accentColor)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
                 }
-            }
-            .tabItem {
-                Label("Profile", systemImage: selectedTab == 4 ? "person.fill" : "person")
-            }
-            .tag(4)
-        }
-        .tint(.primary)
-        .onChange(of: selectedTab) { oldValue, newValue in
-            if newValue == 2 {
-                showCreatePost = true
-                selectedTab = oldValue
+                .padding(.bottom, 70)
+                .padding(.trailing, 16)
+                .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }
         .fullScreenCover(isPresented: $showCreatePost) {
