@@ -83,10 +83,7 @@ public final class ReactionState {
     // MARK: - Private Methods
 
     private func observeReactions() async {
-        let filter = NDKFilter(
-            kinds: [OlasConstants.EventKinds.reaction],
-            tags: ["e": Set([event.id])]
-        )
+        let filter = NDKFilter.tagging(event, kinds: [OlasConstants.EventKinds.reaction])
 
         let subscription = ndk.subscribe(
             filter: filter,

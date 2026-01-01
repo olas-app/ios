@@ -1,5 +1,6 @@
 // FeedView.swift
 import NDKSwiftCore
+import NDKSwiftUI
 import SwiftUI
 
 public struct FeedView: View {
@@ -79,7 +80,8 @@ public struct FeedView: View {
                         NavigationLink {
                             ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: pubkey, sparkWalletManager: sparkWalletManager, nwcWalletManager: nwcWalletManager)
                         } label: {
-                            Image(systemName: "person.circle")
+                            NDKUIProfilePicture(ndk: ndk, pubkey: pubkey, size: 28)
+                                .clipShape(Circle())
                         }
                     }
                 }

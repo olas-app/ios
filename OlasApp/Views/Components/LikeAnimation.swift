@@ -165,19 +165,7 @@ struct CommentButton: View {
     private func loadCommentCount() async {
         guard let ndk else { return }
 
-        // Use proper tagging: 'a' tag for parameterized replaceable events, 'e' tag for regular events
-        let tagFilter: [String: Set<String>]
-        if event.isParameterizedReplaceable {
-            tagFilter = ["a": Set([event.tagAddress])]
-        } else {
-            tagFilter = ["e": Set([event.id])]
-        }
-
-        let commentFilter = NDKFilter(
-            kinds: [OlasConstants.EventKinds.comment],
-            limit: 100,
-            tags: tagFilter
-        )
+        let commentFilter = NDKFilter.tagging(event, kinds: [OlasConstants.EventKinds.comment], limit: 100)
 
         let commentSub = ndk.subscribe(filter: commentFilter)
 

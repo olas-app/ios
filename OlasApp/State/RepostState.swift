@@ -98,18 +98,16 @@ public final class RepostState {
     // MARK: - Private Methods
 
     private func observeReposts() async {
-        // Subscribe to:
-        // - Kind 6 (repost) and Kind 16 (generic repost) with e-tag pointing to our event
-        // - Kind 1 (text note) with q-tag pointing to our event (quote reposts)
-        let repostFilter = NDKFilter(
-            kinds: [6, 16], // repost and generic repost
-            tags: ["e": Set([event.id])]
-        )
+        // Subscribe to reposts and generic reposts using proper tagging for replaceable events
+        let repostFilter = NDKFilter.tagging(event, kinds: [6, 16])
 
-        let quoteFilter = NDKFilter(
-            kinds: [1], // text note
-            tags: ["q": Set([event.id])]
-        )
+        // Quote reposts use 'q' tag - need to handle manually since tagging() uses 'e'/'a'
+        var quoteFilter = NDKFilter(kinds: [1])
+        if event.isReplaceable || event.isParameterizedReplaceable {
+            quoteFilter.addTagFilter("q", values: [event.tagAddress])
+        } else {
+            quoteFilter.addTagFilter("q", values: [event.id])
+        }
 
         // Create subscriptions for both filters
         let repostSubscription = ndk.subscribe(

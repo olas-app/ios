@@ -25,6 +25,7 @@ public enum OlasConstants {
     public enum EventKinds {
         public static let image: NDKSwiftCore.Kind = 20
         public static let shortVideo: NDKSwiftCore.Kind = 22 // NIP-71 short-form video
+        public static let divineVideo: NDKSwiftCore.Kind = 34236 // diVine video
         public static let reaction: NDKSwiftCore.Kind = 7
         public static let comment: NDKSwiftCore.Kind = 1111
         public static let report: NDKSwiftCore.Kind = 1984

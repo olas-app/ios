@@ -83,12 +83,7 @@ struct CommentsSheet: View {
     }
 
     private func loadComments() async {
-        // Fetch comments (kind 1111) that reference this event
-        let filter = NDKFilter(
-            kinds: [OlasConstants.EventKinds.comment],
-            events: [event.id],
-            limit: 100
-        )
+        let filter = NDKFilter.tagging(event, kinds: [OlasConstants.EventKinds.comment], limit: 100)
 
         let subscription = ndk.subscribe(filter: filter)
 
@@ -112,14 +107,11 @@ struct CommentsSheet: View {
         newComment = ""
 
         do {
-            let (newEvent, _) = try await ndk.publish { builder in
-                builder
-                    .kind(OlasConstants.EventKinds.comment)
-                    .content(commentText)
-                    .tag(["e", event.id, "", "root"])
-                    .tag(["p", event.pubkey])
-                    .tag(["k", "\(event.kind)"])
-            }
+            let replyEvent = try await NDKEventBuilder.reply(to: event, ndk: ndk)
+                .content(commentText)
+                .build()
+            _ = try await ndk.publish(replyEvent)
+            let newEvent = replyEvent
 
             // Add to local list
             await MainActor.run {
