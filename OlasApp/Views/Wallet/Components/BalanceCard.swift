@@ -108,24 +108,24 @@ struct BalanceCard: View {
             HStack(spacing: 16) {
                 Button(action: onDeposit) {
                     Label("Deposit", systemImage: "arrow.down.circle.fill")
+                        .font(.headline)
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
                 }
-                .buttonStyle(WalletActionButtonStyle(color: OlasTheme.Colors.accent))
+                .buttonStyle(.glassProminent)
 
                 Button(action: onSend) {
                     Label("Send", systemImage: "arrow.up.circle.fill")
+                        .font(.headline)
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
                 }
-                .buttonStyle(WalletActionButtonStyle(color: OlasTheme.Colors.zapGold))
+                .buttonStyle(.glass)
                 .disabled(balance == 0)
             }
         }
         .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 24)
-                .fill(Color.secondary.opacity(0.1))
-                .shadow(color: Color(.systemGray).opacity(0.3), radius: 10, y: 5)
-        )
+        .glassEffect(.regular, in: .rect(cornerRadius: 24))
     }
 
     private func formatSats(_ amount: Int64) -> String {
@@ -141,22 +141,3 @@ struct BalanceCard: View {
     }
 }
 
-// MARK: - Button Style
-
-struct WalletActionButtonStyle: ButtonStyle {
-    let color: Color
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.headline)
-            .foregroundStyle(.white)
-            .padding(.vertical, 14)
-            .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(color)
-            )
-            .opacity(configuration.isPressed ? 0.8 : 1.0)
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
-    }
-}

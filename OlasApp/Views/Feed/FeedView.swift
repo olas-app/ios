@@ -7,6 +7,8 @@ public struct FeedView: View {
     @Environment(RelayMetadataCache.self) private var relayMetadataCache
     @Environment(NDKAuthManager.self) private var authManager
     @Environment(MuteListManager.self) private var muteListManager
+    @Environment(SparkWalletManager.self) private var sparkWalletManager
+    @Environment(NWCWalletManager.self) private var nwcWalletManager
     private let ndk: NDK
 
     @State private var navigationPath = NavigationPath()
@@ -69,6 +71,16 @@ public struct FeedView: View {
                                 .font(.caption.weight(.semibold))
                         }
                         .foregroundStyle(.primary)
+                    }
+                }
+
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    if let pubkey = authManager.activePubkey {
+                        NavigationLink {
+                            ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: pubkey, sparkWalletManager: sparkWalletManager, nwcWalletManager: nwcWalletManager)
+                        } label: {
+                            Image(systemName: "person.circle")
+                        }
                     }
                 }
             }

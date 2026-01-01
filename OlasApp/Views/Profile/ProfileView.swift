@@ -147,9 +147,6 @@ public struct ProfileView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     NavigationLink(destination: SettingsView(ndk: ndk, sparkWalletManager: sparkWalletManager, nwcWalletManager: nwcWalletManager)) {
                         Image(systemName: "gearshape")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundStyle(.white)
-                            .shadow(color: .black.opacity(0.5), radius: 2)
                     }
                 }
             }

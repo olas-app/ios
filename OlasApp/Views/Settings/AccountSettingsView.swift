@@ -63,7 +63,7 @@ struct AccountSettingsView: View {
                                         Text("Copy Private Key")
                                     }
                                 }
-                                .buttonStyle(.bordered)
+                                .buttonStyle(.glass)
                             }
                         } else {
                             Button {
@@ -74,7 +74,7 @@ struct AccountSettingsView: View {
                                     Text("Reveal Private Key")
                                 }
                             }
-                            .buttonStyle(.bordered)
+                            .buttonStyle(.glass)
                         }
                     }
                 } header: {
@@ -117,7 +117,7 @@ struct AccountSettingsView: View {
                                         Text("Copy Bunker URI")
                                     }
                                 }
-                                .buttonStyle(.bordered)
+                                .buttonStyle(.glass)
                             }
                         }
                     }

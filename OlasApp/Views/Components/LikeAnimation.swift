@@ -165,10 +165,18 @@ struct CommentButton: View {
     private func loadCommentCount() async {
         guard let ndk else { return }
 
+        // Use proper tagging: 'a' tag for parameterized replaceable events, 'e' tag for regular events
+        let tagFilter: [String: Set<String>]
+        if event.isParameterizedReplaceable {
+            tagFilter = ["a": Set([event.tagAddress])]
+        } else {
+            tagFilter = ["e": Set([event.id])]
+        }
+
         let commentFilter = NDKFilter(
             kinds: [OlasConstants.EventKinds.comment],
-            events: [event.id],
-            limit: 100
+            limit: 100,
+            tags: tagFilter
         )
 
         let commentSub = ndk.subscribe(filter: commentFilter)
@@ -263,8 +271,7 @@ struct ZapButton: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(OlasTheme.Colors.accent)
+                    .buttonStyle(.glassProminent)
                     .padding(.horizontal)
                     .padding(.bottom, 32)
                 } else {
@@ -320,7 +327,6 @@ struct ZapButton: View {
                     } label: {
                         if isSending {
                             ProgressView()
-                                .tint(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
                         } else {
@@ -333,8 +339,7 @@ struct ZapButton: View {
                             .padding(.vertical, 14)
                         }
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(OlasTheme.Colors.zapGold)
+                    .buttonStyle(.glassProminent)
                     .disabled(isSending || selectedAmount > walletViewModel.balance)
                     .padding(.horizontal)
                     .padding(.bottom, 32)

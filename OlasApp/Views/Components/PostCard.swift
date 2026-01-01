@@ -372,11 +372,12 @@ struct FullscreenImageViewer: View {
             Button {
                 isPresented = false
             } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title)
-                    .foregroundStyle(.white.opacity(0.8))
-                    .padding()
+                Image(systemName: "xmark")
+                    .font(.title3.weight(.semibold))
+                    .frame(width: 36, height: 36)
             }
+            .buttonStyle(.glass)
+            .padding()
         }
         .statusBarHidden()
         .onAppear {

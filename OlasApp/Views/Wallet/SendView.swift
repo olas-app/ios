@@ -104,8 +104,7 @@ struct SendView: View {
                         .padding(.vertical, 16)
                 }
             }
-            .buttonStyle(.borderedProminent)
-            .tint(OlasTheme.Colors.zapGold)
+            .buttonStyle(.glassProminent)
             .disabled(!isValidInput || isSending)
             .padding(.horizontal, 24)
             .padding(.bottom, 32)
@@ -285,8 +284,7 @@ struct SendView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(OlasTheme.Colors.accent)
+            .buttonStyle(.glassProminent)
             .padding(.horizontal, 24)
             .padding(.bottom, 32)
         }

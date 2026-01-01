@@ -51,11 +51,9 @@ struct FullscreenPostViewer: View {
                         } label: {
                             Image(systemName: "xmark")
                                 .font(.title3.weight(.semibold))
-                                .foregroundStyle(.white)
                                 .frame(width: 36, height: 36)
-                                .background(.black.opacity(0.5))
-                                .clipShape(Circle())
                         }
+                        .buttonStyle(.glass)
                         .padding()
                     }
 
@@ -129,10 +127,8 @@ struct FullscreenPostViewer: View {
             // Mute indicator
             Image(systemName: isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
                 .font(.caption)
-                .foregroundStyle(.white)
                 .padding(8)
-                .background(.black.opacity(0.5))
-                .clipShape(Circle())
+                .glassEffect()
                 .padding()
         }
     }

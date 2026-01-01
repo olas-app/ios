@@ -114,8 +114,7 @@ struct WalletSetupView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(OlasTheme.Colors.accent)
+            .buttonStyle(.glassProminent)
             .padding(.horizontal, 24)
             .padding(.bottom, 32)
         }
@@ -191,8 +190,7 @@ struct WalletSetupView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.primary)
+                .buttonStyle(.glassProminent)
                 .disabled(mintDiscovery.selectedMints.isEmpty)
 
                 Button {
@@ -203,6 +201,7 @@ struct WalletSetupView: View {
                     Text("Back")
                         .font(.subheadline)
                 }
+                .buttonStyle(.glass)
             }
             .padding(24)
         }
@@ -291,8 +290,7 @@ struct WalletSetupView: View {
                             .padding(.vertical, 16)
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(OlasTheme.Colors.accent)
+                .buttonStyle(.glassProminent)
                 .disabled(isSettingUp)
 
                 Button {
@@ -303,6 +301,7 @@ struct WalletSetupView: View {
                     Text("Back")
                         .font(.subheadline)
                 }
+                .buttonStyle(.glass)
                 .disabled(isSettingUp)
             }
             .padding(24)

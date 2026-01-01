@@ -24,67 +24,55 @@ public struct MainTabView: View {
     }
 
     public var body: some View {
-        ZStack(alignment: .bottom) {
-            TabView(selection: $selectedTab) {
-                FeedView(ndk: ndk, settings: settings)
-                    .tabItem {
-                        Label("Home", systemImage: selectedTab == 0 ? "wave.3.up.circle.fill" : "wave.3.up.circle")
-                    }
-                    .tag(0)
-
-                ExploreView(ndk: ndk)
-                    .tabItem {
-                        Label("Explore", systemImage: selectedTab == 1 ? "magnifyingglass.circle.fill" : "magnifyingglass.circle")
-                    }
-                    .tag(1)
-
-                // Wallet - show Spark, Cashu, or NWC based on settings
-                Group {
-                    switch settings.walletType {
-                    case .spark:
-                        SparkWalletView(walletManager: sparkWalletManager)
-                    case .cashu:
-                        WalletView(ndk: ndk, walletViewModel: walletViewModel)
-                    case .nwc:
-                        NWCWalletView(walletManager: nwcWalletManager)
-                    }
-                }
+        TabView(selection: $selectedTab) {
+            FeedView(ndk: ndk, settings: settings)
                 .tabItem {
-                    Label("Wallet", systemImage: selectedTab == 2 ? "creditcard.fill" : "creditcard")
+                    Label("Home", systemImage: selectedTab == 0 ? "wave.3.up.circle.fill" : "wave.3.up.circle")
+                }
+                .tag(0)
+
+            VideosView(ndk: ndk)
+                .tabItem {
+                    Label("Videos", systemImage: selectedTab == 1 ? "play.circle.fill" : "play.circle")
+                }
+                .tag(1)
+
+            // Create tab - triggers sheet instead of navigation
+            Color.clear
+                .tabItem {
+                    Label("Create", systemImage: "plus.circle")
                 }
                 .tag(2)
 
-                // Profile
-                NavigationStack {
-                    if let pubkey = authManager.activePubkey {
-                        ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: pubkey, sparkWalletManager: sparkWalletManager, nwcWalletManager: nwcWalletManager)
-                    } else {
-                        Text("Not logged in")
-                    }
-                }
+            ExploreView(ndk: ndk)
                 .tabItem {
-                    Label("Profile", systemImage: selectedTab == 3 ? "person.fill" : "person")
+                    Label("Explore", systemImage: selectedTab == 3 ? "magnifyingglass.circle.fill" : "magnifyingglass.circle")
                 }
                 .tag(3)
-            }
-            .tint(.primary)
 
-            // FAB - only visible on Home tab
-            if selectedTab == 0 {
-                Button {
-                    showCreatePost = true
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 24, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 56, height: 56)
-                        .background(Color.accentColor)
-                        .clipShape(Circle())
-                        .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+            // Wallet - show Spark, Cashu, or NWC based on settings
+            Group {
+                switch settings.walletType {
+                case .spark:
+                    SparkWalletView(walletManager: sparkWalletManager)
+                case .cashu:
+                    WalletView(ndk: ndk, walletViewModel: walletViewModel)
+                case .nwc:
+                    NWCWalletView(walletManager: nwcWalletManager)
                 }
-                .padding(.bottom, 70)
-                .padding(.trailing, 16)
-                .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .tabItem {
+                Label("Wallet", systemImage: selectedTab == 4 ? "creditcard.fill" : "creditcard")
+            }
+            .tag(4)
+        }
+        .tint(.primary)
+        .tabBarMinimizeBehavior(.onScrollDown)
+        .onChange(of: selectedTab) { oldValue, newValue in
+            // Intercept Create tab selection to show sheet instead
+            if newValue == 2 {
+                selectedTab = oldValue
+                showCreatePost = true
             }
         }
         .fullScreenCover(isPresented: $showCreatePost) {
@@ -114,12 +102,12 @@ public struct MainTabView: View {
                                 .foregroundStyle(.red)
                         } else {
                             Image(systemName: "arrow.up.circle.fill")
-                                .foregroundStyle(.white)
+                                .foregroundStyle(.tint)
                         }
 
                         Text(publishingState.publishingStatus)
                             .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.primary)
 
                         Spacer()
 
@@ -129,7 +117,7 @@ public struct MainTabView: View {
                             } label: {
                                 Image(systemName: "xmark")
                                     .font(.system(size: 14, weight: .bold))
-                                    .foregroundStyle(.white.opacity(0.8))
+                                    .foregroundStyle(.secondary)
                             }
                         }
                     }
@@ -140,12 +128,12 @@ public struct MainTabView: View {
                             ZStack(alignment: .leading) {
                                 // Background track
                                 RoundedRectangle(cornerRadius: 2)
-                                    .fill(Color.white.opacity(0.3))
+                                    .fill(Color.primary.opacity(0.2))
                                     .frame(height: 4)
 
                                 // Progress fill
                                 RoundedRectangle(cornerRadius: 2)
-                                    .fill(Color.white)
+                                    .fill(Color.accentColor)
                                     .frame(width: geometry.size.width * publishingState.publishingProgress, height: 4)
                                     .animation(.easeOut(duration: 0.2), value: publishingState.publishingProgress)
                             }
@@ -155,11 +143,7 @@ public struct MainTabView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background {
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.black.opacity(0.9))
-                        .shadow(radius: 4)
-                }
+                .glassEffect()
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
                 .transition(.move(edge: .top).combined(with: .opacity))
