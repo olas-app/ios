@@ -395,7 +395,7 @@ struct ZapButton: View {
         var total: Int64 = 0
 
         do {
-            for try await zapInfo in ndk.zapManager.subscribeToZaps(for: event, user: nil) {
+            for try await zapInfo in ndk.zapManager.subscribeToZaps(for: event, pubkey: nil) {
                 total += zapInfo.amountSats
 
                 await MainActor.run {

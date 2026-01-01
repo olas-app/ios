@@ -48,12 +48,11 @@ public struct PostPublishingService {
             throw PostError.imageCompressionFailed
         }
 
-        // Upload with real progress tracking using BlossomClient streaming API
+        // Upload with BlossomClient
         let client = BlossomClient()
-        var uploadedBlob: BlossomBlob?
+        await onProgress("Uploading...", 0.35)
 
-        // Progress from 0.05 to 0.70 is the upload phase (65% of total progress)
-        let uploadStream = client.upload(
+        let blob = try await client.upload(
             data: imageData,
             mimeType: "image/jpeg",
             to: serverUrl,
@@ -61,22 +60,7 @@ public struct PostPublishingService {
             configuration: .largeFile
         )
 
-        for try await event in uploadStream {
-            switch event {
-            case .progress(let bytesSent, let totalBytes):
-                let uploadProgress = Double(bytesSent) / Double(totalBytes)
-                // Map upload progress (0-1) to our range (0.05-0.70)
-                let overallProgress = 0.05 + (uploadProgress * 0.65)
-                let percentage = Int(uploadProgress * 100)
-                await onProgress("Uploading... \(percentage)%", overallProgress)
-            case .completed(let blob):
-                uploadedBlob = blob
-            }
-        }
-
-        guard let blob = uploadedBlob else {
-            throw PostError.uploadFailed
-        }
+        await onProgress("Processing...", 0.70)
         let imageUrl = blob.url
 
         // Blurhash

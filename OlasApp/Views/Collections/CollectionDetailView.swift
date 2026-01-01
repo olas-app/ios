@@ -38,6 +38,8 @@ struct CollectionDetailView: View {
         }
         .navigationTitle(collection.title ?? "Collection")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(selectedPicture != nil ? .hidden : .visible, for: .navigationBar)
+        .toolbar(selectedPicture != nil ? .hidden : .visible, for: .tabBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {

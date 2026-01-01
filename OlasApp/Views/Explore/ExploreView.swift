@@ -43,6 +43,8 @@ public struct ExploreView: View {
                     .navigationDestination(for: String.self) { pubkey in
                         ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: authManager.activePubkey)
                     }
+                    .toolbar(selectedPost != nil ? .hidden : .visible, for: .navigationBar)
+                    .toolbar(selectedPost != nil ? .hidden : .visible, for: .tabBar)
 
                 if let post = selectedPost {
                     FullscreenPostViewer(

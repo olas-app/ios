@@ -117,6 +117,8 @@ public struct ProfileView: View {
             .ignoresSafeArea(edges: .top)
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar(selectedPost != nil ? .hidden : .visible, for: .navigationBar)
+            .toolbar(selectedPost != nil ? .hidden : .visible, for: .tabBar)
             .task {
                 await loadFollowCounts()
             }
