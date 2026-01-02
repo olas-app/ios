@@ -4,6 +4,7 @@ import SwiftUI
 public struct VideosView: View {
     @State private var viewModel: VideoFeedViewModel
     @State private var currentIndex: Int? = 0
+    @State private var showVideoCapture = false
 
     @Environment(RelayMetadataCache.self) private var relayMetadataCache
     @Environment(NDKAuthManager.self) private var authManager
@@ -22,24 +23,44 @@ public struct VideosView: View {
             return "Following"
         case let .relay(url):
             return relayMetadataCache.displayName(for: url)
+        case let .pack(pack):
+            return pack.name
         }
     }
 
     public var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
+        NavigationStack {
+            ZStack {
+                Color.black.ignoresSafeArea()
 
-            if viewModel.videos.isEmpty {
-                emptyState
-            } else {
-                videoFeed
+                if viewModel.videos.isEmpty {
+                    emptyState
+                } else {
+                    videoFeed
+                }
+
+                // Top overlay with feed selector
+                VStack {
+                    feedSelector
+                        .padding(.top, 8)
+                    Spacer()
+                }
+
+                // Floating Action Button
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        createButton
+                            .padding(.trailing, 20)
+                            .padding(.bottom, 100)
+                    }
+                }
             }
-
-            // Top overlay with feed selector
-            VStack {
-                feedSelector
-                    .padding(.top, 8)
-                Spacer()
+            .fullScreenCover(isPresented: $showVideoCapture) {
+                NavigationStack {
+                    VideoCaptureView(ndk: ndk)
+                }
             }
         }
         .task {
@@ -142,6 +163,30 @@ public struct VideosView: View {
                 description: Text("Follow some accounts or check back later")
             )
             .foregroundStyle(.white)
+        }
+    }
+
+    // MARK: - Create Button (FAB)
+
+    private var createButton: some View {
+        Button {
+            showVideoCapture = true
+        } label: {
+            Image(systemName: "plus")
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 56, height: 56)
+                .background(
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color(hex: "00BF8F"), Color(hex: "667EEA")],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .shadow(color: Color(hex: "00BF8F").opacity(0.4), radius: 12, y: 4)
+                )
         }
     }
 }

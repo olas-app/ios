@@ -10,6 +10,7 @@ public struct FeedView: View {
     @Environment(MuteListManager.self) private var muteListManager
     @Environment(SparkWalletManager.self) private var sparkWalletManager
     @Environment(NWCWalletManager.self) private var nwcWalletManager
+    @Environment(SavedFeedSourcesManager.self) private var feedSourcesManager
     private let ndk: NDK
 
     @State private var navigationPath = NavigationPath()
@@ -25,6 +26,8 @@ public struct FeedView: View {
             return "Following"
         case let .relay(url):
             return relayMetadataCache.displayName(for: url)
+        case let .pack(pack):
+            return pack.name
         }
     }
 
@@ -62,6 +65,24 @@ public struct FeedView: View {
                             } label: {
                                 let isSelected = viewModel.feedMode == .relay(url: relayURL)
                                 Label(relayMetadataCache.displayName(for: relayURL), systemImage: isSelected ? "checkmark" : "")
+                            }
+                        }
+
+                        if !feedSourcesManager.savedPacks.isEmpty {
+                            Divider()
+
+                            ForEach(feedSourcesManager.savedPacks) { pack in
+                                Button {
+                                    viewModel.switchMode(to: .pack(pack), muteListManager: muteListManager)
+                                } label: {
+                                    let isSelected: Bool = {
+                                        if case .pack(let selectedPack) = viewModel.feedMode {
+                                            return selectedPack.id == pack.id
+                                        }
+                                        return false
+                                    }()
+                                    Label(pack.name, systemImage: isSelected ? "checkmark" : "")
+                                }
                             }
                         }
                     } label: {

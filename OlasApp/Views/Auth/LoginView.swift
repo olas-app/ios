@@ -17,6 +17,8 @@ public struct LoginView: View {
     @State private var showError = false
     @State private var errorMessage = ""
     @State private var detectedSigner: KnownSigner?
+    @State private var showDebugSuccess = false
+    @State private var debugSuccessMessage = ""
 
     enum KnownSigner: CaseIterable {
         case amber
@@ -90,6 +92,13 @@ public struct LoginView: View {
                 Button("OK") {}
             } message: {
                 Text(errorMessage)
+            }
+            .alert("Session Added", isPresented: $showDebugSuccess) {
+                Button("OK") {
+                    dismiss()
+                }
+            } message: {
+                Text(debugSuccessMessage)
             }
         }
         .task {
@@ -321,15 +330,22 @@ public struct LoginView: View {
 
         do {
             _ = try await signer.connect()
-            _ = try await authManager.addSession(signer)
+
+            // Call addSession FIRST before any UI changes
+            let session = try await authManager.addSession(signer)
+            let sessionCount = authManager.availableSessions.count
+
+            // Now show success (view might change, but keychain writes are done)
+            let debugMsg = "LOGIN COMPLETE!\n\nSession ID: \(session.id.prefix(20))...\nSessions stored: \(sessionCount)\nSignerType: \(session.signerType ?? "nil")"
             await MainActor.run {
                 isWaitingForConnection = false
-                dismiss()
+                debugSuccessMessage = debugMsg
+                showDebugSuccess = true
             }
         } catch {
             await MainActor.run {
                 isWaitingForConnection = false
-                errorMessage = error.localizedDescription
+                errorMessage = "LOGIN FAILED: \(error.localizedDescription)"
                 showError = true
             }
         }

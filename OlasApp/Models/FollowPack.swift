@@ -1,7 +1,15 @@
 import Foundation
 import NDKSwiftCore
 
-struct FollowPack: Identifiable, Sendable {
+struct FollowPack: Identifiable, Hashable, Sendable {
+    static func == (lhs: FollowPack, rhs: FollowPack) -> Bool {
+        lhs.id == rhs.id
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+
     let id: String
     let event: NDKEvent
     let name: String

@@ -44,6 +44,13 @@ public final class VideoFeedViewModel {
                 relays: [url],
                 exclusiveRelays: true
             )
+
+        case let .pack(pack):
+            let packFilter = NDKFilter(authors: pack.pubkeys, kinds: videoKinds, limit: 50)
+            subscription = ndk.subscribe(
+                filter: packFilter,
+                cachePolicy: .cacheWithNetwork
+            )
         }
 
         guard let subscription = subscription else { return }

@@ -42,7 +42,9 @@
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>NSCameraUsageDescription</key>
-    <string>Olas needs access to your camera to take photos</string>
+    <string>Olas needs access to your camera to record videos</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Olas needs access to your microphone to record audio with videos</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Olas needs access to your photo library to share photos</string>
     <key>UIApplicationSceneManifest</key>

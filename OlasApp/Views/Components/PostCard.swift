@@ -11,6 +11,7 @@ public struct PostCard: View, Equatable {
     @State private var showLikeAnimation = false
     @State private var showFullscreenImage = false
     @State private var showReportSheet = false
+    @State private var showAddToPackSheet = false
 
     @Environment(MuteListManager.self) private var muteListManager
 
@@ -62,6 +63,9 @@ public struct PostCard: View, Equatable {
         .sheet(isPresented: $showReportSheet) {
             ReportSheet(event: event, ndk: ndk)
         }
+        .sheet(isPresented: $showAddToPackSheet) {
+            AddToPackSheet(ndk: ndk, userPubkey: event.pubkey)
+        }
     }
 
     private var postHeader: some View {
@@ -91,6 +95,14 @@ public struct PostCard: View, Equatable {
                 } label: {
                     Label("Copy ID", systemImage: "doc.on.doc")
                 }
+
+                Button {
+                    showAddToPackSheet = true
+                } label: {
+                    Label("Add to Pack", systemImage: "person.badge.plus")
+                }
+
+                Divider()
 
                 Button(role: .destructive) {
                     showReportSheet = true

@@ -12,7 +12,7 @@ class ExploreViewModel {
     var searchResults: [NDKEvent] = []
     var userResults: [SearchUserResult] = []
     var trendingPosts: [NDKEvent] = []
-    var suggestedUsers: [SuggestedUser] = []
+    var followPacks: [FollowPack] = []
     var selectedTab: ExploreTab = .forYou
 
     // MARK: - Private State
@@ -20,7 +20,6 @@ class ExploreViewModel {
     private let ndk: NDK
     private let settings: SettingsManager
     private let muteListManager: MuteListManager
-    private var seenPubkeys: Set<String> = []
     private var searchTask: Task<Void, Never>?
 
     // MARK: - Computed Properties
@@ -29,16 +28,16 @@ class ExploreViewModel {
         filterMuted(trendingPosts)
     }
 
-    var filteredSuggestedUsers: [SuggestedUser] {
-        suggestedUsers.filter { !muteListManager.isMuted($0.pubkey) }
-    }
-
     var filteredSearchResults: [NDKEvent] {
         filterMuted(searchResults)
     }
 
     var filteredUserResults: [SearchUserResult] {
         userResults.filter { !muteListManager.isMuted($0.pubkey) }
+    }
+
+    var featuredPacks: [FollowPack] {
+        Array(followPacks.prefix(5))
     }
 
     private var feedKinds: [Kind] {
@@ -59,8 +58,15 @@ class ExploreViewModel {
 
     // MARK: - Content Discovery
 
-    /// Loads trending/discover content
+    /// Loads trending/discover content and follow packs
     func loadDiscoverContent() async {
+        // Load packs and posts concurrently
+        async let packsTask: Void = loadFollowPacks()
+        async let postsTask: Void = loadTrendingPosts()
+        _ = await (packsTask, postsTask)
+    }
+
+    private func loadTrendingPosts() async {
         let filter = NDKFilter(
             kinds: feedKinds,
             limit: 50
@@ -73,18 +79,57 @@ class ExploreViewModel {
         }
     }
 
-    private func insertTrendingPostsBatch(_ newPosts: [NDKEvent]) {
-        // Combine and sort - more efficient than individual inserts
-        let combined = trendingPosts + newPosts
-        trendingPosts = combined.sorted { $0.createdAt > $1.createdAt }
+    private func loadFollowPacks() async {
+        // Prioritize media packs (39092) by requesting them first, then generic (39089)
+        let subscription = ndk.subscribe(
+            filter: NDKFilter(
+                kinds: [OlasConstants.EventKinds.mediaFollowPack, OlasConstants.EventKinds.followPack],
+                limit: 30
+            ),
+            subscriptionId: "explore-packs",
+            closeOnEose: true
+        )
 
-        // Extract suggested users
-        for event in newPosts {
-            if !seenPubkeys.contains(event.pubkey), suggestedUsers.count < 10 {
-                seenPubkeys.insert(event.pubkey)
-                suggestedUsers.append(SuggestedUser(pubkey: event.pubkey))
+        var discovered: [String: FollowPack] = [:]
+
+        for await batch in subscription.events {
+            for event in batch {
+                guard let pack = FollowPack(event: event) else { continue }
+                guard pack.memberCount > 0 else { continue }
+
+                // Dedupe by name - prefer media packs over generic packs
+                let key = pack.name.lowercased()
+                if let existing = discovered[key] {
+                    let existingIsMedia = existing.event.kind == OlasConstants.EventKinds.mediaFollowPack
+                    let newIsMedia = event.kind == OlasConstants.EventKinds.mediaFollowPack
+
+                    // Keep media pack over generic, or keep one with more members if same type
+                    if newIsMedia && !existingIsMedia {
+                        discovered[key] = pack
+                    } else if newIsMedia == existingIsMedia && pack.memberCount > existing.memberCount {
+                        discovered[key] = pack
+                    }
+                } else {
+                    discovered[key] = pack
+                }
+            }
+
+            // Sort: media packs first, then by member count
+            followPacks = discovered.values.sorted { pack1, pack2 in
+                let pack1IsMedia = pack1.event.kind == OlasConstants.EventKinds.mediaFollowPack
+                let pack2IsMedia = pack2.event.kind == OlasConstants.EventKinds.mediaFollowPack
+
+                if pack1IsMedia != pack2IsMedia {
+                    return pack1IsMedia // Media packs come first
+                }
+                return pack1.memberCount > pack2.memberCount
             }
         }
+    }
+
+    private func insertTrendingPostsBatch(_ newPosts: [NDKEvent]) {
+        let combined = trendingPosts + newPosts
+        trendingPosts = combined.sorted { $0.createdAt > $1.createdAt }
     }
 
     // MARK: - Search
@@ -251,11 +296,6 @@ enum ExploreTab: String, CaseIterable {
 }
 
 struct SearchUserResult: Identifiable {
-    let id = UUID()
-    let pubkey: String
-}
-
-struct SuggestedUser: Identifiable {
     let id = UUID()
     let pubkey: String
 }

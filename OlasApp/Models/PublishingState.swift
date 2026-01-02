@@ -10,6 +10,7 @@ public final class PublishingState {
     public var publishingProgress: Double = 0
     public var error: Error?
     public var lastPublishedEventId: String?
+    public var didPublish = false
 
     public init() {}
 
@@ -24,5 +25,6 @@ public final class PublishingState {
         publishingStatus = ""
         publishingProgress = 0
         error = nil
+        didPublish = false
     }
 }

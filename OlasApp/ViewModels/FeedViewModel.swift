@@ -38,21 +38,28 @@ public final class FeedViewModel {
         posts = []
         allPosts = []
 
-        let filter = NDKFilter(kinds: feedKinds, limit: 50)
-
         switch feedMode {
         case .following:
+            let filter = NDKFilter(kinds: feedKinds, limit: 50)
             subscription = ndk.subscribe(
                 filter: filter,
                 cachePolicy: .cacheWithNetwork
             )
 
         case let .relay(url):
+            let filter = NDKFilter(kinds: feedKinds, limit: 50)
             subscription = ndk.subscribe(
                 filter: filter,
                 cachePolicy: .networkOnly,
                 relays: [url],
                 exclusiveRelays: true
+            )
+
+        case let .pack(pack):
+            let filter = NDKFilter(authors: pack.pubkeys, kinds: feedKinds, limit: 100)
+            subscription = ndk.subscribe(
+                filter: filter,
+                cachePolicy: .cacheWithNetwork
             )
         }
 
