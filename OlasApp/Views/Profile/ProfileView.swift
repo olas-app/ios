@@ -40,7 +40,13 @@ public struct ProfileView: View {
 
                 // Avatar + Name row
                 HStack(alignment: .top, spacing: 16) {
-                    ProfileAvatarView(profile: profile)
+                    NDKUIProfilePicture(ndk: ndk, pubkey: pubkey, size: 100)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle()
+                                .stroke(Color(.systemBackground), lineWidth: 4)
+                        )
+                        .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
                         .offset(y: -40)
 
                     VStack(alignment: .leading, spacing: 4) {
@@ -211,48 +217,6 @@ private struct ProfileBannerView: View {
                 }
             }
             .clipped()
-    }
-}
-
-private struct ProfileAvatarView: View {
-    let profile: NDKProfile
-
-    var body: some View {
-        // Use Color.clear as fixed-size base to prevent .fill from expanding parent
-        Color.clear
-            .frame(width: 100, height: 100)
-            .background {
-                if let pictureURL = profile.pictureURL {
-                    AsyncImage(url: pictureURL) { image in
-                        image
-                            .resizable()
-                            .scaledToFill()
-                    } placeholder: {
-                        avatarPlaceholderContent
-                    }
-                } else {
-                    avatarPlaceholderContent
-                }
-            }
-            .clipShape(Circle())
-            .overlay(
-                Circle()
-                    .stroke(Color(.systemBackground), lineWidth: 4)
-            )
-            .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
-    }
-
-    private var avatarPlaceholderContent: some View {
-        LinearGradient(
-            colors: [OlasTheme.Colors.accent.opacity(0.6), OlasTheme.Colors.accent],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-        .overlay(
-            Text(String(profile.displayName.prefix(1)).uppercased())
-                .font(.system(size: 40, weight: .bold))
-                .foregroundStyle(.white)
-        )
     }
 }
 
