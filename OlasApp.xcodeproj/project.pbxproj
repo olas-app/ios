@@ -209,7 +209,7 @@
 			mainGroup = 8B41F63C2DEDD0D5001A66F9;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				BCADD6C81B824D75AC023BFA /* XCRemoteSwiftPackageReference "NDKSwift" */,
+				BCADD6C81B824D75AC023BFA /* XCLocalSwiftPackageReference "NDKSwift" */,
 				6EF7FD8648014C208EB4DE72 /* XCRemoteSwiftPackageReference "UnifiedBlurHash" */,
 				F346A611DD4340238529C9E7 /* XCRemoteSwiftPackageReference "breez-sdk-spark-swift" */,
 				0B59A6E543434BB593C819DA /* XCRemoteSwiftPackageReference "MnemonicSwift" */,
@@ -508,13 +508,9 @@
 				minimumVersion = 1.0.0;
 			};
 		};
-		BCADD6C81B824D75AC023BFA /* XCRemoteSwiftPackageReference "NDKSwift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/pablof7z/NDKSwift";
-			requirement = {
-				branch = master;
-				kind = branch;
-			};
+		BCADD6C81B824D75AC023BFA /* XCLocalSwiftPackageReference "NDKSwift" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../NDKSwift-z94ws0";
 		};
 		F346A611DD4340238529C9E7 /* XCRemoteSwiftPackageReference "breez-sdk-spark-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -534,7 +530,7 @@
 		};
 		474C0B2C35BA4E14BA4C3682 /* NDKSwiftNostrDB */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = BCADD6C81B824D75AC023BFA /* XCRemoteSwiftPackageReference "NDKSwift" */;
+			package = BCADD6C81B824D75AC023BFA /* XCLocalSwiftPackageReference "NDKSwift" */;
 			productName = NDKSwiftNostrDB;
 		};
 		6BFBD576CA594027BCF7349A /* MnemonicSwift */ = {
@@ -549,12 +545,12 @@
 		};
 		7A70522E321945EFB4B338AE /* NDKSwiftUI */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = BCADD6C81B824D75AC023BFA /* XCRemoteSwiftPackageReference "NDKSwift" */;
+			package = BCADD6C81B824D75AC023BFA /* XCLocalSwiftPackageReference "NDKSwift" */;
 			productName = NDKSwiftUI;
 		};
 		998E391250C94006AEB38E8E /* NDKSwiftCore */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = BCADD6C81B824D75AC023BFA /* XCRemoteSwiftPackageReference "NDKSwift" */;
+			package = BCADD6C81B824D75AC023BFA /* XCLocalSwiftPackageReference "NDKSwift" */;
 			productName = NDKSwiftCore;
 		};
 /* End XCSwiftPackageProductDependency section */

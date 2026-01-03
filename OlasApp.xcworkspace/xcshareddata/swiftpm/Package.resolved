@@ -1,5 +1,5 @@
 {
-  "originHash" : "fbc1817cd7652b39135bbcb3eec74549d1d74340beeb6fbbcf4deddba5ae6718",
+  "originHash" : "4bb37a958db59a8941ee864dd5a628165e883bdb2d4c316f4fe93aa38dc4d68d",
   "pins" : [
     {
       "identity" : "base58",
@@ -98,15 +98,6 @@
       "state" : {
         "revision" : "2d7f3e76e904621e111efada6cc9575f39543bb2",
         "version" : "2.2.5"
-      }
-    },
-    {
-      "identity" : "ndkswift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/pablof7z/NDKSwift",
-      "state" : {
-        "branch" : "master",
-        "revision" : "b82c1ec350684094c7e1394003b74dfb8731252a"
       }
     },
     {

@@ -1,3 +1,4 @@
+import Combine
 import NDKSwiftCore
 import NDKSwiftNostrDB
 import SwiftUI
@@ -16,9 +17,15 @@ struct OlasApp: App {
     @State private var isInitialized = false
     @State private var pendingNWCURI: String?
 
-    // DEBUG: Visible debug state
-    @State private var debugMessage: String = ""
-    @State private var showDebugAlert = false
+    // Signing failure UI state
+    @State private var showSigningError = false
+    @State private var signingErrorMessage = ""
+    @State private var signingFailureCancellable: AnyCancellable?
+
+    // Session validation failure UI state
+    @State private var showReconnectSheet = false
+    @State private var invalidSession: NDKSession?
+    @State private var sessionValidationCancellable: AnyCancellable?
 
     // Splash screen animation state
     @State private var logoScale: CGFloat = 0.3
@@ -58,10 +65,26 @@ struct OlasApp: App {
                     pendingNWCURI = nil
                 }
             }
-            .alert("Session Debug", isPresented: $showDebugAlert) {
-                Button("OK") {}
+            .alert("Action Failed", isPresented: $showSigningError) {
+                Button("OK", role: .cancel) {}
+                if authManager?.activeSigner is NDKBunkerSigner {
+                    Button("Reconnect Signer") {
+                        if let session = authManager?.activeSession {
+                            invalidSession = session
+                            showReconnectSheet = true
+                        }
+                    }
+                }
             } message: {
-                Text(debugMessage)
+                Text(signingErrorMessage)
+            }
+            .sheet(isPresented: $showReconnectSheet) {
+                if let session = invalidSession, let ndk = ndk, let authManager = authManager {
+                    SignerReconnectView(session: session, ndk: ndk, authManager: authManager) {
+                        showReconnectSheet = false
+                        invalidSession = nil
+                    }
+                }
             }
         }
     }
@@ -229,41 +252,7 @@ struct OlasApp: App {
 
         // Create auth manager with NDK
         let newAuthManager = NDKAuthManager(ndk: newNDK)
-
-        // DEBUG: Check keychain BEFORE initialize (which might delete sessions)
-        let keychainManagerPre = NDKKeychainManager()
-        var preInitIds: [String] = []
-        do {
-            preInitIds = try await keychainManagerPre.getAllSessionIdentifiers()
-        } catch {
-            preInitIds = ["ERROR: \(error)"]
-        }
-        UserDefaults.standard.set("PRE-INIT: \(preInitIds.count) IDs", forKey: "NDK_DEBUG_PRE_INIT")
-
-        // Restore session - NDKAuthManager automatically sets signer on NDK
         await newAuthManager.initialize()
-
-        // DEBUG: Check keychain AFTER initialize
-        let keychainManager = NDKKeychainManager()
-        var keychainSessionIds: [String] = []
-        do {
-            keychainSessionIds = try await keychainManager.getAllSessionIdentifiers()
-        } catch {
-            keychainSessionIds = ["ERROR: \(error.localizedDescription)"]
-        }
-
-        // DEBUG: Read debug info from UserDefaults
-        let restoreStatus = UserDefaults.standard.string(forKey: "NDK_DEBUG_RESTORE") ?? "no restore"
-        let rawSigner = UserDefaults.standard.string(forKey: "NDK_DEBUG_RAW_SIGNER") ?? "no raw data"
-
-        // DEBUG: Capture session state for debugging
-        let sessionCount = newAuthManager.availableSessions.count
-        let isAuth = newAuthManager.isAuthenticated
-        let debugInfo = "Restore: \(restoreStatus)\n\n\(rawSigner)\n\nSessions: \(sessionCount), Auth: \(isAuth)"
-        await MainActor.run {
-            self.debugMessage = debugInfo
-            self.showDebugAlert = true
-        }
 
         // Connect in background - don't block UI for network
         Task {
@@ -295,6 +284,22 @@ struct OlasApp: App {
             self.nwcWalletManager = nwcManager
             self.followPackManager = packManager
             self.isInitialized = true
+
+            // Subscribe to signing failures - centralized error handling
+            self.signingFailureCancellable = newNDK.signingFailedPublisher
+                .receive(on: DispatchQueue.main)
+                .sink { [self] failure in
+                    self.signingErrorMessage = failure.error.localizedDescription
+                    self.showSigningError = true
+                }
+
+            // Subscribe to session validation failures - show reconnect UI
+            self.sessionValidationCancellable = newAuthManager.sessionValidationFailedPublisher
+                .receive(on: DispatchQueue.main)
+                .sink { [self] failure in
+                    self.invalidSession = failure.session
+                    self.showReconnectSheet = true
+                }
         }
     }
 }

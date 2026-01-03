@@ -17,8 +17,6 @@ public struct LoginView: View {
     @State private var showError = false
     @State private var errorMessage = ""
     @State private var detectedSigner: KnownSigner?
-    @State private var showDebugSuccess = false
-    @State private var debugSuccessMessage = ""
 
     enum KnownSigner: CaseIterable {
         case amber
@@ -92,13 +90,6 @@ public struct LoginView: View {
                 Button("OK") {}
             } message: {
                 Text(errorMessage)
-            }
-            .alert("Session Added", isPresented: $showDebugSuccess) {
-                Button("OK") {
-                    dismiss()
-                }
-            } message: {
-                Text(debugSuccessMessage)
             }
         }
         .task {
@@ -256,7 +247,14 @@ public struct LoginView: View {
     }
 
     private func openSignerApp(connectURL: String) {
-        if let url = URL(string: connectURL) {
+        // Add callback for return-to-app flow when opening via detected signer
+        var urlWithCallback = connectURL
+        let callback = "olas://nip46"
+        if let encodedCallback = callback.addingPercentEncoding(withAllowedCharacters: .alphanumerics) {
+            urlWithCallback += "&callback=\(encodedCallback)"
+        }
+
+        if let url = URL(string: urlWithCallback) {
             openURL(url)
         }
     }
@@ -289,13 +287,7 @@ public struct LoginView: View {
                 try? await Task.sleep(for: .milliseconds(100))
             }
 
-            if var url = url {
-                // Add callback for signers that support return-to-app flow
-                let callback = "olas://nip46"
-                // Use alphanumerics to ensure :// gets encoded as %3A%2F%2F
-                if let encodedCallback = callback.addingPercentEncoding(withAllowedCharacters: .alphanumerics) {
-                    url += "&callback=\(encodedCallback)"
-                }
+            if let url = url {
                 nostrConnectURL = url
                 generateQRCode(from: url)
 
@@ -330,22 +322,15 @@ public struct LoginView: View {
 
         do {
             _ = try await signer.connect()
-
-            // Call addSession FIRST before any UI changes
-            let session = try await authManager.addSession(signer)
-            let sessionCount = authManager.availableSessions.count
-
-            // Now show success (view might change, but keychain writes are done)
-            let debugMsg = "LOGIN COMPLETE!\n\nSession ID: \(session.id.prefix(20))...\nSessions stored: \(sessionCount)\nSignerType: \(session.signerType ?? "nil")"
+            _ = try await authManager.addSession(signer)
             await MainActor.run {
                 isWaitingForConnection = false
-                debugSuccessMessage = debugMsg
-                showDebugSuccess = true
+                dismiss()
             }
         } catch {
             await MainActor.run {
                 isWaitingForConnection = false
-                errorMessage = "LOGIN FAILED: \(error.localizedDescription)"
+                errorMessage = error.localizedDescription
                 showError = true
             }
         }

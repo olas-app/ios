@@ -91,6 +91,8 @@ struct AccountSettingsView: View {
                         Label("Remote Signer", systemImage: "network")
                             .foregroundStyle(.blue)
 
+                        signerHealthIndicator
+
                         Text("You're using a remote signer via NIP-46. Your keys are managed by your remote signing app.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -171,5 +173,39 @@ struct AccountSettingsView: View {
             try? await Task.sleep(for: .seconds(2))
             copiedMessage = nil
         }
+    }
+
+    @ViewBuilder
+    private var signerHealthIndicator: some View {
+        HStack(spacing: 8) {
+            switch authManager.activeSignerHealth {
+            case .unknown:
+                Image(systemName: "circle.fill")
+                    .foregroundStyle(.gray)
+                Text("Checking connection...")
+                    .foregroundStyle(.secondary)
+            case .healthy:
+                Image(systemName: "circle.fill")
+                    .foregroundStyle(.green)
+                Text("Connected")
+                    .foregroundStyle(.secondary)
+            case .unreachable:
+                Image(systemName: "circle.fill")
+                    .foregroundStyle(.red)
+                Text("Signer unreachable")
+                    .foregroundStyle(.secondary)
+            case .unauthorized:
+                Image(systemName: "circle.fill")
+                    .foregroundStyle(.orange)
+                Text("Access revoked - please reconnect")
+                    .foregroundStyle(.secondary)
+            case .error(let message):
+                Image(systemName: "circle.fill")
+                    .foregroundStyle(.red)
+                Text(message)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .font(.caption)
     }
 }

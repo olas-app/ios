@@ -17,7 +17,7 @@ public enum LogLevel: String, Codable, CaseIterable, Sendable {
     }
 }
 
-public struct LogEntry: Codable, Sendable {
+public struct TelemetryLogEntry: Codable, Sendable {
     let timestamp: Date
     let level: LogLevel
     let category: String
@@ -63,7 +63,7 @@ public final class TelemetryService {
     }
 
     // Queued logs for batch sending
-    @ObservationIgnored private var logQueue: [LogEntry] = []
+    @ObservationIgnored private var logQueue: [TelemetryLogEntry] = []
     @ObservationIgnored private var sendTask: Task<Void, Never>?
     @ObservationIgnored private let batchSize = 50
     @ObservationIgnored private let flushInterval: TimeInterval = 30
@@ -102,7 +102,7 @@ public final class TelemetryService {
     // MARK: - Core Logging
 
     private func log(level: LogLevel, message: String, category: String, metadata: [String: String]?) {
-        let entry = LogEntry(
+        let entry = TelemetryLogEntry(
             timestamp: Date(),
             level: level,
             category: category,
@@ -161,7 +161,7 @@ public final class TelemetryService {
         }
     }
 
-    private static func sendLogs(_ logs: [LogEntry], to endpoint: String) async {
+    private static func sendLogs(_ logs: [TelemetryLogEntry], to endpoint: String) async {
         guard let url = URL(string: endpoint) else { return }
 
         var request = URLRequest(url: url)
@@ -200,7 +200,7 @@ public final class TelemetryService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 10
 
-        let testEntry = LogEntry(
+        let testEntry = TelemetryLogEntry(
             timestamp: Date(),
             level: .info,
             category: "Telemetry",
