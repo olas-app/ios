@@ -450,7 +450,8 @@ public final class SparkWalletManager {
             request: ReceivePaymentRequest(
                 paymentMethod: .bolt11Invoice(
                     description: description ?? "",
-                    amountSats: amountSats
+                    amountSats: amountSats,
+                    expirySecs: nil
                 )
             )
         )
@@ -472,7 +473,8 @@ public final class SparkWalletManager {
             request: ReceivePaymentRequest(
                 paymentMethod: .bolt11Invoice(
                     description: description ?? "",
-                    amountSats: nil
+                    amountSats: nil,
+                    expirySecs: nil
                 )
             )
         )
@@ -610,6 +612,9 @@ public final class SparkWalletManager {
         case let .claimedDeposits(deposits):
             Log.info("Claimed deposits", category: "Spark", metadata: ["count": "\(deposits.count)"])
             await refreshInfo()
+        case .optimization:
+            // Ignore optimization events
+            break
         }
     }
 
