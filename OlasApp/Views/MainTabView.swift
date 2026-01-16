@@ -24,57 +24,88 @@ public struct MainTabView: View {
     }
 
     public var body: some View {
-        TabView(selection: $selectedTab) {
-            FeedView(ndk: ndk, settings: settings)
-                .tabItem {
-                    Label("Home", systemImage: selectedTab == 0 ? "wave.3.up.circle.fill" : "wave.3.up.circle")
-                }
-                .tag(0)
-
-            VideosView(ndk: ndk)
-                .tabItem {
-                    Label("Videos", systemImage: selectedTab == 1 ? "play.circle.fill" : "play.circle")
-                }
-                .tag(1)
-
-            // Create tab - triggers sheet instead of navigation
-            Color.clear
-                .tabItem {
-                    Label("Create", systemImage: "plus.circle")
-                }
-                .tag(2)
-
-            ExploreView(ndk: ndk)
-                .tabItem {
-                    Label("Explore", systemImage: selectedTab == 3 ? "magnifyingglass.circle.fill" : "magnifyingglass.circle")
-                }
-                .tag(3)
-
-            // Wallet - show Spark, Cashu, or NWC based on settings
+        ZStack(alignment: .bottom) {
+            // Content area - switch between views based on selected tab
             Group {
-                switch settings.walletType {
-                case .spark:
-                    SparkWalletView(walletManager: sparkWalletManager)
-                case .cashu:
-                    WalletView(ndk: ndk, walletViewModel: walletViewModel)
-                case .nwc:
-                    NWCWalletView(walletManager: nwcWalletManager)
+                switch selectedTab {
+                case 0:
+                    FeedView(ndk: ndk, settings: settings)
+                case 1:
+                    VideosView(ndk: ndk)
+                case 2:
+                    ExploreView(ndk: ndk)
+                case 3:
+                    Group {
+                        switch settings.walletType {
+                        case .spark:
+                            SparkWalletView(walletManager: sparkWalletManager)
+                        case .cashu:
+                            WalletView(ndk: ndk, walletViewModel: walletViewModel)
+                        case .nwc:
+                            NWCWalletView(walletManager: nwcWalletManager)
+                        }
+                    }
+                default:
+                    FeedView(ndk: ndk, settings: settings)
                 }
             }
-            .tabItem {
-                Label("Wallet", systemImage: selectedTab == 4 ? "creditcard.fill" : "creditcard")
+
+            // Custom dual-pill bottom bar
+            HStack(spacing: 12) {
+                // Main navigation pill
+                HStack(spacing: 0) {
+                    TabBarButton(
+                        icon: "wave.3.up.circle",
+                        selectedIcon: "wave.3.up.circle.fill",
+                        label: "Home",
+                        isSelected: selectedTab == 0
+                    ) {
+                        selectedTab = 0
+                    }
+
+                    TabBarButton(
+                        icon: "play.circle",
+                        selectedIcon: "play.circle.fill",
+                        label: "Videos",
+                        isSelected: selectedTab == 1
+                    ) {
+                        selectedTab = 1
+                    }
+
+                    TabBarButton(
+                        icon: "magnifyingglass.circle",
+                        selectedIcon: "magnifyingglass.circle.fill",
+                        label: "Explore",
+                        isSelected: selectedTab == 2
+                    ) {
+                        selectedTab = 2
+                    }
+
+                    TabBarButton(
+                        icon: "creditcard",
+                        selectedIcon: "creditcard.fill",
+                        label: "Wallet",
+                        isSelected: selectedTab == 3
+                    ) {
+                        selectedTab = 3
+                    }
+                }
+                .glassEffect(.regular.interactive())
+
+                // Create button pill
+                Button {
+                    showCreatePost = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 20, weight: .semibold))
+                        .frame(width: 50, height: 50)
+                }
+                .glassEffect(.regular.interactive())
             }
-            .tag(4)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
         }
         .tint(.primary)
-        .tabBarMinimizeBehavior(.onScrollDown)
-        .onChange(of: selectedTab) { oldValue, newValue in
-            // Intercept Create tab selection to show sheet instead
-            if newValue == 2 {
-                selectedTab = oldValue
-                showCreatePost = true
-            }
-        }
         .fullScreenCover(isPresented: $showCreatePost) {
             CreatePostView(ndk: ndk)
         }
@@ -151,5 +182,28 @@ public struct MainTabView: View {
                 .animation(.spring(response: 0.4, dampingFraction: 0.8), value: publishingState.error != nil)
             }
         }
+    }
+}
+
+// MARK: - Tab Bar Button Component
+private struct TabBarButton: View {
+    let icon: String
+    let selectedIcon: String
+    let label: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: isSelected ? selectedIcon : icon)
+                    .font(.system(size: 24))
+                Text(label)
+                    .font(.caption2)
+            }
+            .frame(width: 70, height: 50)
+            .foregroundStyle(isSelected ? .primary : .secondary)
+        }
+        .buttonStyle(.plain)
     }
 }
