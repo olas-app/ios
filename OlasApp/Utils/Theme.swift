@@ -29,9 +29,60 @@ public enum OlasTheme {
     // MARK: - Glassmorphism
 
     public enum Glass {
+        // MARK: - Corner Radius
         public static let cornerRadius: CGFloat = 20
-        public static let shadowRadius: CGFloat = 20
-        public static let shadowOpacity: Double = 0.1
+
+        // MARK: - Shadow Parameters
+        public enum Shadow {
+            public static let radius: CGFloat = 20
+            public static let opacity: Double = 0.1
+            public static let yOffset: CGFloat = 10
+        }
+
+        // MARK: - Defaults
+        public enum Defaults {
+            public static let level: Level = .ultraThin
+            public static let cornerRadius: CGFloat = Glass.cornerRadius
+        }
+
+        // MARK: - Glass Levels
+        /// Glass intensity levels mapped to SwiftUI materials.
+        /// - `ultraThin`: Maps to `.ultraThinMaterial` - most transparent
+        /// - `thin`: Maps to `.thinMaterial` - moderate transparency
+        /// - `regular`: Maps to `.regularMaterial` - least transparent
+        public enum Level {
+            case ultraThin
+            case thin
+            case regular
+
+            public var material: Material {
+                switch self {
+                case .ultraThin:
+                    return .ultraThinMaterial
+                case .thin:
+                    return .thinMaterial
+                case .regular:
+                    return .regularMaterial
+                }
+            }
+
+            public var shadowOpacity: Double {
+                switch self {
+                case .ultraThin:
+                    return Shadow.opacity * 0.5
+                case .thin:
+                    return Shadow.opacity
+                case .regular:
+                    return Shadow.opacity * 1.5
+                }
+            }
+        }
+
+        // Legacy support
+        @available(*, deprecated, renamed: "OlasTheme.Glass.Shadow.radius")
+        public static let shadowRadius: CGFloat = Shadow.radius
+        @available(*, deprecated, renamed: "OlasTheme.Glass.Shadow.opacity")
+        public static let shadowOpacity: Double = Shadow.opacity
     }
 
     // MARK: - Spacing
@@ -72,22 +123,38 @@ extension Color {
 // MARK: - View Modifiers
 
 public struct GlassBackground: ViewModifier {
-    @Environment(\.colorScheme) var colorScheme
+    let level: OlasTheme.Glass.Level
+    let cornerRadius: CGFloat
+
+    public init(
+        level: OlasTheme.Glass.Level = OlasTheme.Glass.Defaults.level,
+        cornerRadius: CGFloat = OlasTheme.Glass.Defaults.cornerRadius
+    ) {
+        self.level = level
+        self.cornerRadius = cornerRadius
+    }
 
     public func body(content: Content) -> some View {
         content
-            .background(.ultraThinMaterial)
-            .cornerRadius(OlasTheme.Glass.cornerRadius)
+            .background(level.material)
+            .cornerRadius(cornerRadius)
             .shadow(
-                color: .black.opacity(OlasTheme.Glass.shadowOpacity),
-                radius: OlasTheme.Glass.shadowRadius,
-                y: 10
+                color: .black.opacity(level.shadowOpacity),
+                radius: OlasTheme.Glass.Shadow.radius,
+                y: OlasTheme.Glass.Shadow.yOffset
             )
     }
 }
 
 public extension View {
-    func glassBackground() -> some View {
-        modifier(GlassBackground())
+    /// Applies a glass background with the specified level and corner radius
+    /// - Parameters:
+    ///   - level: The glass intensity level (ultraThin, thin, regular). Defaults to `.ultraThin`
+    ///   - cornerRadius: The corner radius. Defaults to `OlasTheme.Glass.cornerRadius` (20pt)
+    func glassBackground(
+        level: OlasTheme.Glass.Level = OlasTheme.Glass.Defaults.level,
+        cornerRadius: CGFloat = OlasTheme.Glass.Defaults.cornerRadius
+    ) -> some View {
+        modifier(GlassBackground(level: level, cornerRadius: cornerRadius))
     }
 }
