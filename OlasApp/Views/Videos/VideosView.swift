@@ -113,7 +113,7 @@ public struct VideosView: View {
             .foregroundStyle(.white)
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
-            .background(.ultraThinMaterial.opacity(0.8))
+            .background(OlasTheme.Glass.Level.ultraThin.material.opacity(0.8))
             .clipShape(Capsule())
         }
     }

@@ -209,8 +209,7 @@ struct SearchBar: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(.ultraThinMaterial)
-        .cornerRadius(12)
+        .glassBackground(level: .ultraThin, cornerRadius: OlasTheme.Glass.cornerRadius)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
     }

@@ -53,7 +53,7 @@ struct CommentsSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
-        .presentationCornerRadius(24)
+        .presentationCornerRadius(OlasTheme.Glass.cornerRadius)
     }
 
     private var commentInput: some View {
@@ -62,8 +62,7 @@ struct CommentsSheet: View {
                 .lineLimit(1 ... 4)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
-                .background(.ultraThinMaterial)
-                .cornerRadius(20)
+                .glassBackground(level: .ultraThin, cornerRadius: OlasTheme.Glass.cornerRadius)
                 .focused($isInputFocused)
 
             Button {
