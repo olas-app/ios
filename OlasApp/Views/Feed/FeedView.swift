@@ -35,22 +35,25 @@ public struct FeedView: View {
     public var body: some View {
         NavigationStack(path: $navigationPath) {
             ScrollView {
-                LazyVStack(spacing: 8) {
-                    ForEach(viewModel.posts, id: \.id) { event in
-                        PostCard(event: event, ndk: ndk) { pubkey in
-                            navigationPath.append(pubkey)
+                ZStack(alignment: .top) {
+                    // Main content
+                    LazyVStack(spacing: 8) {
+                        ForEach(viewModel.posts, id: \.id) { event in
+                            PostCard(event: event, ndk: ndk) { pubkey in
+                                navigationPath.append(pubkey)
+                            }
+                            .equatable()
                         }
-                        .equatable()
                     }
-                }
-                .background(
-                    GeometryReader { geometry in
+
+                    // Background geometry reader for global offset tracking
+                    GeometryReader { proxy in
                         Color.clear.preference(
                             key: ScrollOffsetPreferenceKey.self,
-                            value: -geometry.frame(in: .named("feedScroll")).origin.y
+                            value: -proxy.frame(in: .global).origin.y
                         )
                     }
-                )
+                }
             }
             .coordinateSpace(name: "feedScroll")
             .onPreferenceChange(ScrollOffsetPreferenceKey.self) { offset in
@@ -150,15 +153,7 @@ public struct FeedView: View {
                 ProgressView()
             }
 
-            if let error = viewModel.error {
-                ContentUnavailableView(
-                    "Unable to load feed",
-                    systemImage: "wifi.slash",
-                    description: Text(error.localizedDescription)
-                )
-            }
-
-            if !viewModel.isLoading && viewModel.posts.isEmpty && viewModel.error == nil {
+            if !viewModel.isLoading && viewModel.posts.isEmpty {
                 ContentUnavailableView(
                     "No posts yet",
                     systemImage: "photo.on.rectangle",

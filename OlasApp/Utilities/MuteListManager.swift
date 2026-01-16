@@ -46,7 +46,8 @@ public final class MuteListManager {
         startCentralizedSubscription()
     }
 
-    /// Starts all mute list subscriptions (user + centralized sources)
+    /// Starts the mute list subscription. This method is idempotent and safe to call
+    /// repeatedly - it cancels any existing subscription tasks before creating new ones.
     public func startSubscription() {
         startUserSubscription()
         startCentralizedSubscription()
@@ -113,27 +114,26 @@ public final class MuteListManager {
         centralizedSubscriptionTask = nil
     }
 
-    /// Parses the current user's mute list
-    private func parseUserMuteList(from event: NDKEvent) {
+    /// Extracts muted pubkeys from an event's "p" tags
+    private func extractMutedPubkeys(from event: NDKEvent) -> Set<String> {
         var pubkeys = Set<String>()
         for tag in event.tags {
             if tag.first == "p", tag.count > 1 {
                 pubkeys.insert(tag[1])
             }
         }
-        userMutedPubkeys = pubkeys
+        return pubkeys
+    }
+
+    /// Parses the current user's mute list
+    private func parseUserMuteList(from event: NDKEvent) {
+        userMutedPubkeys = extractMutedPubkeys(from: event)
         recalculateMutedPubkeys()
     }
 
     /// Parses a centralized mute list from a source pubkey
     private func parseCentralizedMuteList(from event: NDKEvent) {
-        var pubkeys = Set<String>()
-        for tag in event.tags {
-            if tag.first == "p", tag.count > 1 {
-                pubkeys.insert(tag[1])
-            }
-        }
-        mutedBySource[event.pubkey] = pubkeys
+        mutedBySource[event.pubkey] = extractMutedPubkeys(from: event)
         recalculateMutedPubkeys()
     }
 

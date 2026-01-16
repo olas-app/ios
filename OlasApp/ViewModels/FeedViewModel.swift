@@ -5,17 +5,18 @@ import SwiftUI
 @MainActor
 @Observable
 public final class FeedViewModel {
+    private static let loadingTimeout: Duration = .seconds(10)
+
     public private(set) var posts: [NDKEvent] = []
     public private(set) var isLoading = false
-    public private(set) var error: Error?
     public var feedMode: FeedMode = .following
 
     private let ndk: NDK
     private let settings: SettingsManager
     private var subscription: NDKSubscription<NDKEvent>?
     private var subscriptionTask: Task<Void, Never>?
-    private var allPosts: [NDKEvent] = []
-    private var currentMuteListManager: MuteListManager?
+    private var loadingTimeoutTask: Task<Void, Never>?
+    private var loadToken = UUID()
 
     /// Dynamic kinds based on video settings
     private var feedKinds: [Kind] {
@@ -32,11 +33,11 @@ public final class FeedViewModel {
     }
 
     public func startSubscription(muteListManager: MuteListManager) {
-        currentMuteListManager = muteListManager
+        stopSubscription()
+        let token = UUID()
+        loadToken = token
         isLoading = true
-        error = nil
         posts = []
-        allPosts = []
 
         switch feedMode {
         case .following:
@@ -63,14 +64,26 @@ public final class FeedViewModel {
             )
         }
 
-        guard let subscription = subscription else { return }
+        guard let subscription = subscription else {
+            isLoading = false
+            return
+        }
+
+        // Timeout to clear loading state if no events arrive
+        loadingTimeoutTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.loadingTimeout)
+            guard let self = self, !Task.isCancelled, self.loadToken == token else { return }
+            self.isLoading = false
+        }
 
         subscriptionTask = Task { [weak self] in
             var seenEvents: Set<String> = []
 
             for await events in subscription.events {
-                guard let self = self else { break }
-                if Task.isCancelled { break }
+                guard let self = self, !Task.isCancelled, self.loadToken == token else { return }
+
+                loadingTimeoutTask?.cancel()
+                loadingTimeoutTask = nil
 
                 for event in events {
                     // Track unique events
@@ -81,9 +94,6 @@ public final class FeedViewModel {
                     guard !muteListManager.mutedPubkeys.contains(event.pubkey) else {
                         continue
                     }
-
-                    // Add to allPosts for tracking
-                    allPosts.append(event)
 
                     // Insert in sorted position using binary search
                     let insertIndex = posts.insertionIndex(for: event) { $0.createdAt > $1.createdAt }
@@ -96,15 +106,18 @@ public final class FeedViewModel {
     }
 
     public func stopSubscription() {
+        loadToken = UUID()
+        loadingTimeoutTask?.cancel()
+        loadingTimeoutTask = nil
         subscriptionTask?.cancel()
         subscriptionTask = nil
         subscription = nil
+        isLoading = false
     }
 
     public func updateForMuteList(_ mutedPubkeys: Set<String>) {
         // Remove muted posts without re-sorting
         posts.removeAll { mutedPubkeys.contains($0.pubkey) }
-        allPosts.removeAll { mutedPubkeys.contains($0.pubkey) }
     }
 
     public func switchMode(to mode: FeedMode, muteListManager: MuteListManager) {

@@ -1,28 +1,29 @@
 import AVFoundation
+import CommonCrypto
 import Foundation
 import NDKSwiftCore
 import SwiftUI
 import UnifiedBlurHash
 
 enum VideoPublishingError: LocalizedError {
-    case videoCompressionFailed
+    case noUploadServer
     case thumbnailGenerationFailed
     case uploadFailed
     case invalidUploadResponse
-    case publishFailed
+    case fileNotFound
 
     var errorDescription: String? {
         switch self {
-        case .videoCompressionFailed:
-            return "Failed to compress video"
+        case .noUploadServer:
+            return "No upload server configured. Please add a Blossom server in settings."
         case .thumbnailGenerationFailed:
             return "Failed to generate thumbnail"
         case .uploadFailed:
             return "Failed to upload video"
         case .invalidUploadResponse:
             return "Invalid response from upload server"
-        case .publishFailed:
-            return "Failed to publish to Nostr"
+        case .fileNotFound:
+            return "Video file not found"
         }
     }
 }
@@ -36,15 +37,11 @@ struct VideoPublishingService {
         videoMode: VideoCaptureView.VideoMode,
         onProgress: @MainActor (String, Double) -> Void
     ) async throws -> String {
-        // Get user's configured servers or use defaults
-        let blossomManager = NDKBlossomServerManager(ndk: ndk)
-        var servers = blossomManager.userServers
-        if servers.isEmpty {
-            servers = OlasConstants.blossomServers
-        }
-
-        guard let serverUrl = servers.first else {
-            throw VideoPublishingError.uploadFailed
+        let serverURL: URL
+        do {
+            serverURL = try BlossomServerResolver.effectiveServerURL(ndk: ndk)
+        } catch is BlossomServerError {
+            throw VideoPublishingError.noUploadServer
         }
 
         // 1. Get video metadata
@@ -79,21 +76,18 @@ struct VideoPublishingService {
         let thumbnailBlob = try await client.upload(
             data: thumbnailData,
             mimeType: "image/jpeg",
-            to: serverUrl,
+            to: serverURL.absoluteString,
             ndk: ndk,
             configuration: .default
         )
 
-        // 5. Upload video (uses largeFile config with extended timeouts)
+        // 5. Upload video using streaming (file-based) to avoid loading entire video into memory
         await onProgress("Uploading video...", 0.30)
-        let videoData = try Data(contentsOf: videoURL)
-
-        let videoBlob = try await client.upload(
-            data: videoData,
+        let videoBlob = try await uploadVideoFromFile(
+            fileURL: videoURL,
             mimeType: "video/mp4",
-            to: serverUrl,
-            ndk: ndk,
-            configuration: .largeFile
+            to: serverURL,
+            ndk: ndk
         )
 
         await onProgress("Publishing...", 0.85)
@@ -143,5 +137,119 @@ struct VideoPublishingService {
         } catch {
             throw VideoPublishingError.thumbnailGenerationFailed
         }
+    }
+
+    // MARK: - Streaming File Upload
+
+    /// Uploads a video file using streaming to avoid loading the entire file into memory.
+    /// Uses URLSession.uploadTask(with:fromFile:) which streams directly from disk.
+    private static func uploadVideoFromFile(
+        fileURL: URL,
+        mimeType: String,
+        to serverURL: URL,
+        ndk: NDK
+    ) async throws -> BlossomBlob {
+        let signer = try ndk.requireSigner()
+
+        // Get file attributes without loading the file
+        let fileManager = FileManager.default
+        guard fileManager.fileExists(atPath: fileURL.path) else {
+            throw VideoPublishingError.fileNotFound
+        }
+
+        let attributes = try fileManager.attributesOfItem(atPath: fileURL.path)
+        guard let fileSize = attributes[.size] as? Int64 else {
+            throw VideoPublishingError.uploadFailed
+        }
+
+        // Compute SHA256 using chunked reading on background thread (memory-efficient, non-blocking)
+        // Use cancellation handler to propagate cancellation to the detached task
+        let hashTask = Task.detached(priority: .utility) {
+            try computeSHA256(of: fileURL)
+        }
+        let sha256Hex = try await withTaskCancellationHandler {
+            try await hashTask.value
+        } onCancel: {
+            hashTask.cancel()
+        }
+
+        // Create Blossom auth event
+        let auth = try await BlossomAuth.createUploadAuth(
+            sha256: sha256Hex,
+            size: fileSize,
+            mimeType: mimeType,
+            signer: signer,
+            ndk: ndk,
+            expiration: nil
+        )
+
+        // Build upload URL
+        let uploadURL = serverURL.appendingPathComponent("upload")
+
+        // Build request
+        var request = URLRequest(url: uploadURL)
+        request.httpMethod = "PUT"
+        request.setValue(mimeType, forHTTPHeaderField: "Content-Type")
+        request.setValue(try auth.authorizationHeaderValue(), forHTTPHeaderField: "Authorization")
+
+        // Configure session with extended timeouts for large files
+        let sessionConfig = URLSessionConfiguration.default
+        sessionConfig.timeoutIntervalForRequest = 300
+        sessionConfig.timeoutIntervalForResource = 1800
+
+        // Perform streaming upload from file (doesn't load entire file into memory)
+        let session = URLSession(configuration: sessionConfig)
+        defer { session.invalidateAndCancel() }
+
+        let (responseData, response) = try await session.upload(for: request, fromFile: fileURL)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw VideoPublishingError.invalidUploadResponse
+        }
+
+        switch httpResponse.statusCode {
+        case 200, 201:
+            let decoder = JSONDecoder()
+            let uploadDescriptor = try decoder.decode(BlossomUploadDescriptor.self, from: responseData)
+
+            guard uploadDescriptor.sha256 == sha256Hex else {
+                throw VideoPublishingError.invalidUploadResponse
+            }
+
+            return BlossomBlob(
+                sha256: uploadDescriptor.sha256,
+                url: uploadDescriptor.url,
+                size: uploadDescriptor.size,
+                type: uploadDescriptor.type,
+                uploaded: Date(timeIntervalSince1970: TimeInterval(uploadDescriptor.uploaded))
+            )
+
+        default:
+            throw VideoPublishingError.uploadFailed
+        }
+    }
+
+    /// Computes SHA256 hash of a file using chunked reading to avoid loading the entire file into memory.
+    /// Must be called from a background context to avoid blocking the main thread.
+    /// Supports cooperative cancellation via Task.checkCancellation().
+    private static func computeSHA256(of fileURL: URL) throws -> String {
+        let handle = try FileHandle(forReadingFrom: fileURL)
+        defer { try? handle.close() }
+
+        var context = CC_SHA256_CTX()
+        CC_SHA256_Init(&context)
+
+        let bufferSize = 64 * 1024 // 64KB chunks
+        while let data = try handle.read(upToCount: bufferSize), !data.isEmpty {
+            try Task.checkCancellation()
+            data.withUnsafeBytes { buffer in
+                _ = CC_SHA256_Update(&context, buffer.baseAddress, CC_LONG(buffer.count))
+            }
+        }
+
+        var digest = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
+        CC_SHA256_Final(&digest, &context)
+
+        return digest.map { String(format: "%02x", $0) }.joined()
     }
 }

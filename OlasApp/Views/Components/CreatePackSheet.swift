@@ -19,6 +19,7 @@ struct CreatePackSheet: View {
     @State private var isUploading = false
     @State private var isCreating = false
     @State private var errorMessage: String?
+    @State private var showingError = false
 
     init(ndk: NDK, initialMember: String? = nil, onCreated: @escaping () -> Void) {
         self.ndk = ndk
@@ -85,8 +86,8 @@ struct CreatePackSheet: View {
                     .disabled(!canCreate)
                 }
             }
-            .alert("Error", isPresented: .constant(errorMessage != nil)) {
-                Button("OK") { errorMessage = nil }
+            .alert("Error", isPresented: $showingError) {
+                Button("OK") { }
             } message: {
                 if let error = errorMessage {
                     Text(error)
@@ -105,9 +106,9 @@ struct CreatePackSheet: View {
 
     @ViewBuilder
     private var imageSection: some View {
-        if let url = imageURL, let imageUrl = URL(string: url) {
+        if let url = imageURL, let displayURL = URL(string: url) {
             HStack {
-                AsyncImage(url: imageUrl) { phase in
+                AsyncImage(url: displayURL) { phase in
                     switch phase {
                     case .success(let image):
                         image
@@ -165,18 +166,16 @@ struct CreatePackSheet: View {
                   let jpegData = ImageMetadataStripper.jpegDataWithoutMetadata(from: uiImage, compressionQuality: 0.8)
             else {
                 errorMessage = "Failed to process image"
+                showingError = true
                 return
             }
 
-            // Get user's blossom servers or use defaults
-            let blossomManager = NDKBlossomServerManager(ndk: ndk)
-            var servers = blossomManager.userServers
-            if servers.isEmpty {
-                servers = OlasConstants.blossomServers
-            }
-
-            guard let serverUrl = servers.first else {
-                errorMessage = "No upload server available"
+            let serverURL: URL
+            do {
+                serverURL = try BlossomServerResolver.effectiveServerURL(ndk: ndk)
+            } catch {
+                errorMessage = error.localizedDescription
+                showingError = true
                 return
             }
 
@@ -185,7 +184,7 @@ struct CreatePackSheet: View {
             let blob = try await client.upload(
                 data: jpegData,
                 mimeType: "image/jpeg",
-                to: serverUrl,
+                to: serverURL.absoluteString,
                 ndk: ndk,
                 configuration: .default
             )
@@ -193,6 +192,7 @@ struct CreatePackSheet: View {
             imageURL = blob.url
         } catch {
             errorMessage = "Failed to upload image: \(error.localizedDescription)"
+            showingError = true
         }
     }
 
@@ -220,6 +220,7 @@ struct CreatePackSheet: View {
             onCreated()
         } catch {
             errorMessage = "Failed to create pack: \(error.localizedDescription)"
+            showingError = true
         }
     }
 }

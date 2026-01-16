@@ -4,18 +4,18 @@ import SwiftUI
 import UnifiedBlurHash
 
 public enum PostError: LocalizedError {
+    case noUploadServer
     case imageCompressionFailed
     case uploadFailed
-    case invalidUploadResponse
 
     public var errorDescription: String? {
         switch self {
+        case .noUploadServer:
+            return "No upload server configured. Please add a Blossom server in settings."
         case .imageCompressionFailed:
             return "Failed to compress image"
         case .uploadFailed:
             return "Failed to upload image"
-        case .invalidUploadResponse:
-            return "Invalid response from upload server"
         }
     }
 }
@@ -28,15 +28,11 @@ public struct PostPublishingService {
         caption: String,
         onProgress: @MainActor (String, Double) -> Void
     ) async throws -> String {
-        // Get user's configured servers or use defaults
-        let blossomManager = NDKBlossomServerManager(ndk: ndk)
-        var servers = blossomManager.userServers
-        if servers.isEmpty {
-            servers = OlasConstants.blossomServers
-        }
-
-        guard let serverUrl = servers.first else {
-            throw PostError.uploadFailed
+        let serverURL: URL
+        do {
+            serverURL = try BlossomServerResolver.effectiveServerURL(ndk: ndk)
+        } catch is BlossomServerError {
+            throw PostError.noUploadServer
         }
 
         // Compress and strip EXIF metadata for privacy (removes GPS, camera info, etc.)
@@ -55,13 +51,13 @@ public struct PostPublishingService {
         let blob = try await client.upload(
             data: imageData,
             mimeType: "image/jpeg",
-            to: serverUrl,
+            to: serverURL.absoluteString,
             ndk: ndk,
             configuration: .largeFile
         )
 
         await onProgress("Processing...", 0.70)
-        let imageUrl = blob.url
+        let imageURL = blob.url
 
         // Blurhash
         await onProgress("Processing...", 0.75)
@@ -74,7 +70,7 @@ public struct PostPublishingService {
             builder
                 .kind(OlasConstants.EventKinds.image)
                 .content(caption)
-                .imetaTag(url: imageUrl) { imeta in
+                .imetaTag(url: imageURL) { imeta in
                     imeta.dim = dimensions
                     imeta.m = "image/jpeg"
                     imeta.blurhash = blurhash
