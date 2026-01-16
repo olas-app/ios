@@ -27,6 +27,7 @@ public struct PulsingBoltIcon: View {
 /// Error icon with shake animation
 public struct ShakingErrorIcon: View {
     @State private var shakeOffset: CGFloat = 0
+    @State private var resetTask: Task<Void, Never>?
 
     public init() {}
 
@@ -39,9 +40,14 @@ public struct ShakingErrorIcon: View {
                 withAnimation(.default.repeatCount(3, autoreverses: true)) {
                     shakeOffset = 10
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                resetTask = Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(600))
+                    guard !Task.isCancelled else { return }
                     shakeOffset = 0
                 }
+            }
+            .onDisappear {
+                resetTask?.cancel()
             }
     }
 }

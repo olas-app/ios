@@ -6,6 +6,9 @@ import UIKit
 
 /// Handles applying filters and adjustments to images
 public enum FilterProcessor {
+    /// Shared CIContext for efficient GPU-accelerated image processing
+    /// Using a singleton avoids recreating the context on each view redraw
+    public static let sharedContext = CIContext(options: [.useSoftwareRenderer: false])
     /// Applies a filter to an image with the given intensity
     public static func applyFilter(
         _ filter: ImageFilter,

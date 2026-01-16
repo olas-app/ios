@@ -34,7 +34,7 @@ struct VideoPublishingService {
         ndk: NDK,
         videoURL: URL,
         caption: String,
-        videoMode: VideoCaptureView.VideoMode,
+        videoMode: VideoMode,
         onProgress: @MainActor (String, Double) -> Void
     ) async throws -> String {
         let serverURL: URL

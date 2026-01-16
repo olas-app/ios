@@ -21,7 +21,8 @@ struct ImageEditorView: View {
     @State private var processedImage: UIImage?
     @State private var isProcessing = false
 
-    private let context = CIContext(options: [.useSoftwareRenderer: false])
+    /// Use shared context to avoid memory churn from recreating CIContext
+    private var context: CIContext { FilterProcessor.sharedContext }
 
     init(image: Binding<UIImage>, onComplete: @escaping (UIImage) -> Void, onBack: @escaping () -> Void) {
         _image = image

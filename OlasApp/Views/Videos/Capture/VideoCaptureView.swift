@@ -23,6 +23,7 @@ public struct VideoCaptureView: View {
     @State private var countdownSeconds: Int = 0
     @State private var showFocusIndicator = false
     @State private var focusIndicatorPosition: CGPoint = .zero
+    @State private var countdownTask: Task<Void, Never>?
 
     public init(ndk: NDK) {
         self.ndk = ndk
@@ -80,6 +81,7 @@ public struct VideoCaptureView: View {
             cameraSession.startAudioLevelMonitoring()
         }
         .onDisappear {
+            countdownTask?.cancel()
             cameraSession.stopSession()
             cameraSession.stopAudioLevelMonitoring()
         }
@@ -266,15 +268,18 @@ public struct VideoCaptureView: View {
     }
 
     private func startCountdown() {
+        countdownTask?.cancel()
         countdownSeconds = selectedCountdown.rawValue
 
-        Task {
-            while countdownSeconds > 0 {
+        countdownTask = Task { @MainActor in
+            while countdownSeconds > 0, !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else { return }
                 withAnimation(.spring(response: 0.3)) {
                     countdownSeconds -= 1
                 }
             }
+            guard !Task.isCancelled else { return }
             beginActualRecording()
         }
     }

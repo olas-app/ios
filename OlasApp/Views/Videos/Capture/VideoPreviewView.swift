@@ -7,7 +7,7 @@ struct VideoPreviewView: View {
     @Environment(PublishingState.self) private var publishingState
 
     let videoURL: URL
-    let videoMode: VideoCaptureView.VideoMode
+    let videoMode: VideoMode
     let ndk: NDK
 
     @State private var player: AVPlayer?
