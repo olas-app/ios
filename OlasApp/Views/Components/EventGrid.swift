@@ -8,6 +8,7 @@ public struct EventGrid: View {
     let namespace: Namespace.ID
 
     @State private var events: [NDKEvent] = []
+    @State private var subscriptionTask: Task<Void, Never>?
 
     public init(ndk: NDK, filter: NDKFilter, onTap: @escaping (NDKEvent) -> Void, namespace: Namespace.ID) {
         self.ndk = ndk
@@ -19,13 +20,21 @@ public struct EventGrid: View {
     public var body: some View {
         PostGridView(posts: events, spacing: 1, onTap: onTap, namespace: namespace)
             .task {
-                await subscribeToEvents()
+                subscriptionTask = Task {
+                    await subscribeToEvents()
+                }
+                await subscriptionTask?.value
+            }
+            .onDisappear {
+                subscriptionTask?.cancel()
+                subscriptionTask = nil
             }
     }
 
     private func subscribeToEvents() async {
         let subscription = ndk.subscribe(filter: filter, cachePolicy: .cacheWithNetwork)
         for await eventBatch in subscription.events {
+            guard !Task.isCancelled else { break }
             for event in eventBatch {
                 let insertIndex = events.firstIndex { event.createdAt > $0.createdAt } ?? events.endIndex
                 events.insert(event, at: insertIndex)

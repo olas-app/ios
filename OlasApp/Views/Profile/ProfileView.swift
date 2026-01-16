@@ -14,6 +14,7 @@ public struct ProfileView: View {
     @State private var selectedTab: ProfileTab = .posts
     @State private var selectedPost: NDKEvent?
     @State private var followingCount: Int?
+    @State private var followCountTask: Task<Void, Never>?
     @Namespace private var imageNamespace
 
     private var isOwnProfile: Bool {
@@ -126,7 +127,14 @@ public struct ProfileView: View {
             .toolbar(selectedPost != nil ? .hidden : .visible, for: .navigationBar)
             .toolbar(selectedPost != nil ? .hidden : .visible, for: .tabBar)
             .task {
-                await loadFollowCounts()
+                followCountTask = Task {
+                    await loadFollowCounts()
+                }
+                await followCountTask?.value
+            }
+            .onDisappear {
+                followCountTask?.cancel()
+                followCountTask = nil
             }
             .sheet(isPresented: $showEditProfile) {
                 EditProfileView(ndk: ndk, currentProfile: profile.metadata) {
@@ -169,6 +177,7 @@ public struct ProfileView: View {
 
         let followingSub = ndk.subscribe(filter: followingFilter)
         for await batch in followingSub.events {
+            guard !Task.isCancelled else { break }
             if let event = batch.first {
                 let pTags = event.tags.filter { $0.first == "p" }
                 await MainActor.run { followingCount = pTags.count }

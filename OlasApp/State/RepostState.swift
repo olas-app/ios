@@ -26,8 +26,6 @@ public final class RepostState {
     private let event: NDKEvent
     private var userRepostEvent: NDKEvent?
     @ObservationIgnored nonisolated(unsafe) private var observationTask: Task<Void, Never>?
-    @ObservationIgnored private var repostSubscription: NDKSubscription<NDKEvent>?
-    @ObservationIgnored private var quoteSubscription: NDKSubscription<NDKEvent>?
 
     /// Maximum reposts to track to prevent unbounded memory growth
     private let maxReposts = 500
@@ -61,10 +59,6 @@ public final class RepostState {
     public func stop() {
         observationTask?.cancel()
         observationTask = nil
-        repostSubscription?.close()
-        repostSubscription = nil
-        quoteSubscription?.close()
-        quoteSubscription = nil
     }
 
     /// Toggle repost state - creates a repost if not reposted, deletes if already reposted
@@ -110,15 +104,7 @@ public final class RepostState {
         // Subscribe to reposts and generic reposts using proper tagging for replaceable events
         let repostFilter = NDKFilter.tagging(event, kinds: [6, 16])
 
-        // Quote reposts use 'q' tag - need to handle manually since tagging() uses 'e'/'a'
-        var quoteFilter = NDKFilter(kinds: [1])
-        if event.isReplaceable || event.isParameterizedReplaceable {
-            quoteFilter.addTagFilter("q", values: [event.tagAddress])
-        } else {
-            quoteFilter.addTagFilter("q", values: [event.id])
-        }
-
-        // Create subscriptions for both filters
+        // Create subscription
         let repostSub = ndk.subscribe(
             filter: repostFilter,
             maxAge: 0,
@@ -126,53 +112,24 @@ public final class RepostState {
             closeOnEose: false
         )
 
-        let quoteSub = ndk.subscribe(
-            filter: quoteFilter,
-            maxAge: 0,
-            cachePolicy: .cacheWithNetwork,
-            closeOnEose: false
-        )
-
-        // Store subscription references for cleanup
-        self.repostSubscription = repostSub
-        self.quoteSubscription = quoteSub
-
         // Track all repost events by ID to handle updates
         var allReposts: [String: NDKEvent] = [:]
 
-        // Helper function to prune dictionary if over limit
-        func pruneIfNeeded() {
+        for await batch in repostSub.events {
+            guard !Task.isCancelled else { break }
+            for event in batch {
+                allReposts[event.id] = event
+            }
+
+            // Prune if over limit - keep most recent by created_at
             if allReposts.count > maxReposts {
                 let sorted = allReposts.values.sorted { $0.createdAt > $1.createdAt }
                 allReposts = Dictionary(
                     uniqueKeysWithValues: sorted.prefix(maxReposts).map { ($0.id, $0) }
                 )
             }
-        }
 
-        // Process both subscriptions concurrently
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask { [weak self] in
-                for await batch in repostSub.events {
-                    guard let self, !Task.isCancelled else { return }
-                    for event in batch {
-                        allReposts[event.id] = event
-                    }
-                    pruneIfNeeded()
-                    await self.updateState(from: Array(allReposts.values))
-                }
-            }
-
-            group.addTask { [weak self] in
-                for await batch in quoteSub.events {
-                    guard let self, !Task.isCancelled else { return }
-                    for event in batch {
-                        allReposts[event.id] = event
-                    }
-                    pruneIfNeeded()
-                    await self.updateState(from: Array(allReposts.values))
-                }
-            }
+            await updateState(from: Array(allReposts.values))
         }
     }
 

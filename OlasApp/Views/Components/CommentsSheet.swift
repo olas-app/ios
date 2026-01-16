@@ -11,6 +11,7 @@ struct CommentsSheet: View {
     @State private var comments: [NDKEvent] = []
     @State private var newComment = ""
     @State private var isSending = false
+    @State private var commentsTask: Task<Void, Never>?
     @FocusState private var isInputFocused: Bool
 
     private var filteredComments: [NDKEvent] {
@@ -48,7 +49,14 @@ struct CommentsSheet: View {
                 }
             }
             .task {
-                await loadComments()
+                commentsTask = Task {
+                    await loadComments()
+                }
+                await commentsTask?.value
+            }
+            .onDisappear {
+                commentsTask?.cancel()
+                commentsTask = nil
             }
         }
         .presentationDetents([.medium, .large])

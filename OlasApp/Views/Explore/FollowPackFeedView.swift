@@ -13,6 +13,7 @@ struct FollowPackFeedView: View {
 
     @State private var posts: [NDKEvent] = []
     @State private var selectedPost: NDKEvent?
+    @State private var packFeedTask: Task<Void, Never>?
     @Namespace private var imageNamespace
 
     private var isSaved: Bool {
@@ -65,7 +66,14 @@ struct FollowPackFeedView: View {
             }
         }
         .task {
-            await loadPackPosts()
+            packFeedTask = Task {
+                await loadPackPosts()
+            }
+            await packFeedTask?.value
+        }
+        .onDisappear {
+            packFeedTask?.cancel()
+            packFeedTask = nil
         }
     }
 
@@ -103,6 +111,7 @@ struct FollowPackFeedView: View {
         )
 
         for await events in subscription.events {
+            guard !Task.isCancelled else { break }
             let combined = posts + events
             posts = combined.sorted { $0.createdAt > $1.createdAt }
         }

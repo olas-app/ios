@@ -27,7 +27,6 @@ public final class ReactionState {
     private let reaction: String
     private var userReactionEvent: NDKEvent?
     @ObservationIgnored nonisolated(unsafe) private var observationTask: Task<Void, Never>?
-    @ObservationIgnored private var activeSubscription: NDKSubscription<NDKEvent>?
 
     /// Maximum reactions to track to prevent unbounded memory growth
     private let maxReactions = 500
@@ -63,8 +62,6 @@ public final class ReactionState {
     public func stop() {
         observationTask?.cancel()
         observationTask = nil
-        activeSubscription?.close()
-        activeSubscription = nil
     }
 
     /// Toggle reaction state - creates a reaction if not reacted, deletes if already reacted
@@ -97,9 +94,6 @@ public final class ReactionState {
             cachePolicy: .cacheWithNetwork,
             closeOnEose: false
         )
-
-        // Store subscription reference for cleanup
-        self.activeSubscription = subscription
 
         var allReactions: [String: NDKEvent] = [:]
 

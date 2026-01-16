@@ -7,6 +7,7 @@ struct LikeAnimation: View {
 
     @State private var scale: CGFloat = 0
     @State private var opacity: Double = 0
+    @State private var animationTask: Task<Void, Never>?
 
     var body: some View {
         Image(systemName: "heart.fill")
@@ -20,32 +21,39 @@ struct LikeAnimation: View {
                     animate()
                 }
             }
+            .onDisappear {
+                animationTask?.cancel()
+                animationTask = nil
+            }
     }
 
     private func animate() {
-        // Initial burst
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.5, blendDuration: 0)) {
-            scale = 1.3
-            opacity = 1
-        }
+        animationTask?.cancel()
+        animationTask = Task { @MainActor in
+            // Initial burst
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.5, blendDuration: 0)) {
+                scale = 1.3
+                opacity = 1
+            }
 
-        // Settle
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            // Settle
+            try? await Task.sleep(for: .milliseconds(150))
+            guard !Task.isCancelled else { return }
             withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
                 scale = 1.0
             }
-        }
 
-        // Fade out
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            // Fade out
+            try? await Task.sleep(for: .milliseconds(350))
+            guard !Task.isCancelled else { return }
             withAnimation(.easeOut(duration: 0.3)) {
                 opacity = 0
                 scale = 1.2
             }
-        }
 
-        // Reset
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            // Reset
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
             scale = 0
             isAnimating = false
         }
@@ -68,6 +76,7 @@ struct LikeButton: View {
 
     @State private var reactionState: ReactionState?
     @State private var animateHeart = false
+    @State private var animationTask: Task<Void, Never>?
 
     var body: some View {
         Button {
@@ -89,7 +98,10 @@ struct LikeButton: View {
         .buttonStyle(HeartButtonStyle(isLiked: reactionState?.hasReacted ?? false))
         .onChange(of: animateHeart) { _, newValue in
             if newValue {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                animationTask?.cancel()
+                animationTask = Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(200))
+                    guard !Task.isCancelled else { return }
                     withAnimation(.spring(response: 0.2, dampingFraction: 0.5)) {
                         animateHeart = false
                     }
@@ -104,6 +116,8 @@ struct LikeButton: View {
         }
         .onDisappear {
             reactionState?.stop()
+            animationTask?.cancel()
+            animationTask = nil
         }
     }
 
@@ -138,6 +152,7 @@ struct CommentButton: View {
 
     @State private var commentCount = 0
     @State private var showComments = false
+    @State private var commentTask: Task<Void, Never>?
 
     var body: some View {
         Button {
@@ -161,7 +176,14 @@ struct CommentButton: View {
             }
         }
         .task {
-            await loadCommentCount()
+            commentTask = Task {
+                await loadCommentCount()
+            }
+            await commentTask?.value
+        }
+        .onDisappear {
+            commentTask?.cancel()
+            commentTask = nil
         }
     }
 
@@ -191,6 +213,8 @@ struct ZapButton: View {
     @State private var showSuccess = false
     @State private var zapError: Error?
     @State private var totalZapAmount: Int64 = 0
+    @State private var zapTask: Task<Void, Never>?
+    @State private var animationTask: Task<Void, Never>?
 
     private let zapAmounts: [Int64] = [21, 100, 500, 1000]
 
@@ -200,7 +224,10 @@ struct ZapButton: View {
             withAnimation(.spring(response: 0.2, dampingFraction: 0.5)) {
                 isAnimating = true
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            animationTask?.cancel()
+            animationTask = Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(200))
+                guard !Task.isCancelled else { return }
                 isAnimating = false
             }
 
@@ -228,7 +255,16 @@ struct ZapButton: View {
             zapSheet
         }
         .task {
-            await loadZapTotal()
+            zapTask = Task {
+                await loadZapTotal()
+            }
+            await zapTask?.value
+        }
+        .onDisappear {
+            zapTask?.cancel()
+            zapTask = nil
+            animationTask?.cancel()
+            animationTask = nil
         }
     }
 
@@ -392,6 +428,7 @@ struct ZapButton: View {
 
         do {
             for try await zapInfo in ndk.zapManager.subscribeToZaps(for: event, pubkey: nil) {
+                guard !Task.isCancelled else { break }
                 total += zapInfo.amountSats
 
                 await MainActor.run {
@@ -442,6 +479,7 @@ struct RepostButton: View {
     @State private var showQuoteComposer = false
     @State private var quoteContent = ""
     @State private var isAnimating = false
+    @State private var animationTask: Task<Void, Never>?
 
     var body: some View {
         Button {
@@ -492,6 +530,8 @@ struct RepostButton: View {
         }
         .onDisappear {
             repostState?.stop()
+            animationTask?.cancel()
+            animationTask = nil
         }
     }
 
@@ -559,7 +599,10 @@ struct RepostButton: View {
             isAnimating = true
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+        animationTask?.cancel()
+        animationTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(200))
+            guard !Task.isCancelled else { return }
             withAnimation {
                 isAnimating = false
             }

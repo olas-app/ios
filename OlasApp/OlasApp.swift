@@ -162,7 +162,8 @@ struct OlasApp: App {
         }
 
         // Phase 2: Logo zooms toward user while splash fades
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(500))
             withAnimation(.easeOut(duration: 0.3)) {
                 logoScale = 12.0
                 logoOpacity = 0

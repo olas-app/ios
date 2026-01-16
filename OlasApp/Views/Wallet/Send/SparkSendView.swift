@@ -417,7 +417,8 @@ struct SparkSendView: View {
             showFlash = true
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
             withAnimation(.easeOut(duration: 0.3)) {
                 showFlash = false
             }
