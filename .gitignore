@@ -67,3 +67,9 @@ fastlane/test_output
 # Merge/conflict artifacts
 *.orig
 *.backup
+
+# Xcode workspace SPM state (per-machine)
+*.xcworkspace/xcshareddata/swiftpm/
+
+# Temporary patch files
+*.patch
