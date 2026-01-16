@@ -3,28 +3,14 @@ import SwiftUI
 // MARK: - Camera Settings Sheet
 
 /// Full settings sheet for camera configuration
-public struct CameraSettingsSheet: View {
+struct CameraSettingsSheet: View {
     @Binding var isPresented: Bool
     let cameraSession: CameraSession
     @Binding var selectedSpeed: RecordingSpeed
     @Binding var selectedCountdown: CountdownOption
     let videoModeColor: Color
 
-    public init(
-        isPresented: Binding<Bool>,
-        cameraSession: CameraSession,
-        selectedSpeed: Binding<RecordingSpeed>,
-        selectedCountdown: Binding<CountdownOption>,
-        videoModeColor: Color
-    ) {
-        _isPresented = isPresented
-        self.cameraSession = cameraSession
-        _selectedSpeed = selectedSpeed
-        _selectedCountdown = selectedCountdown
-        self.videoModeColor = videoModeColor
-    }
-
-    public var body: some View {
+    var body: some View {
         NavigationStack {
             List {
                 aspectRatioSection

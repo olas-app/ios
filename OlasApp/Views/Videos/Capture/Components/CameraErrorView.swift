@@ -3,22 +3,12 @@ import SwiftUI
 // MARK: - Camera Error View
 
 /// Error display when camera is unavailable
-public struct CameraErrorView: View {
+struct CameraErrorView: View {
     let error: CameraSession.CameraError
     let videoModeColor: Color
     let onDismiss: () -> Void
 
-    public init(
-        error: CameraSession.CameraError,
-        videoModeColor: Color,
-        onDismiss: @escaping () -> Void
-    ) {
-        self.error = error
-        self.videoModeColor = videoModeColor
-        self.onDismiss = onDismiss
-    }
-
-    public var body: some View {
+    var body: some View {
         VStack(spacing: 24) {
             Image(systemName: "video.slash.fill")
                 .font(.system(size: 64))
@@ -62,10 +52,8 @@ public struct CameraErrorView: View {
 // MARK: - External Mic Indicator
 
 /// Badge showing external microphone is connected
-public struct ExternalMicIndicator: View {
-    public init() {}
-
-    public var body: some View {
+struct ExternalMicIndicator: View {
+    var body: some View {
         HStack(spacing: 4) {
             Image(systemName: "mic.fill")
                 .font(.system(size: 12))
