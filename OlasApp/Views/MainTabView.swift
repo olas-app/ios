@@ -142,20 +142,14 @@ public struct MainTabView: View {
     // MARK: - Action Satellite Button
     @ViewBuilder
     private var actionSatellite: some View {
-        let satelliteSize = buttonSize + dockPadding * 2
-
         Button {
             showCreatePost = true
         } label: {
             Image(systemName: "plus")
                 .font(.system(size: iconSize, weight: .bold))
-                .foregroundStyle(.primary)
-                .frame(width: buttonSize, height: buttonSize)
         }
-        .buttonStyle(.plain)
-        .frame(width: satelliteSize, height: satelliteSize)
-        .glassEffect(.regular.interactive())
-        .clipShape(Circle())
+        .buttonStyle(.glass)
+        .buttonBorderShape(.circle)
     }
 
     public var body: some View {
