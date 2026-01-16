@@ -20,12 +20,9 @@ struct OlasApp: App {
     // Signing failure UI state
     @State private var showSigningError = false
     @State private var signingErrorMessage = ""
-    @State private var signingFailureCancellable: AnyCancellable?
 
-    // Session validation failure UI state
-    @State private var showReconnectSheet = false
+    // Session validation failure UI state (use item binding to guarantee session is present)
     @State private var invalidSession: NDKSession?
-    @State private var sessionValidationCancellable: AnyCancellable?
 
     // Splash screen animation state
     @State private var logoScale: CGFloat = 0.3
@@ -65,23 +62,34 @@ struct OlasApp: App {
                     pendingNWCURI = nil
                 }
             }
+            .onChange(of: authManager?.lastValidationFailure?.session.id) { _, newValue in
+                // When session validation fails, show reconnect sheet
+                if newValue != nil, let failure = authManager?.lastValidationFailure {
+                    invalidSession = failure.session
+                }
+            }
+            .onChange(of: ndk?.lastSigningFailure?.error.localizedDescription) { _, newValue in
+                // When signing fails, show error alert
+                if let failure = ndk?.lastSigningFailure {
+                    signingErrorMessage = failure.error.localizedDescription
+                    showSigningError = true
+                    ndk?.clearSigningFailure()
+                }
+            }
             .alert("Action Failed", isPresented: $showSigningError) {
                 Button("OK", role: .cancel) {}
                 if authManager?.activeSigner is NDKBunkerSigner {
                     Button("Reconnect Signer") {
-                        if let session = authManager?.activeSession {
-                            invalidSession = session
-                            showReconnectSheet = true
-                        }
+                        invalidSession = authManager?.activeSession
                     }
                 }
             } message: {
                 Text(signingErrorMessage)
             }
-            .sheet(isPresented: $showReconnectSheet) {
-                if let session = invalidSession, let ndk = ndk, let authManager = authManager {
+            .sheet(item: $invalidSession) { session in
+                if let ndk = ndk, let authManager = authManager {
                     SignerReconnectView(session: session, ndk: ndk, authManager: authManager) {
-                        showReconnectSheet = false
+                        authManager.clearValidationFailure()
                         invalidSession = nil
                     }
                 }
@@ -252,6 +260,14 @@ struct OlasApp: App {
 
         // Create auth manager with NDK
         let newAuthManager = NDKAuthManager(ndk: newNDK)
+
+        // Set ndk and authManager IMMEDIATELY so onReceive can work
+        // (background validation can fire before other initialization completes)
+        await MainActor.run {
+            self.ndk = newNDK
+            self.authManager = newAuthManager
+        }
+
         await newAuthManager.initialize()
 
         // Connect in background - don't block UI for network
@@ -278,28 +294,10 @@ struct OlasApp: App {
         }
 
         await MainActor.run {
-            self.ndk = newNDK
-            self.authManager = newAuthManager
             self.sparkWalletManager = sparkManager
             self.nwcWalletManager = nwcManager
             self.followPackManager = packManager
             self.isInitialized = true
-
-            // Subscribe to signing failures - centralized error handling
-            self.signingFailureCancellable = newNDK.signingFailedPublisher
-                .receive(on: DispatchQueue.main)
-                .sink { [self] failure in
-                    self.signingErrorMessage = failure.error.localizedDescription
-                    self.showSigningError = true
-                }
-
-            // Subscribe to session validation failures - show reconnect UI
-            self.sessionValidationCancellable = newAuthManager.sessionValidationFailedPublisher
-                .receive(on: DispatchQueue.main)
-                .sink { [self] failure in
-                    self.invalidSession = failure.session
-                    self.showReconnectSheet = true
-                }
         }
     }
 }
