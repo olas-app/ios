@@ -27,6 +27,10 @@ public final class ReactionState {
     private let reaction: String
     private var userReactionEvent: NDKEvent?
     @ObservationIgnored nonisolated(unsafe) private var observationTask: Task<Void, Never>?
+    @ObservationIgnored private var activeSubscription: NDKSubscription<NDKEvent>?
+
+    /// Maximum reactions to track to prevent unbounded memory growth
+    private let maxReactions = 500
 
     // MARK: - Initialization
 
@@ -59,6 +63,8 @@ public final class ReactionState {
     public func stop() {
         observationTask?.cancel()
         observationTask = nil
+        activeSubscription?.close()
+        activeSubscription = nil
     }
 
     /// Toggle reaction state - creates a reaction if not reacted, deletes if already reacted
@@ -92,12 +98,27 @@ public final class ReactionState {
             closeOnEose: false
         )
 
+        // Store subscription reference for cleanup
+        self.activeSubscription = subscription
+
         var allReactions: [String: NDKEvent] = [:]
 
         for await batch in subscription.events {
+            // Check for task cancellation
+            guard !Task.isCancelled else { break }
+
             for event in batch {
                 allReactions[event.id] = event
             }
+
+            // Prune if over limit - keep most recent by created_at
+            if allReactions.count > maxReactions {
+                let sorted = allReactions.values.sorted { $0.createdAt > $1.createdAt }
+                allReactions = Dictionary(
+                    uniqueKeysWithValues: sorted.prefix(maxReactions).map { ($0.id, $0) }
+                )
+            }
+
             await updateState(from: Array(allReactions.values))
         }
     }

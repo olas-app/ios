@@ -98,9 +98,12 @@ struct LikeButton: View {
         }
         .task {
             guard let ndk else { return }
-            let state = ReactionState(ndk: ndk, event: event)
+            let state = ReactionStateCache.shared.state(for: event, ndk: ndk)
             reactionState = state
             await state.start()
+        }
+        .onDisappear {
+            reactionState?.stop()
         }
     }
 
@@ -483,9 +486,12 @@ struct RepostButton: View {
         }
         .task {
             guard let ndk else { return }
-            let state = RepostState(ndk: ndk, event: event)
+            let state = RepostStateCache.shared.state(for: event, ndk: ndk)
             repostState = state
             await state.start()
+        }
+        .onDisappear {
+            repostState?.stop()
         }
     }
 
