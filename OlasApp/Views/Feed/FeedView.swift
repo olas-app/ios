@@ -11,6 +11,7 @@ public struct FeedView: View {
     @Environment(SparkWalletManager.self) private var sparkWalletManager
     @Environment(NWCWalletManager.self) private var nwcWalletManager
     @Environment(SavedFeedSourcesManager.self) private var feedSourcesManager
+    @Environment(TabBarState.self) private var tabBarState: TabBarState?
     private let ndk: NDK
 
     @State private var navigationPath = NavigationPath()
@@ -42,6 +43,18 @@ public struct FeedView: View {
                         .equatable()
                     }
                 }
+                .background(
+                    GeometryReader { geometry in
+                        Color.clear.preference(
+                            key: ScrollOffsetPreferenceKey.self,
+                            value: -geometry.frame(in: .named("feedScroll")).origin.y
+                        )
+                    }
+                )
+            }
+            .coordinateSpace(name: "feedScroll")
+            .onPreferenceChange(ScrollOffsetPreferenceKey.self) { offset in
+                tabBarState?.updateScrollOffset(offset)
             }
             .refreshable {
                 viewModel.stopSubscription()

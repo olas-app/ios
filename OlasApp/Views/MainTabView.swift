@@ -2,6 +2,63 @@
 import NDKSwiftCore
 import SwiftUI
 
+// MARK: - Tab Bar State Manager
+@Observable
+public final class TabBarState {
+    public var isMinimized: Bool = false
+    private var previousOffset: CGFloat = 0
+    private var accumulatedDelta: CGFloat = 0
+    private let minimizeThreshold: CGFloat = 100  // Scroll down this much to minimize
+    private let expandThreshold: CGFloat = 50     // Scroll up this much to expand
+
+    public func updateScrollOffset(_ offset: CGFloat) {
+        let delta = offset - previousOffset
+        previousOffset = offset
+
+        // Accumulate delta in the current direction
+        if delta > 0 {
+            // Scrolling down
+            if accumulatedDelta < 0 {
+                accumulatedDelta = 0  // Reset when direction changes
+            }
+            accumulatedDelta += delta
+
+            if accumulatedDelta > minimizeThreshold && !isMinimized {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    isMinimized = true
+                }
+                accumulatedDelta = 0
+            }
+        } else if delta < 0 {
+            // Scrolling up
+            if accumulatedDelta > 0 {
+                accumulatedDelta = 0  // Reset when direction changes
+            }
+            accumulatedDelta += delta
+
+            if accumulatedDelta < -expandThreshold && isMinimized {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    isMinimized = false
+                }
+                accumulatedDelta = 0
+            }
+        }
+    }
+
+    public func resetScroll() {
+        previousOffset = 0
+        accumulatedDelta = 0
+    }
+}
+
+// MARK: - Scroll Offset Preference Key
+struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
 public struct MainTabView: View {
     @Environment(NDKAuthManager.self) private var authManager
     @State private var walletViewModel: WalletViewModel
@@ -10,10 +67,19 @@ public struct MainTabView: View {
     @Environment(PublishingState.self) private var publishingState
     @State private var selectedTab = 0
     @State private var showCreatePost = false
+    @State private var tabBarState = TabBarState()
 
     private let ndk: NDK
     private var sparkWalletManager: SparkWalletManager
     private var nwcWalletManager: NWCWalletManager
+
+    // Tab configuration
+    private let tabs: [(icon: String, selectedIcon: String, label: String)] = [
+        ("wave.3.up.circle", "wave.3.up.circle.fill", "Home"),
+        ("play.circle", "play.circle.fill", "Videos"),
+        ("magnifyingglass.circle", "magnifyingglass.circle.fill", "Explore"),
+        ("creditcard", "creditcard.fill", "Wallet")
+    ]
 
     public init(ndk: NDK, sparkWalletManager: SparkWalletManager, nwcWalletManager: NWCWalletManager) {
         self.ndk = ndk
@@ -21,6 +87,75 @@ public struct MainTabView: View {
         self._muteListManager = State(initialValue: MuteListManager(ndk: ndk))
         self.sparkWalletManager = sparkWalletManager
         self.nwcWalletManager = nwcWalletManager
+    }
+
+    // MARK: - Liquid Glass Navigation Constants
+    private let buttonSize: CGFloat = 44
+    private let dockPadding: CGFloat = 6
+    private let iconSize: CGFloat = 22
+
+    // Computed dock width for smooth animation
+    private var expandedDockWidth: CGFloat {
+        CGFloat(tabs.count) * buttonSize + CGFloat(tabs.count - 1) * 8 + dockPadding * 2
+    }
+
+    private var minimizedDockWidth: CGFloat {
+        buttonSize + dockPadding * 2
+    }
+
+    // MARK: - Liquid Navigation Dock
+    @ViewBuilder
+    private var liquidNavigationDock: some View {
+        // Container that smoothly animates width
+        HStack(spacing: 8) {
+            ForEach(Array(tabs.enumerated()), id: \.offset) { index, tab in
+                let isActive = selectedTab == index
+                let shouldShow = !tabBarState.isMinimized || isActive
+
+                TabBarButton(
+                    icon: tab.icon,
+                    selectedIcon: tab.selectedIcon,
+                    label: tab.label,
+                    isSelected: isActive
+                ) {
+                    if tabBarState.isMinimized {
+                        // Tap on minimized dot expands the dock
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                            tabBarState.isMinimized = false
+                        }
+                    } else {
+                        selectedTab = index
+                    }
+                }
+                .frame(width: shouldShow ? buttonSize : 0, height: buttonSize)
+                .opacity(shouldShow ? 1 : 0)
+                .scaleEffect(shouldShow ? 1 : 0.5)
+            }
+        }
+        .padding(dockPadding)
+        .frame(width: tabBarState.isMinimized ? minimizedDockWidth : expandedDockWidth)
+        .glassEffect(.regular.interactive())
+        .clipShape(Capsule())
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: tabBarState.isMinimized)
+    }
+
+    // MARK: - Action Satellite Button
+    @ViewBuilder
+    private var actionSatellite: some View {
+        let satelliteSize = buttonSize + dockPadding * 2
+
+        Button {
+            showCreatePost = true
+        } label: {
+            Image(systemName: "plus")
+                .font(.system(size: iconSize, weight: .bold))
+                .foregroundStyle(.primary)
+                .frame(width: buttonSize, height: buttonSize)
+        }
+        .buttonStyle(.plain)
+        .frame(width: satelliteSize, height: satelliteSize)
+        .glassEffect(.regular.interactive())
+        .clipShape(Circle())
     }
 
     public var body: some View {
@@ -50,62 +185,19 @@ public struct MainTabView: View {
                 }
             }
 
-            // Custom dual-pill bottom bar
+            // Custom dual-pill bottom bar - Liquid Glass design
             HStack(spacing: 12) {
-                // Main navigation pill
-                HStack(spacing: 0) {
-                    TabBarButton(
-                        icon: "wave.3.up.circle",
-                        selectedIcon: "wave.3.up.circle.fill",
-                        label: "Home",
-                        isSelected: selectedTab == 0
-                    ) {
-                        selectedTab = 0
-                    }
+                // Main navigation dock - smoothly animates between expanded and minimized
+                liquidNavigationDock
 
-                    TabBarButton(
-                        icon: "play.circle",
-                        selectedIcon: "play.circle.fill",
-                        label: "Videos",
-                        isSelected: selectedTab == 1
-                    ) {
-                        selectedTab = 1
-                    }
-
-                    TabBarButton(
-                        icon: "magnifyingglass.circle",
-                        selectedIcon: "magnifyingglass.circle.fill",
-                        label: "Explore",
-                        isSelected: selectedTab == 2
-                    ) {
-                        selectedTab = 2
-                    }
-
-                    TabBarButton(
-                        icon: "creditcard",
-                        selectedIcon: "creditcard.fill",
-                        label: "Wallet",
-                        isSelected: selectedTab == 3
-                    ) {
-                        selectedTab = 3
-                    }
-                }
-                .glassEffect(.regular.interactive())
-
-                // Create button pill
-                Button {
-                    showCreatePost = true
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 20, weight: .semibold))
-                        .frame(width: 50, height: 50)
-                }
-                .glassEffect(.regular.interactive())
+                // Action satellite - perfect circle '+' button
+                actionSatellite
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 8)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 12)
         }
         .tint(.primary)
+        .environment(tabBarState)
         .fullScreenCover(isPresented: $showCreatePost) {
             CreatePostView(ndk: ndk)
         }
@@ -193,16 +285,24 @@ private struct TabBarButton: View {
     let isSelected: Bool
     let action: () -> Void
 
+    // Button size constants for Liquid Glass aesthetic
+    private let buttonSize: CGFloat = 44
+    private let iconSize: CGFloat = 22
+
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
+            ZStack {
+                // Circular active background - high contrast indicator
+                Circle()
+                    .fill(Color.primary.opacity(isSelected ? 0.15 : 0))
+                    .frame(width: buttonSize, height: buttonSize)
+
                 Image(systemName: isSelected ? selectedIcon : icon)
-                    .font(.system(size: 24))
-                Text(label)
-                    .font(.caption2)
+                    .font(.system(size: iconSize, weight: isSelected ? .semibold : .regular))
+                    .foregroundStyle(isSelected ? .primary : .secondary)
             }
-            .frame(width: 70, height: 50)
-            .foregroundStyle(isSelected ? .primary : .secondary)
+            .frame(width: buttonSize, height: buttonSize)
+            .contentShape(Circle())
         }
         .buttonStyle(.plain)
     }
