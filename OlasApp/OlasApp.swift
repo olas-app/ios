@@ -229,6 +229,9 @@ struct OlasApp: App {
     }
 
     private func initializeNDK() async {
+        // Prevent double initialization - LMDB cannot handle multiple opens
+        guard !isInitialized && ndk == nil else { return }
+
         let relayUrls = OlasConstants.defaultRelays
 
         // Initialize NostrDB cache
