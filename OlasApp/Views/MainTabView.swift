@@ -8,8 +8,8 @@ public struct MainTabView: View {
 
     @State private var coordinator: MainTabCoordinator
     @State private var selectedTab: MainTab = .home
+    @State private var lastContentTab: MainTab = .home
     @State private var showCreatePost = false
-    @State private var tabBarState = TabBarState()
 
     private let ndk: NDK
     private let sparkWalletManager: SparkWalletManager
@@ -23,12 +23,8 @@ public struct MainTabView: View {
     }
 
     public var body: some View {
-        ZStack(alignment: .bottom) {
-            tabContent
-            bottomBar
-        }
+        tabContent
         .tint(.primary)
-        .environment(tabBarState)
         .fullScreenCover(isPresented: $showCreatePost) {
             CreatePostView(ndk: ndk)
         }
@@ -41,10 +37,25 @@ public struct MainTabView: View {
         .onChange(of: settings.muteListSources) { _, newSources in
             coordinator.updateMuteListSources(newSources)
         }
+        .onChange(of: selectedTab) { oldTab, newTab in
+            if newTab == .createPost {
+                selectedTab = lastContentTab
+                showCreatePost = true
+            } else {
+                lastContentTab = newTab
+            }
+        }
         .environment(coordinator.walletViewModel)
         .environment(coordinator.muteListManager)
         .environment(sparkWalletManager)
         .environment(nwcWalletManager)
+        .overlay(alignment: .topLeading) {
+            if settings.showRelayIndicator {
+                RelayConnectionIndicatorButton(ndk: ndk)
+                    .padding(.top, 6)
+                    .padding(.leading, 8)
+            }
+        }
         .overlay(alignment: .top) {
             PublishingBannerOverlay(publishingState: publishingState)
         }
@@ -52,15 +63,36 @@ public struct MainTabView: View {
 
     @ViewBuilder
     private var tabContent: some View {
-        switch selectedTab {
-        case .home:
+        TabView(selection: $selectedTab) {
             FeedView(ndk: ndk, settings: settings)
-        case .videos:
+                .tag(MainTab.home)
+                .tabItem {
+                    Label(MainTab.home.label, systemImage: MainTab.home.selectedIcon)
+                }
+
             VideosView(ndk: ndk)
-        case .explore:
+                .tag(MainTab.videos)
+                .tabItem {
+                    Label(MainTab.videos.label, systemImage: MainTab.videos.selectedIcon)
+                }
+
+            Color.clear
+                .tag(MainTab.createPost)
+                .tabItem {
+                    Label(MainTab.createPost.label, systemImage: MainTab.createPost.icon)
+                }
+
             ExploreView(ndk: ndk)
-        case .wallet:
+                .tag(MainTab.explore)
+                .tabItem {
+                    Label(MainTab.explore.label, systemImage: MainTab.explore.selectedIcon)
+                }
+
             walletView
+                .tag(MainTab.wallet)
+                .tabItem {
+                    Label(MainTab.wallet.label, systemImage: MainTab.wallet.selectedIcon)
+                }
         }
     }
 
@@ -76,18 +108,4 @@ public struct MainTabView: View {
         }
     }
 
-    @ViewBuilder
-    private var bottomBar: some View {
-        HStack(spacing: 12) {
-            LiquidNavigationDock(
-                selectedTab: $selectedTab,
-                tabBarState: tabBarState
-            )
-            ActionSatelliteButton(accessibilityLabel: "Create post") {
-                showCreatePost = true
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 12)
-    }
 }

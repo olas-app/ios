@@ -20,6 +20,7 @@ public enum WalletType: String, CaseIterable, Hashable {
 public final class SettingsManager {
     @ObservationIgnored @AppStorage("showVideos") public var showVideos: Bool = true
     @ObservationIgnored @AppStorage("autoplayVideos") public var autoplayVideos: Bool = true
+    @ObservationIgnored @AppStorage("showRelayIndicator") public var showRelayIndicator: Bool = false
 
     public var hasCompletedOnboarding: Bool = false {
         didSet {

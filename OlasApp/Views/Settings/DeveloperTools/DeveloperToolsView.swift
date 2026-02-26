@@ -4,6 +4,7 @@ import SwiftUI
 
 struct DeveloperToolsView: View {
     let ndk: NDK
+    @Environment(SettingsManager.self) private var settings
 
     @State private var stats: NdbStat?
     @State private var databaseSize: Int64 = 0
@@ -65,6 +66,11 @@ struct DeveloperToolsView: View {
                 NavigationLink(destination: NetworkTrafficView()) {
                     ToolRow(icon: "arrow.left.arrow.right", title: "Network Traffic", subtitle: "Raw Nostr protocol messages", color: .red)
                 }
+            }
+
+            Section("UI Options") {
+                @Bindable var settings = settings
+                Toggle("Relay Connection Indicator", isOn: $settings.showRelayIndicator)
             }
 
             // Quick Actions Section
