@@ -5,6 +5,8 @@ import SwiftUI
 
 @main
 struct OlasApp: App {
+    @Environment(\.scenePhase) private var scenePhase
+
     @State private var settings = SettingsManager()
     @State private var relayCache = RelayMetadataCache()
     @State private var publishingState = PublishingState()
@@ -54,6 +56,9 @@ struct OlasApp: App {
             .onOpenURL { url in
                 handleIncomingURL(url)
             }
+            .onChange(of: scenePhase) { _, newPhase in
+                handleScenePhaseChange(newPhase)
+            }
             .onChange(of: isInitialized) { _, initialized in
                 if initialized, let uri = pendingNWCURI {
                     Task {
@@ -86,9 +91,12 @@ struct OlasApp: App {
             } message: {
                 Text(signingErrorMessage)
             }
-            .sheet(item: $invalidSession) { session in
+            .sheet(item: $invalidSession, onDismiss: {
+                authManager?.clearValidationFailure()
+                invalidSession = nil
+            }) { session in
                 if let ndk = ndk, let authManager = authManager {
-                    SignerReconnectView(session: session, ndk: ndk, authManager: authManager) {
+                    LoginView(authManager: authManager, ndk: ndk, reconnectSession: session) {
                         authManager.clearValidationFailure()
                         invalidSession = nil
                     }
@@ -174,6 +182,19 @@ struct OlasApp: App {
 
     // MARK: - URL Handling
 
+    private func handleScenePhaseChange(_ phase: ScenePhase) {
+        switch phase {
+        case .active:
+            logInfo("App entered foreground", category: "AppLifecycle")
+        case .background:
+            logInfo("App entered background", category: "AppLifecycle")
+        case .inactive:
+            logDebug("App became inactive", category: "AppLifecycle")
+        @unknown default:
+            logWarning("App entered unknown scene phase", category: "AppLifecycle")
+        }
+    }
+
     private func handleIncomingURL(_ url: URL) {
         guard url.scheme == "olas" else { return }
 
@@ -232,6 +253,9 @@ struct OlasApp: App {
         // Prevent double initialization - LMDB cannot handle multiple opens
         guard !isInitialized && ndk == nil else { return }
 
+        NDKLogger.configure(logLevel: .trace, logNetworkTraffic: true)
+        logInfo("NDK trace logging enabled", category: "Network", metadata: ["logLevel": "trace", "networkTraffic": "true"])
+
         let relayUrls = OlasConstants.defaultRelays
 
         // Initialize NostrDB cache
@@ -276,7 +300,9 @@ struct OlasApp: App {
 
         // Connect in background - don't block UI for network
         Task {
+            logInfo("Starting relay connections", category: "Network", metadata: ["relayCount": "\(relayUrls.count)"])
             await newNDK.connect()
+            logInfo("Initial relay connect completed", category: "Network")
         }
 
         // Initialize SparkWalletManager
