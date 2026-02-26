@@ -605,11 +605,13 @@ public final class SparkWalletManager {
             Log.error("Payment failed", category: "Spark", metadata: ["id": payment.id])
         case let .paymentPending(payment):
             Log.debug("Payment pending", category: "Spark", metadata: ["amount": "\(payment.amount)"])
-        case let .unclaimedDeposits(deposits):
-            Log.debug("Unclaimed deposits", category: "Spark", metadata: ["count": "\(deposits.count)"])
-        case let .claimedDeposits(deposits):
-            Log.info("Claimed deposits", category: "Spark", metadata: ["count": "\(deposits.count)"])
+        case let .unclaimedDeposits(unclaimedDeposits):
+            Log.debug("Unclaimed deposits", category: "Spark", metadata: ["count": "\(unclaimedDeposits.count)"])
+        case let .claimedDeposits(claimedDeposits):
+            Log.info("Claimed deposits", category: "Spark", metadata: ["count": "\(claimedDeposits.count)"])
             await refreshInfo()
+        case .synced:
+            Log.debug("Wallet synced", category: "Spark")
         }
     }
 

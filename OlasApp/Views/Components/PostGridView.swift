@@ -10,12 +10,11 @@ public struct PostGridView: View {
     let onTap: (NDKEvent) -> Void
     let namespace: Namespace.ID
 
-    /// Creates a post grid view
-    /// - Parameters:
-    ///   - posts: Array of NDKEvent posts to display
-    ///   - spacing: Space between grid items (default: 2)
-    ///   - onTap: Closure called when a post is tapped
-    ///   - namespace: Matched geometry namespace for hero animations
+    /// Event IDs whose images have been confirmed loadable, in order of confirmation
+    @State private var loadedIds: [String] = []
+    /// Event IDs already processed (loaded, failed, or no URL) — avoids re-prefetching
+    @State private var processedIds: Set<String> = []
+
     public init(
         posts: [NDKEvent],
         spacing: CGFloat = 2,
@@ -36,11 +35,52 @@ public struct PostGridView: View {
         ]
     }
 
+    /// Only show events whose images have actually loaded
+    private var displayedPosts: [NDKEvent] {
+        let postMap = Dictionary(posts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return loadedIds.compactMap { postMap[$0] }
+    }
+
     public var body: some View {
         LazyVGrid(columns: columns, spacing: spacing) {
-            ForEach(posts, id: \.id) { post in
+            ForEach(displayedPosts, id: \.id) { post in
                 GridCell(event: post, onTap: onTap, namespace: namespace)
             }
+        }
+        .onChange(of: posts.count) {
+            prefetchNewImages()
+        }
+        .onAppear {
+            prefetchNewImages()
+        }
+    }
+
+    private func prefetchNewImages() {
+        for event in posts {
+            let id = event.id
+            guard !processedIds.contains(id) else { continue }
+            processedIds.insert(id)
+
+            guard let url = thumbnailURL(for: event) else { continue }
+
+            KingfisherManager.shared.retrieveImage(with: url) { result in
+                Task { @MainActor in
+                    if case .success = result {
+                        loadedIds.append(id)
+                    }
+                }
+            }
+        }
+    }
+
+    private func thumbnailURL(for event: NDKEvent) -> URL? {
+        let isVideo = event.kind == OlasConstants.EventKinds.shortVideo
+        if isVideo {
+            let video = NDKVideo(event: event)
+            return video.thumbnailURL.flatMap { URL(string: $0) }
+        } else {
+            let image = NDKImage(event: event)
+            return image.primaryImageURL.flatMap { URL(string: $0) }
         }
     }
 }
