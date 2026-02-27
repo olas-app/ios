@@ -92,7 +92,7 @@ struct CommentsSheet: View {
     private func loadComments() async {
         let filter = NDKFilter.tagging(event, kinds: [OlasConstants.EventKinds.comment], limit: 100)
 
-        let subscription = ndk.subscribe(filter: filter)
+        let subscription = ndk.subscribeWithTrace(filter: filter)
 
         // Stream comments as they arrive (events now come in batches)
         for await commentEvents in subscription.events {

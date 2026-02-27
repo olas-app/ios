@@ -8,6 +8,7 @@ public struct PostGridView: View {
     let posts: [NDKEvent]
     let spacing: CGFloat
     let onTap: (NDKEvent) -> Void
+    let onNearEnd: ((NDKEvent) -> Void)?
     let namespace: Namespace.ID
 
     /// Event IDs whose images have been confirmed loadable, in order of confirmation
@@ -19,11 +20,13 @@ public struct PostGridView: View {
         posts: [NDKEvent],
         spacing: CGFloat = 2,
         onTap: @escaping (NDKEvent) -> Void,
+        onNearEnd: ((NDKEvent) -> Void)? = nil,
         namespace: Namespace.ID
     ) {
         self.posts = posts
         self.spacing = spacing
         self.onTap = onTap
+        self.onNearEnd = onNearEnd
         self.namespace = namespace
     }
 
@@ -42,9 +45,15 @@ public struct PostGridView: View {
     }
 
     public var body: some View {
+        let displayed = displayedPosts
         LazyVGrid(columns: columns, spacing: spacing) {
-            ForEach(displayedPosts, id: \.id) { post in
+            ForEach(Array(displayed.enumerated()), id: \.element.id) { index, post in
                 GridCell(event: post, onTap: onTap, namespace: namespace)
+                    .onAppear {
+                        if let onNearEnd, index >= displayed.count - 9 {
+                            onNearEnd(post)
+                        }
+                    }
             }
         }
         .onChange(of: posts.count) {

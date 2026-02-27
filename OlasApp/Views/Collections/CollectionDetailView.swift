@@ -39,7 +39,6 @@ struct CollectionDetailView: View {
         .navigationTitle(collection.title ?? "Collection")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(selectedPicture != nil ? .hidden : .visible, for: .navigationBar)
-        .toolbar(selectedPicture != nil ? .hidden : .visible, for: .tabBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
@@ -166,7 +165,7 @@ struct CollectionDetailView: View {
         }
 
         let filter = NDKFilter(ids: eventIds)
-        let subscription = ndk.subscribe(filter: filter, cachePolicy: .cacheWithNetwork)
+        let subscription = ndk.subscribeWithTrace(filter: filter, cachePolicy: .cacheWithNetwork)
 
         for await events in subscription.events {
             guard !Task.isCancelled else { break }

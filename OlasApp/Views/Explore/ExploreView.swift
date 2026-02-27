@@ -40,7 +40,7 @@ public struct ExploreView: View {
                 }
                 .navigationTitle("Explore")
                 #if os(iOS)
-                    .navigationBarTitleDisplayMode(.large)
+                    .navigationBarTitleDisplayMode(.inline)
                 #endif
                     .navigationDestination(for: String.self) { pubkey in
                         ProfileView(ndk: ndk, pubkey: pubkey, currentUserPubkey: authManager.activePubkey)
@@ -49,7 +49,6 @@ public struct ExploreView: View {
                         FollowPackFeedView(ndk: ndk, pack: pack)
                     }
                     .toolbar(selectedPost != nil ? .hidden : .visible, for: .navigationBar)
-                    .toolbar(selectedPost != nil ? .hidden : .visible, for: .tabBar)
                     .toolbar {
                         ToolbarItem(placement: .topBarTrailing) {
                             Button {
@@ -132,6 +131,7 @@ private struct SearchSheet: View {
     let onDismiss: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(SavedFeedSourcesManager.self) private var feedSourcesManager
 
     var body: some View {
         NavigationStack {
@@ -147,7 +147,12 @@ private struct SearchSheet: View {
                     }
                 )
 
-                if !viewModel.searchText.isEmpty {
+                if let tag = viewModel.activeHashtagSearch {
+                    HashtagSearchResultsView(
+                        tag: tag,
+                        posts: viewModel.filteredHashtagResults
+                    )
+                } else if !viewModel.searchText.isEmpty {
                     SearchResultsView(
                         searchText: viewModel.searchText,
                         userResults: viewModel.filteredUserResults,
@@ -164,6 +169,20 @@ private struct SearchSheet: View {
             .navigationTitle("Search")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                if let tag = viewModel.activeHashtagSearch {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            if feedSourcesManager.isHashtagSaved(tag) {
+                                feedSourcesManager.removeHashtag(tag)
+                            } else {
+                                feedSourcesManager.saveHashtag(tag)
+                            }
+                        } label: {
+                            Image(systemName: feedSourcesManager.isHashtagSaved(tag) ? "bookmark.fill" : "bookmark")
+                        }
+                    }
+                }
+
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") {
                         viewModel.clearSearch()
@@ -234,8 +253,16 @@ struct DiscoverContentView: View {
             TabBar(selectedTab: $viewModel.selectedTab)
                 .padding(.top, 8)
 
-            PostGridView(posts: viewModel.filteredTrendingPosts, spacing: 2, onTap: onPostTap, namespace: namespace)
-                .padding(.top, 16)
+            PostGridView(
+                posts: viewModel.filteredTrendingPosts,
+                spacing: 2,
+                onTap: onPostTap,
+                onNearEnd: { _ in
+                    viewModel.loadMoreIfNeeded()
+                },
+                namespace: namespace
+            )
+            .padding(.top, 16)
         }
     }
 }
@@ -453,4 +480,3 @@ struct FeaturedFollowPackCard: View {
         .padding(20)
     }
 }
-

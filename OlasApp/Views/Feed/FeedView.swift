@@ -11,7 +11,6 @@ public struct FeedView: View {
     @Environment(SparkWalletManager.self) private var sparkWalletManager
     @Environment(NWCWalletManager.self) private var nwcWalletManager
     @Environment(SavedFeedSourcesManager.self) private var feedSourcesManager
-    @Environment(TabBarState.self) private var tabBarState: TabBarState?
     private let ndk: NDK
 
     @State private var navigationPath = NavigationPath()
@@ -29,6 +28,8 @@ public struct FeedView: View {
             return relayMetadataCache.displayName(for: url)
         case let .pack(pack):
             return pack.name
+        case let .hashtag(tag):
+            return "#\(tag)"
         }
     }
 
@@ -46,18 +47,7 @@ public struct FeedView: View {
                         }
                     }
 
-                    // Background geometry reader for global offset tracking
-                    GeometryReader { proxy in
-                        Color.clear.preference(
-                            key: ScrollOffsetPreferenceKey.self,
-                            value: -proxy.frame(in: .global).origin.y
-                        )
-                    }
                 }
-            }
-            .coordinateSpace(name: "feedScroll")
-            .onPreferenceChange(ScrollOffsetPreferenceKey.self) { offset in
-                tabBarState?.updateScrollOffset(offset)
             }
             .refreshable {
                 viewModel.stopSubscription()
@@ -98,6 +88,19 @@ public struct FeedView: View {
                                         return false
                                     }()
                                     Label(pack.name, systemImage: isSelected ? "checkmark" : "")
+                                }
+                            }
+                        }
+
+                        if !feedSourcesManager.savedHashtags.isEmpty {
+                            Divider()
+
+                            ForEach(feedSourcesManager.savedHashtags, id: \.self) { tag in
+                                Button {
+                                    viewModel.switchMode(to: .hashtag(tag), muteListManager: muteListManager)
+                                } label: {
+                                    let isSelected = viewModel.feedMode == .hashtag(tag)
+                                    Label("#\(tag)", systemImage: isSelected ? "checkmark" : "")
                                 }
                             }
                         }

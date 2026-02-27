@@ -1,6 +1,9 @@
 import NDKSwiftCore
 import NDKSwiftUI
+import os.log
 import SwiftUI
+
+private let logger = Logger(subsystem: "com.olas.app", category: "ExplorePagination")
 
 /// ViewModel for ExploreView that handles search and content discovery
 @MainActor
@@ -11,6 +14,7 @@ class ExploreViewModel {
     var searchText = ""
     var searchResults: [NDKEvent] = []
     var userResults: [SearchUserResult] = []
+    var hashtagResults: [NDKEvent] = []
     var trendingPosts: [NDKEvent] = []
     var followPacks: [FollowPack] = []
     var selectedTab: ExploreTab = .forYou
@@ -21,6 +25,8 @@ class ExploreViewModel {
     private let settings: SettingsManager
     private let muteListManager: MuteListManager
     private var searchTask: Task<Void, Never>?
+    private var isLoadingMore = false
+    private var seenEventIds: Set<String> = []
 
     // MARK: - Computed Properties
 
@@ -34,6 +40,17 @@ class ExploreViewModel {
 
     var filteredUserResults: [SearchUserResult] {
         userResults.filter { !muteListManager.isMuted($0.pubkey) }
+    }
+
+    var filteredHashtagResults: [NDKEvent] {
+        filterMuted(hashtagResults)
+    }
+
+    /// Returns the lowercase tag if searchText starts with `#` and has >1 char, else nil
+    var activeHashtagSearch: String? {
+        let trimmed = searchText.trimmingCharacters(in: .whitespaces)
+        guard trimmed.hasPrefix("#"), trimmed.count > 1 else { return nil }
+        return String(trimmed.dropFirst()).lowercased()
     }
 
     var featuredPacks: [FollowPack] {
@@ -67,21 +84,60 @@ class ExploreViewModel {
     }
 
     private func loadTrendingPosts() async {
+        await fetchPosts(until: nil)
+    }
+
+    private func fetchPosts(until: Timestamp?) async {
+        logger.info("fetchPosts called — until: \(until.map { String($0) } ?? "nil", privacy: .public), current total: \(self.trendingPosts.count)")
+
         let filter = NDKFilter(
             kinds: feedKinds,
+            until: until,
             limit: 50
         )
 
-        let subscription = ndk.subscribe(filter: filter)
+        let subscription = ndk.subscribeWithTrace(
+            filter: filter,
+            closeOnEose: true
+        )
 
+        var batchCount = 0
         for await events in subscription.events {
-            insertTrendingPostsBatch(events)
+            batchCount += 1
+            let newEvents = events.filter { seenEventIds.insert($0.id).inserted }
+            logger.info("fetchPosts batch #\(batchCount): received \(events.count) events, \(newEvents.count) new (after dedup)")
+            guard !newEvents.isEmpty else { continue }
+            let combined = trendingPosts + newEvents
+            trendingPosts = combined.sorted { $0.createdAt > $1.createdAt }
+            logger.info("fetchPosts total now: \(self.trendingPosts.count), filtered: \(self.filteredTrendingPosts.count)")
+        }
+        logger.info("fetchPosts subscription ended — total batches: \(batchCount), final count: \(self.trendingPosts.count)")
+    }
+
+    /// Called by PostGridView when a cell near the end of the displayed list appears
+    func loadMoreIfNeeded() {
+        guard !isLoadingMore else {
+            logger.debug("loadMoreIfNeeded: already loading, skipping")
+            return
+        }
+
+        isLoadingMore = true
+        let oldestTimestamp = trendingPosts.last?.createdAt
+        logger.info("loadMoreIfNeeded: TRIGGERED — loading more, oldest timestamp: \(oldestTimestamp.map { String($0) } ?? "nil", privacy: .public)")
+
+        Task {
+            defer { isLoadingMore = false }
+            guard let until = oldestTimestamp else {
+                logger.warning("loadMoreIfNeeded: no oldest timestamp, aborting")
+                return
+            }
+            await fetchPosts(until: until - 1)
         }
     }
 
     private func loadFollowPacks() async {
         // Prioritize media packs (39092) by requesting them first, then generic (39089)
-        let subscription = ndk.subscribe(
+        let subscription = ndk.subscribeWithTrace(
             filter: NDKFilter(
                 kinds: [OlasConstants.EventKinds.mediaFollowPack, OlasConstants.EventKinds.followPack],
                 limit: 30
@@ -127,11 +183,6 @@ class ExploreViewModel {
         }
     }
 
-    private func insertTrendingPostsBatch(_ newPosts: [NDKEvent]) {
-        let combined = trendingPosts + newPosts
-        trendingPosts = combined.sorted { $0.createdAt > $1.createdAt }
-    }
-
     // MARK: - Search
 
     /// Performs search for users and posts
@@ -141,6 +192,15 @@ class ExploreViewModel {
 
         guard !query.isEmpty else {
             clearSearchResults()
+            return
+        }
+
+        // Route hashtag queries to tag-based search
+        if let tag = activeHashtagSearch {
+            searchTask = Task {
+                await clearSearchResults()
+                await searchByHashtag(tag)
+            }
             return
         }
 
@@ -222,7 +282,7 @@ class ExploreViewModel {
             limit: 50
         )
 
-        let subscription = ndk.subscribe(filter: filter)
+        let subscription = ndk.subscribeWithTrace(filter: filter)
 
         for await events in subscription.events {
             guard !Task.isCancelled else { break }
@@ -237,13 +297,31 @@ class ExploreViewModel {
         }
     }
 
+    private func searchByHashtag(_ tag: String) async {
+        var filter = NDKFilter(kinds: feedKinds, limit: 50)
+        filter.addTagFilter("t", values: [tag])
+
+        let subscription = ndk.subscribeWithTrace(
+            filter: filter,
+            closeOnEose: true
+        )
+
+        for await events in subscription.events {
+            guard !Task.isCancelled else { break }
+
+            let newEvents = events.filter { !muteListManager.isMuted($0.pubkey) }
+            let combined = hashtagResults + newEvents
+            hashtagResults = combined.sorted { $0.createdAt > $1.createdAt }
+        }
+    }
+
     private func searchPosts(query: String) async {
         let filter = NDKFilter(
             kinds: feedKinds,
             limit: 50
         )
 
-        let subscription = ndk.subscribe(filter: filter)
+        let subscription = ndk.subscribeWithTrace(filter: filter)
 
         for await events in subscription.events {
             guard !Task.isCancelled else { break }
@@ -265,6 +343,7 @@ class ExploreViewModel {
     private func clearSearchResults() {
         searchResults = []
         userResults = []
+        hashtagResults = []
     }
 
     // MARK: - Helper Methods

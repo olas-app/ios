@@ -9,10 +9,12 @@ public final class SavedFeedSourcesManager {
 
     private static let packsKey = "com.olas.savedPacks"
     private static let activeModeKey = "com.olas.activeFeedMode"
+    private static let hashtagsKey = "com.olas.savedHashtags"
 
     // MARK: - Published State
 
     public private(set) var savedPacks: [SavedPack] = []
+    public private(set) var savedHashtags: [String] = []
     public var activeFeedMode: FeedMode = .following {
         didSet { persistActiveFeedMode() }
     }
@@ -46,10 +48,34 @@ public final class SavedFeedSourcesManager {
         savedPacks.contains { $0.id == packId }
     }
 
+    // MARK: - Hashtag Management
+
+    func saveHashtag(_ tag: String) {
+        let normalized = tag.lowercased()
+        guard !savedHashtags.contains(normalized) else { return }
+        savedHashtags.append(normalized)
+        persistHashtags()
+    }
+
+    func removeHashtag(_ tag: String) {
+        let normalized = tag.lowercased()
+        savedHashtags.removeAll { $0 == normalized }
+        persistHashtags()
+
+        if case .hashtag(let activeTag) = activeFeedMode, activeTag == normalized {
+            activeFeedMode = .following
+        }
+    }
+
+    func isHashtagSaved(_ tag: String) -> Bool {
+        savedHashtags.contains(tag.lowercased())
+    }
+
     // MARK: - Persistence
 
     private func load() {
         loadPacks()
+        loadHashtags()
         loadActiveFeedMode()
     }
 
@@ -78,7 +104,21 @@ public final class SavedFeedSourcesManager {
             } else {
                 activeFeedMode = .following
             }
+        case .hashtag(let tag):
+            if savedHashtags.contains(tag) {
+                activeFeedMode = mode
+            } else {
+                activeFeedMode = .following
+            }
         }
+    }
+
+    private func loadHashtags() {
+        savedHashtags = UserDefaults.standard.stringArray(forKey: Self.hashtagsKey) ?? []
+    }
+
+    private func persistHashtags() {
+        UserDefaults.standard.set(savedHashtags, forKey: Self.hashtagsKey)
     }
 
     private func persistPacks() {

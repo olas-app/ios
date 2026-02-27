@@ -192,7 +192,7 @@ struct CommentButton: View {
 
         let commentFilter = NDKFilter.tagging(event, kinds: [OlasConstants.EventKinds.comment], limit: 100)
 
-        let commentSub = ndk.subscribe(filter: commentFilter)
+        let commentSub = ndk.subscribeWithTrace(filter: commentFilter)
 
         for await commentEvents in commentSub.events {
             guard !Task.isCancelled else { break }

@@ -31,7 +31,8 @@ public struct MainTabView: View {
         .task {
             await coordinator.performSetup(
                 userPubkey: authManager.activePubkey,
-                muteListSources: settings.muteListSources
+                muteListSources: settings.muteListSources,
+                walletType: settings.walletType
             )
         }
         .onChange(of: settings.muteListSources) { _, newSources in

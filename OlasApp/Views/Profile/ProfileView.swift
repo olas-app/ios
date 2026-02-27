@@ -125,7 +125,6 @@ public struct ProfileView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar(selectedPost != nil ? .hidden : .visible, for: .navigationBar)
-            .toolbar(selectedPost != nil ? .hidden : .visible, for: .tabBar)
             .task {
                 followCountTask = Task {
                     await loadFollowCounts()
@@ -175,7 +174,7 @@ public struct ProfileView: View {
             limit: 1
         )
 
-        let followingSub = ndk.subscribe(filter: followingFilter)
+        let followingSub = ndk.subscribeWithTrace(filter: followingFilter)
         for await batch in followingSub.events {
             guard !Task.isCancelled else { break }
             if let event = batch.first {

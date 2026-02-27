@@ -104,7 +104,7 @@ struct FollowPackFeedView: View {
             limit: 100
         )
 
-        let subscription = ndk.subscribe(
+        let subscription = ndk.subscribeWithTrace(
             filter: filter,
             subscriptionId: "pack-feed-\(pack.id)",
             closeOnEose: false

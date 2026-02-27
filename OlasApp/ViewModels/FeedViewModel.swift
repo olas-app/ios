@@ -42,14 +42,14 @@ public final class FeedViewModel {
         switch feedMode {
         case .following:
             let filter = NDKFilter(kinds: feedKinds, limit: 50)
-            subscription = ndk.subscribe(
+            subscription = ndk.subscribeWithTrace(
                 filter: filter,
                 cachePolicy: .cacheWithNetwork
             )
 
         case let .relay(url):
             let filter = NDKFilter(kinds: feedKinds, limit: 50)
-            subscription = ndk.subscribe(
+            subscription = ndk.subscribeWithTrace(
                 filter: filter,
                 cachePolicy: .networkOnly,
                 relays: [url],
@@ -58,8 +58,16 @@ public final class FeedViewModel {
 
         case let .pack(pack):
             let filter = NDKFilter(authors: pack.pubkeys, kinds: feedKinds, limit: 100)
-            subscription = ndk.subscribe(
+            subscription = ndk.subscribeWithTrace(
                 filter: filter,
+                cachePolicy: .cacheWithNetwork
+            )
+
+        case let .hashtag(tag):
+            var hashtagFilter = NDKFilter(kinds: feedKinds, limit: 50)
+            hashtagFilter.addTagFilter("t", values: [tag])
+            subscription = ndk.subscribeWithTrace(
+                filter: hashtagFilter,
                 cachePolicy: .cacheWithNetwork
             )
         }

@@ -65,7 +65,7 @@ public final class MuteListManager {
                 limit: 1
             )
 
-            let subscription = ndk.subscribe(filter: filter, cachePolicy: .cacheWithNetwork)
+            let subscription = ndk.subscribeWithTrace(filter: filter, cachePolicy: .cacheWithNetwork)
 
             for await events in subscription.events {
                 guard !Task.isCancelled else { break }
@@ -88,7 +88,7 @@ public final class MuteListManager {
             )
 
             // Keep subscription open with network priority to get real-time updates
-            let subscription = ndk.subscribe(filter: filter, cachePolicy: .cacheWithNetwork)
+            let subscription = ndk.subscribeWithTrace(filter: filter, cachePolicy: .cacheWithNetwork)
 
             for await events in subscription.events {
                 guard !Task.isCancelled else { break }

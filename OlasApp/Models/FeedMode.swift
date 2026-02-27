@@ -4,6 +4,7 @@ public enum FeedMode: Equatable, Hashable {
     case following
     case relay(url: String)
     case pack(SavedPack)
+    case hashtag(String)
 
     var displayName: String {
         switch self {
@@ -13,6 +14,8 @@ public enum FeedMode: Equatable, Hashable {
             return "Relay"
         case .pack(let pack):
             return pack.name
+        case .hashtag(let tag):
+            return "#\(tag)"
         }
     }
 }
@@ -51,11 +54,11 @@ public struct SavedPack: Identifiable, Codable, Equatable, Hashable, Sendable {
 
 extension FeedMode: Codable {
     private enum CodingKeys: String, CodingKey {
-        case type, relayURL, pack
+        case type, relayURL, pack, hashtag
     }
 
     private enum FeedType: String, Codable {
-        case following, relay, pack
+        case following, relay, pack, hashtag
     }
 
     public init(from decoder: Decoder) throws {
@@ -71,6 +74,9 @@ extension FeedMode: Codable {
         case .pack:
             let pack = try container.decode(SavedPack.self, forKey: .pack)
             self = .pack(pack)
+        case .hashtag:
+            let tag = try container.decode(String.self, forKey: .hashtag)
+            self = .hashtag(tag)
         }
     }
 
@@ -86,6 +92,9 @@ extension FeedMode: Codable {
         case .pack(let pack):
             try container.encode(FeedType.pack, forKey: .type)
             try container.encode(pack, forKey: .pack)
+        case .hashtag(let tag):
+            try container.encode(FeedType.hashtag, forKey: .type)
+            try container.encode(tag, forKey: .hashtag)
         }
     }
 }

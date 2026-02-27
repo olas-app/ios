@@ -32,7 +32,7 @@ public struct EventGrid: View {
     }
 
     private func subscribeToEvents() async {
-        let subscription = ndk.subscribe(filter: filter, cachePolicy: .cacheWithNetwork)
+        let subscription = ndk.subscribeWithTrace(filter: filter, cachePolicy: .cacheWithNetwork)
         for await eventBatch in subscription.events {
             guard !Task.isCancelled else { break }
             for event in eventBatch {

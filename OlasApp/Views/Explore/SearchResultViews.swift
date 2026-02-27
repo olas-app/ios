@@ -209,6 +209,31 @@ private struct PostThumbnail: View {
     }
 }
 
+// MARK: - Hashtag Search Results
+
+struct HashtagSearchResultsView: View {
+    let tag: String
+    let posts: [NDKEvent]
+
+    var body: some View {
+        if posts.isEmpty {
+            ContentUnavailableView(
+                "No results for #\(tag)",
+                systemImage: "number",
+                description: Text("No posts found with this hashtag")
+            )
+        } else {
+            ScrollView {
+                LazyVStack(spacing: 1) {
+                    ForEach(posts, id: \.id) { event in
+                        SearchPostRow(event: event)
+                    }
+                }
+            }
+        }
+    }
+}
+
 // MARK: - Empty Search View
 
 struct EmptySearchView: View {

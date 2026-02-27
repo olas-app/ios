@@ -25,6 +25,8 @@ public struct VideosView: View {
             return relayMetadataCache.displayName(for: url)
         case let .pack(pack):
             return pack.name
+        case let .hashtag(tag):
+            return "#\(tag)"
         }
     }
 

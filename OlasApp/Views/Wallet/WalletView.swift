@@ -38,6 +38,9 @@ public struct WalletView: View {
                     }
                 }
             }
+            .task {
+                await walletViewModel.loadWallet()
+            }
             .sheet(isPresented: $showDeposit) {
                 DepositView(
                     walletType: .cashu(

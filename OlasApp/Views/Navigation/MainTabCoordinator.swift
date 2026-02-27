@@ -15,8 +15,10 @@ final class MainTabCoordinator {
         self.muteListManager = MuteListManager(ndk: ndk)
     }
 
-    func performSetup(userPubkey: String?, muteListSources: [String]) async {
-        await walletViewModel.loadWallet()
+    func performSetup(userPubkey: String?, muteListSources: [String], walletType: WalletType) async {
+        if walletType == .cashu {
+            await walletViewModel.loadWallet()
+        }
         muteListManager.userPubkey = userPubkey
         muteListManager.updateMuteListSources(muteListSources)
         muteListManager.startSubscription()
