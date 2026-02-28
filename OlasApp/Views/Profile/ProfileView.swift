@@ -174,7 +174,7 @@ public struct ProfileView: View {
             limit: 1
         )
 
-        let followingSub = ndk.subscribeWithTrace(filter: followingFilter)
+        let followingSub = ndk.subscribe(filter: followingFilter)
         for await batch in followingSub.events {
             guard !Task.isCancelled else { break }
             if let event = batch.first {

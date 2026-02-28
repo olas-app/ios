@@ -32,13 +32,13 @@ public final class VideoFeedViewModel {
 
         switch feedMode {
         case .following:
-            subscription = ndk.subscribeWithTrace(
+            subscription = ndk.subscribe(
                 filter: filter,
                 cachePolicy: .cacheWithNetwork
             )
 
         case let .relay(url):
-            subscription = ndk.subscribeWithTrace(
+            subscription = ndk.subscribe(
                 filter: filter,
                 cachePolicy: .networkOnly,
                 relays: [url],
@@ -47,7 +47,7 @@ public final class VideoFeedViewModel {
 
         case let .pack(pack):
             let packFilter = NDKFilter(authors: pack.pubkeys, kinds: videoKinds, limit: 50)
-            subscription = ndk.subscribeWithTrace(
+            subscription = ndk.subscribe(
                 filter: packFilter,
                 cachePolicy: .cacheWithNetwork
             )
@@ -55,7 +55,7 @@ public final class VideoFeedViewModel {
         case let .hashtag(tag):
             var hashtagFilter = NDKFilter(kinds: videoKinds, limit: 50)
             hashtagFilter.addTagFilter("t", values: [tag])
-            subscription = ndk.subscribeWithTrace(
+            subscription = ndk.subscribe(
                 filter: hashtagFilter,
                 cachePolicy: .cacheWithNetwork
             )

@@ -96,7 +96,7 @@ class ExploreViewModel {
             limit: 50
         )
 
-        let subscription = ndk.subscribeWithTrace(
+        let subscription = ndk.subscribe(
             filter: filter,
             closeOnEose: true
         )
@@ -137,7 +137,7 @@ class ExploreViewModel {
 
     private func loadFollowPacks() async {
         // Prioritize media packs (39092) by requesting them first, then generic (39089)
-        let subscription = ndk.subscribeWithTrace(
+        let subscription = ndk.subscribe(
             filter: NDKFilter(
                 kinds: [OlasConstants.EventKinds.mediaFollowPack, OlasConstants.EventKinds.followPack],
                 limit: 30
@@ -282,7 +282,7 @@ class ExploreViewModel {
             limit: 50
         )
 
-        let subscription = ndk.subscribeWithTrace(filter: filter)
+        let subscription = ndk.subscribe(filter: filter)
 
         for await events in subscription.events {
             guard !Task.isCancelled else { break }
@@ -301,7 +301,7 @@ class ExploreViewModel {
         var filter = NDKFilter(kinds: feedKinds, limit: 50)
         filter.addTagFilter("t", values: [tag])
 
-        let subscription = ndk.subscribeWithTrace(
+        let subscription = ndk.subscribe(
             filter: filter,
             closeOnEose: true
         )
@@ -321,7 +321,7 @@ class ExploreViewModel {
             limit: 50
         )
 
-        let subscription = ndk.subscribeWithTrace(filter: filter)
+        let subscription = ndk.subscribe(filter: filter)
 
         for await events in subscription.events {
             guard !Task.isCancelled else { break }

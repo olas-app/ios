@@ -75,7 +75,7 @@ public final class MintDiscoveryViewModel {
             limit: 100
         )
 
-        let announcementSub = ndk.subscribeWithTrace(
+        let announcementSub = ndk.subscribe(
             filter: announcementFilter,
             maxAge: 3600,
             cachePolicy: .cacheWithNetwork
@@ -122,7 +122,7 @@ public final class MintDiscoveryViewModel {
         )
         recommendationFilter.addTagFilter("k", values: ["38172"])
 
-        let recommendationSub = ndk.subscribeWithTrace(
+        let recommendationSub = ndk.subscribe(
             filter: recommendationFilter,
             maxAge: 3600,
             cachePolicy: .cacheWithNetwork

@@ -88,7 +88,7 @@ public final class ReactionState {
     private func observeReactions() async {
         let filter = NDKFilter.tagging(event, kinds: [OlasConstants.EventKinds.reaction])
 
-        let subscription = ndk.subscribeWithTrace(
+        let subscription = ndk.subscribe(
             filter: filter,
             maxAge: 0,
             cachePolicy: .cacheWithNetwork,

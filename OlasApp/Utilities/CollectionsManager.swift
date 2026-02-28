@@ -26,7 +26,7 @@ final class CollectionsManager {
                 kinds: [OlasConstants.EventKinds.pictureCurationSet]
             )
 
-            let subscription = ndk.subscribeWithTrace(filter: filter, cachePolicy: .cacheWithNetwork)
+            let subscription = ndk.subscribe(filter: filter, cachePolicy: .cacheWithNetwork)
 
             for await events in subscription.events {
                 guard !Task.isCancelled else { break }
@@ -68,7 +68,7 @@ final class CollectionsManager {
                 )
 
                 var results: [String: NDKPictureCurationSet] = [:]
-                let subscription = ndk.subscribeWithTrace(filter: filter, cachePolicy: .cacheWithNetwork)
+                let subscription = ndk.subscribe(filter: filter, cachePolicy: .cacheWithNetwork)
 
                 for await events in subscription.events {
                     guard !Task.isCancelled else { break }

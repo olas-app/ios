@@ -5,8 +5,6 @@ import SwiftUI
 
 @main
 struct OlasApp: App {
-    @Environment(\.scenePhase) private var scenePhase
-
     @State private var settings = SettingsManager()
     @State private var relayCache = RelayMetadataCache()
     @State private var publishingState = PublishingState()
@@ -56,10 +54,7 @@ struct OlasApp: App {
             .onOpenURL { url in
                 handleIncomingURL(url)
             }
-            .onChange(of: scenePhase) { _, newPhase in
-                handleScenePhaseChange(newPhase)
-            }
-            .onChange(of: isInitialized) { _, initialized in
+.onChange(of: isInitialized) { _, initialized in
                 if initialized, let uri = pendingNWCURI {
                     Task {
                         await connectPendingNWC(uri: uri)
@@ -182,20 +177,7 @@ struct OlasApp: App {
 
     // MARK: - URL Handling
 
-    private func handleScenePhaseChange(_ phase: ScenePhase) {
-        switch phase {
-        case .active:
-            logInfo("App entered foreground", category: "AppLifecycle")
-        case .background:
-            logInfo("App entered background", category: "AppLifecycle")
-        case .inactive:
-            logDebug("App became inactive", category: "AppLifecycle")
-        @unknown default:
-            logWarning("App entered unknown scene phase", category: "AppLifecycle")
-        }
-    }
-
-    private func handleIncomingURL(_ url: URL) {
+private func handleIncomingURL(_ url: URL) {
         guard url.scheme == "olas" else { return }
 
         switch url.host {
@@ -205,7 +187,7 @@ struct OlasApp: App {
             // NIP-46 callback - signer app returned to Olas
             // The actual connection is handled via relays in LoginView.waitForSignerConnection()
             // This callback just brings Olas back to foreground
-            logInfo("NIP-46 signer returned via callback", category: "App")
+            break
         default:
             break
         }
@@ -244,9 +226,7 @@ struct OlasApp: App {
         do {
             try await manager.connect(walletConnectURI: uri)
             settings.walletType = .nwc
-        } catch {
-            logError("NWC connection failed: \(error.localizedDescription)", category: "NWC")
-        }
+        } catch {}
     }
 
     private func initializeNDK() async {
@@ -254,7 +234,6 @@ struct OlasApp: App {
         guard !isInitialized && ndk == nil else { return }
 
         NDKLogger.configure(logLevel: .trace, logNetworkTraffic: true)
-        logInfo("NDK trace logging enabled", category: "Network", metadata: ["logLevel": "trace", "networkTraffic": "true"])
 
         let relayUrls = OlasConstants.defaultRelays
 
@@ -271,17 +250,13 @@ struct OlasApp: App {
                 withIntermediateDirectories: true,
                 attributes: nil
             )
-        } catch {
-            logError("Failed to create cache directory: \(error.localizedDescription)", category: "Cache")
-        }
+        } catch {}
 
         // Create cache first, then pass to NDK
         var cache: (any NDKCache)?
         do {
             cache = try await NDKNostrDBCache(path: cachePath)
-            logInfo("NostrDB cache initialized", category: "Cache", metadata: ["path": cachePath])
         } catch {
-            logError("Failed to initialize NostrDB cache: \(error.localizedDescription)", category: "Cache", metadata: ["path": cachePath])
         }
 
         let newNDK = NDK(relayURLs: relayUrls, cache: cache)
@@ -300,9 +275,7 @@ struct OlasApp: App {
 
         // Connect in background - don't block UI for network
         Task {
-            logInfo("Starting relay connections", category: "Network", metadata: ["relayCount": "\(relayUrls.count)"])
             await newNDK.connect()
-            logInfo("Initial relay connect completed", category: "Network")
         }
 
         // Initialize SparkWalletManager

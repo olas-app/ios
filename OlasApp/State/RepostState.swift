@@ -105,7 +105,7 @@ public final class RepostState {
         let repostFilter = NDKFilter.tagging(event, kinds: [6, 16])
 
         // Create subscription
-        let repostSub = ndk.subscribeWithTrace(
+        let repostSub = ndk.subscribe(
             filter: repostFilter,
             maxAge: 0,
             cachePolicy: .cacheWithNetwork,

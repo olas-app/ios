@@ -44,7 +44,7 @@ final class FollowPackManager {
                 limit: 50
             )
 
-            let subscription = ndk.subscribeWithTrace(
+            let subscription = ndk.subscribe(
                 filter: filter,
                 subscriptionId: "user-packs",
                 closeOnEose: true

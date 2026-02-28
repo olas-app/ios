@@ -165,7 +165,7 @@ struct CollectionDetailView: View {
         }
 
         let filter = NDKFilter(ids: eventIds)
-        let subscription = ndk.subscribeWithTrace(filter: filter, cachePolicy: .cacheWithNetwork)
+        let subscription = ndk.subscribe(filter: filter, cachePolicy: .cacheWithNetwork)
 
         for await events in subscription.events {
             guard !Task.isCancelled else { break }

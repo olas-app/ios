@@ -82,9 +82,6 @@ public struct SettingsView: View {
                 NavigationLink(destination: DeveloperToolsView(ndk: ndk)) {
                     SettingsRow(icon: "wrench.and.screwdriver", title: "Developer Tools", color: .gray)
                 }
-                NavigationLink(destination: TelemetrySettingsView()) {
-                    SettingsRow(icon: "antenna.radiowaves.left.and.right", title: "Telemetry", color: .indigo)
-                }
             }
 
             Section("Privacy & Security") {

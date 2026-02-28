@@ -60,7 +60,7 @@ public final class NWCWalletManager {
     }
 
     private func debugLog(_ message: String) {
-        Log.debug(message, category: "NWC")
+        print(message)
     }
 
     /// Connect to NWC wallet using a connection URI
@@ -239,9 +239,7 @@ public final class NWCWalletManager {
             if let rate = response.bitcoin[preferredCurrency.lowercased()] {
                 btcRate = rate
             }
-        } catch {
-            Log.warning("Failed to fetch BTC price: \(error.localizedDescription)", category: "NWC")
-        }
+        } catch {}
     }
 
     /// Convert sats to fiat using current rate

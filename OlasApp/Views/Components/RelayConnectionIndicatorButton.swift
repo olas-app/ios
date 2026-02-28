@@ -12,15 +12,6 @@ struct RelayConnectionIndicatorButton: View {
     var body: some View {
         Button {
             showDetails = true
-            logInfo(
-                "Relay status indicator tapped",
-                category: "Network",
-                metadata: [
-                    "connected": "\(monitor.connectedCount)",
-                    "total": "\(monitor.totalRelays)",
-                    "health": monitor.health.label
-                ]
-            )
         } label: {
             HStack(spacing: 6) {
                 Circle()

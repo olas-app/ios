@@ -205,10 +205,7 @@ public final class WalletViewModel {
             if let rate = response.bitcoin[preferredCurrency.lowercased()] {
                 btcRate = rate
             }
-        } catch {
-            Log.warning("Failed to fetch BTC price: \(error.localizedDescription)", category: "Wallet")
-            // Don't set error to avoid disrupting UI for non-critical feature
-        }
+        } catch {}
     }
 
     /// Convert sats to fiat using current rate

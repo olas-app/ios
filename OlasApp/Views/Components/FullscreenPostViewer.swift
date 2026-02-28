@@ -430,7 +430,7 @@ struct FullscreenPostViewer: View {
                 limit: 500
             )
 
-            let subscription = ndk.subscribeWithTrace(filter: reactionFilter)
+            let subscription = ndk.subscribe(filter: reactionFilter)
 
             for await reactionEvents in subscription.events {
                 if Task.isCancelled { break }

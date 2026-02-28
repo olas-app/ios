@@ -144,7 +144,7 @@ struct FollowPackDiscoveryView: View {
             limit: 50
         )
 
-        let subscription = ndk.subscribeWithTrace(filter: filter)
+        let subscription = ndk.subscribe(filter: filter)
 
         var loadedPacks: [FollowPack] = []
 

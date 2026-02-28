@@ -152,14 +152,12 @@ final class RelayConnectionMonitor {
             task.cancel()
             relayStateTasks.removeValue(forKey: relayURL)
             relayStates.removeValue(forKey: relayURL)
-            logInfo("Relay removed from active set", category: "Network", metadata: ["relay": relayURL])
         }
 
         // Start monitors for newly discovered relays.
         for relay in relays where relayStateTasks[relay.url] == nil {
             let currentState = await relay.connectionState
             relayStates[relay.url] = currentState
-            logRelayTransition(relayURL: relay.url, oldState: nil, newState: currentState)
 
             relayStateTasks[relay.url] = Task { [weak self, relay] in
                 guard let self else { return }
@@ -176,76 +174,6 @@ final class RelayConnectionMonitor {
         guard previousState != state else { return }
 
         relayStates[relayURL] = state
-        logRelayTransition(relayURL: relayURL, oldState: previousState, newState: state)
     }
 
-    private func logRelayTransition(
-        relayURL: RelayURL,
-        oldState: NDKRelayConnectionState?,
-        newState: NDKRelayConnectionState
-    ) {
-        guard let oldState else {
-            logInfo(
-                "Relay state observed",
-                category: "Network",
-                metadata: [
-                    "relay": relayURL,
-                    "state": describe(newState)
-                ]
-            )
-            return
-        }
-
-        let metadata = [
-            "relay": relayURL,
-            "from": describe(oldState),
-            "to": describe(newState)
-        ]
-
-        if isConnected(oldState), !isConnected(newState) {
-            logWarning("Connection to relay lost", category: "Network", metadata: metadata)
-            return
-        }
-
-        if !isConnected(oldState), isConnected(newState) {
-            logInfo("Connected to relay", category: "Network", metadata: metadata)
-            return
-        }
-
-        switch newState {
-        case .connecting, .authenticating:
-            logInfo("Connecting to relay", category: "Network", metadata: metadata)
-        case .failed(_):
-            logError("Relay connection failed", category: "Network", metadata: metadata)
-        case .authRequired(challenge: _):
-            logWarning("Relay authentication required", category: "Network", metadata: metadata)
-        default:
-            logDebug("Relay state changed", category: "Network", metadata: metadata)
-        }
-    }
-
-    private func isConnected(_ state: NDKRelayConnectionState) -> Bool {
-        state == .connected || state == .authenticated
-    }
-
-    private func describe(_ state: NDKRelayConnectionState) -> String {
-        switch state {
-        case .disconnected:
-            return "disconnected"
-        case .connecting:
-            return "connecting"
-        case .connected:
-            return "connected"
-        case .authRequired(challenge: _):
-            return "auth_required"
-        case .authenticating:
-            return "authenticating"
-        case .authenticated:
-            return "authenticated"
-        case .disconnecting:
-            return "disconnecting"
-        case .failed(_):
-            return "failed"
-        }
-    }
 }
