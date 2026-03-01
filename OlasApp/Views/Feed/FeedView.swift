@@ -8,6 +8,7 @@ public struct FeedView: View {
     @Environment(RelayMetadataCache.self) private var relayMetadataCache
     @Environment(NDKAuthManager.self) private var authManager
     @Environment(MuteListManager.self) private var muteListManager
+    @Environment(MainTabCoordinator.self) private var coordinator
     @Environment(SparkWalletManager.self) private var sparkWalletManager
     @Environment(NWCWalletManager.self) private var nwcWalletManager
     @Environment(SavedFeedSourcesManager.self) private var feedSourcesManager
@@ -24,6 +25,8 @@ public struct FeedView: View {
         switch viewModel.feedMode {
         case .following:
             return "Following"
+        case .network:
+            return "Network"
         case let .relay(url):
             return relayMetadataCache.displayName(for: url)
         case let .pack(pack):
@@ -61,6 +64,12 @@ public struct FeedView: View {
                             viewModel.switchMode(to: .following, muteListManager: muteListManager)
                         } label: {
                             Label("Following", systemImage: viewModel.feedMode == .following ? "checkmark" : "")
+                        }
+
+                        Button {
+                            viewModel.switchMode(to: .network, muteListManager: muteListManager)
+                        } label: {
+                            Label("Network", systemImage: viewModel.feedMode == .network ? "checkmark" : "")
                         }
 
                         Divider()
@@ -151,6 +160,18 @@ public struct FeedView: View {
             // Remove muted users' posts from feed
             viewModel.updateForMuteList(newMutedPubkeys)
         }
+        .onChange(of: coordinator.sessionData?.followList, initial: true) { _, newFollowList in
+            guard viewModel.feedMode == .following else { return }
+            guard let follows = newFollowList, !follows.isEmpty else { return }
+            viewModel.stopSubscription()
+            viewModel.startSubscription(muteListManager: muteListManager)
+        }
+        .onChange(of: coordinator.sessionData?.wotState.isAvailable) { _, isAvailable in
+            guard viewModel.feedMode == .network else { return }
+            guard isAvailable == true else { return }
+            viewModel.stopSubscription()
+            viewModel.startSubscription(muteListManager: muteListManager)
+        }
         .overlay {
             if viewModel.isLoading && viewModel.posts.isEmpty {
                 ProgressView()
@@ -160,7 +181,9 @@ public struct FeedView: View {
                 ContentUnavailableView(
                     "No posts yet",
                     systemImage: "photo.on.rectangle",
-                    description: Text("Follow some accounts or check back later")
+                    description: Text(viewModel.feedMode == .network
+                        ? "Your web of trust is still loading or has no posts"
+                        : "Follow some accounts or check back later")
                 )
             }
         }

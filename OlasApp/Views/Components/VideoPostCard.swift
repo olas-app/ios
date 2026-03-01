@@ -16,6 +16,7 @@ public struct VideoPostCard: View {
     @State private var loopObserver: NSObjectProtocol?
 
     @Environment(MuteListManager.self) private var muteListManager
+    @Environment(NDKAuthManager.self) private var authManager
 
     public init(event: NDKEvent, ndk: NDK, onProfileTap: ((String) -> Void)? = nil) {
         self.event = event
@@ -66,6 +67,10 @@ public struct VideoPostCard: View {
             }
 
             Spacer()
+
+            if event.pubkey != authManager.activePubkey {
+                NDKUIFollowButton(ndk: ndk, pubkey: event.pubkey, style: .compact)
+            }
 
             Menu {
                 Button {

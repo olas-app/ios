@@ -1,5 +1,4 @@
 import NDKSwiftCore
-import NDKSwiftNostrDB
 import SwiftUI
 
 struct EventInspectorView: View {
@@ -162,7 +161,7 @@ struct EventInspectorView: View {
         isLoading = true
         defer { isLoading = false }
 
-        guard let cache = ndk.cache as? NDKNostrDBCache else { return }
+        let cache = ndk.cache
 
         switch searchType {
         case .content:

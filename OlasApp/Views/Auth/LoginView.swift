@@ -225,15 +225,6 @@ public struct LoginView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 14))
             }
 
-#if DEBUG
-            if signer == .primal {
-                Text("Debug URL: \(buildSignerOpenURLString(connectURL: connectURL))")
-                    .font(.system(.caption2, design: .monospaced))
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-#endif
         }
     }
 

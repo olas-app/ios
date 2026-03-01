@@ -9,6 +9,7 @@ public struct VideosView: View {
     @Environment(RelayMetadataCache.self) private var relayMetadataCache
     @Environment(NDKAuthManager.self) private var authManager
     @Environment(MuteListManager.self) private var muteListManager
+    @Environment(MainTabCoordinator.self) private var coordinator
 
     private let ndk: NDK
 
@@ -21,6 +22,8 @@ public struct VideosView: View {
         switch viewModel.feedMode {
         case .following:
             return "Following"
+        case .network:
+            return "Network"
         case let .relay(url):
             return relayMetadataCache.displayName(for: url)
         case let .pack(pack):
@@ -83,6 +86,18 @@ public struct VideosView: View {
         .onChange(of: muteListManager.mutedPubkeys) { _, newMutedPubkeys in
             viewModel.updateForMuteList(newMutedPubkeys)
         }
+        .onChange(of: coordinator.sessionData?.followList, initial: true) { _, newFollowList in
+            guard viewModel.feedMode == .following else { return }
+            guard let follows = newFollowList, !follows.isEmpty else { return }
+            viewModel.stopSubscription()
+            viewModel.startSubscription(muteListManager: muteListManager)
+        }
+        .onChange(of: coordinator.sessionData?.wotState.isAvailable) { _, isAvailable in
+            guard viewModel.feedMode == .network else { return }
+            guard isAvailable == true else { return }
+            viewModel.stopSubscription()
+            viewModel.startSubscription(muteListManager: muteListManager)
+        }
     }
 
     // MARK: - Feed Selector
@@ -93,6 +108,12 @@ public struct VideosView: View {
                 viewModel.switchMode(to: .following, muteListManager: muteListManager)
             } label: {
                 Label("Following", systemImage: viewModel.feedMode == .following ? "checkmark" : "")
+            }
+
+            Button {
+                viewModel.switchMode(to: .network, muteListManager: muteListManager)
+            } label: {
+                Label("Network", systemImage: viewModel.feedMode == .network ? "checkmark" : "")
             }
 
             Divider()
@@ -162,7 +183,9 @@ public struct VideosView: View {
             ContentUnavailableView(
                 "No videos yet",
                 systemImage: "play.rectangle",
-                description: Text("Follow some accounts or check back later")
+                description: Text(viewModel.feedMode == .network
+                    ? "Your web of trust is still loading or has no videos"
+                    : "Follow some accounts or check back later")
             )
             .foregroundStyle(.white)
         }

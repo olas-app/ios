@@ -96,7 +96,7 @@ public final class SavedFeedSourcesManager {
 
         // Validate the mode still exists
         switch mode {
-        case .following, .relay:
+        case .following, .network, .relay:
             activeFeedMode = mode
         case .pack(let pack):
             if savedPacks.contains(where: { $0.id == pack.id }) {

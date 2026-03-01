@@ -46,6 +46,7 @@ public struct MainTabView: View {
                 lastContentTab = newTab
             }
         }
+        .environment(coordinator)
         .environment(coordinator.walletViewModel)
         .environment(coordinator.muteListManager)
         .environment(sparkWalletManager)

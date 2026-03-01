@@ -28,16 +28,30 @@ public final class VideoFeedViewModel {
         error = nil
         videos = []
 
-        let filter = NDKFilter(kinds: videoKinds, limit: 50)
-
         switch feedMode {
         case .following:
+            guard let sessionData = ndk.sessionData,
+                  sessionData.contactListState.isAvailable else {
+                // Contact list still loading — keep isLoading true, will be triggered by onChange
+                return
+            }
+            let followList = sessionData.followList
+            guard !followList.isEmpty else {
+                isLoading = false
+                return
+            }
+            var authors = Array(followList)
+            if !authors.contains(sessionData.pubkey) {
+                authors.append(sessionData.pubkey)
+            }
+            let filter = NDKFilter(authors: authors, kinds: videoKinds, limit: 50)
             subscription = ndk.subscribe(
                 filter: filter,
                 cachePolicy: .cacheWithNetwork
             )
 
         case let .relay(url):
+            let filter = NDKFilter(kinds: videoKinds, limit: 50)
             subscription = ndk.subscribe(
                 filter: filter,
                 cachePolicy: .networkOnly,
@@ -49,6 +63,17 @@ public final class VideoFeedViewModel {
             let packFilter = NDKFilter(authors: pack.pubkeys, kinds: videoKinds, limit: 50)
             subscription = ndk.subscribe(
                 filter: packFilter,
+                cachePolicy: .cacheWithNetwork
+            )
+
+        case .network:
+            guard let sessionData = ndk.sessionData,
+                  sessionData.wotState.isAvailable else {
+                return
+            }
+            let filter = NDKFilter(kinds: videoKinds, limit: 50)
+            subscription = ndk.subscribe(
+                filter: filter,
                 cachePolicy: .cacheWithNetwork
             )
 
@@ -75,6 +100,12 @@ public final class VideoFeedViewModel {
                     seenEvents.insert(event.id)
 
                     guard !muteListManager.mutedPubkeys.contains(event.pubkey) else {
+                        continue
+                    }
+
+                    if case .network = self.feedMode,
+                       let sessionData = ndk.sessionData,
+                       !sessionData.isInWebOfTrust(event.pubkey) {
                         continue
                     }
 

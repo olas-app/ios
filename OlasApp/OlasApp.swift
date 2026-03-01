@@ -1,6 +1,5 @@
 import Combine
 import NDKSwiftCore
-import NDKSwiftNostrDB
 import SwiftUI
 
 @main
@@ -252,12 +251,8 @@ private func handleIncomingURL(_ url: URL) {
             )
         } catch {}
 
-        // Create cache first, then pass to NDK
-        var cache: (any NDKCache)?
-        do {
-            cache = try await NDKNostrDBCache(path: cachePath)
-        } catch {
-        }
+        // Create cache, then pass to NDK
+        let cache = try! await NDKNostrDBCache(path: cachePath)
 
         let newNDK = NDK(relayURLs: relayUrls, cache: cache)
 

@@ -10,7 +10,6 @@
 		1F178AB05E8343D4BE644F0B /* NDKSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 7A70522E321945EFB4B338AE /* NDKSwiftUI */; };
 		327D0DEA8DF1460EB45314E5 /* UnifiedBlurHash in Frameworks */ = {isa = PBXBuildFile; productRef = 7A0D014EC5A747D3A5AA06E7 /* UnifiedBlurHash */; };
 		513D1DDCE7AA4A589BB99DCE /* BreezSdkSpark in Frameworks */ = {isa = PBXBuildFile; productRef = 17B92841420D445F9619DDC3 /* BreezSdkSpark */; };
-		7BE79112E9CE4320A87F2423 /* NDKSwiftNostrDB in Frameworks */ = {isa = PBXBuildFile; productRef = 474C0B2C35BA4E14BA4C3682 /* NDKSwiftNostrDB */; };
 		A01197F93009450ABB0698A9 /* MnemonicSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 6BFBD576CA594027BCF7349A /* MnemonicSwift */; };
 		E1DE6D65E58549D2A883B207 /* NDKSwiftCore in Frameworks */ = {isa = PBXBuildFile; productRef = 998E391250C94006AEB38E8E /* NDKSwiftCore */; };
 /* End PBXBuildFile section */
@@ -81,7 +80,6 @@
 			files = (
 				E1DE6D65E58549D2A883B207 /* NDKSwiftCore in Frameworks */,
 				1F178AB05E8343D4BE644F0B /* NDKSwiftUI in Frameworks */,
-				7BE79112E9CE4320A87F2423 /* NDKSwiftNostrDB in Frameworks */,
 				327D0DEA8DF1460EB45314E5 /* UnifiedBlurHash in Frameworks */,
 				513D1DDCE7AA4A589BB99DCE /* BreezSdkSpark in Frameworks */,
 				A01197F93009450ABB0698A9 /* MnemonicSwift in Frameworks */,
@@ -148,7 +146,6 @@
 			packageProductDependencies = (
 				998E391250C94006AEB38E8E /* NDKSwiftCore */,
 				7A70522E321945EFB4B338AE /* NDKSwiftUI */,
-				474C0B2C35BA4E14BA4C3682 /* NDKSwiftNostrDB */,
 				7A0D014EC5A747D3A5AA06E7 /* UnifiedBlurHash */,
 				17B92841420D445F9619DDC3 /* BreezSdkSpark */,
 				6BFBD576CA594027BCF7349A /* MnemonicSwift */,
@@ -530,11 +527,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = F346A611DD4340238529C9E7 /* XCRemoteSwiftPackageReference "breez-sdk-spark-swift" */;
 			productName = BreezSdkSpark;
-		};
-		474C0B2C35BA4E14BA4C3682 /* NDKSwiftNostrDB */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = BCADD6C81B824D75AC023BFA /* XCLocalSwiftPackageReference "../NDKSwift-z94ws0" */;
-			productName = NDKSwiftNostrDB;
 		};
 		6BFBD576CA594027BCF7349A /* MnemonicSwift */ = {
 			isa = XCSwiftPackageProductDependency;

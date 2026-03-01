@@ -1,5 +1,4 @@
 import NDKSwiftCore
-import NDKSwiftNostrDB
 import SwiftUI
 
 struct DeveloperToolsView: View {
@@ -117,15 +116,10 @@ struct DeveloperToolsView: View {
     private func refreshStats() async {
         isLoading = true
 
-        if let cache = ndk.cache as? NDKNostrDBCache {
-            stats = await cache.getStats()
-            databaseSize = await cache.getDatabaseSize()
-            cachePath = await cache.getCachePath()
-        } else {
-            stats = nil
-            databaseSize = 0
-            cachePath = nil
-        }
+        let cache = ndk.cache
+        stats = await cache.getStats()
+        databaseSize = await cache.getDatabaseSize()
+        cachePath = await cache.getCachePath()
 
         let relays = await ndk.relays
         relayCount = relays.count

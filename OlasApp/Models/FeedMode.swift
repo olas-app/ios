@@ -2,6 +2,7 @@ import Foundation
 
 public enum FeedMode: Equatable, Hashable {
     case following
+    case network
     case relay(url: String)
     case pack(SavedPack)
     case hashtag(String)
@@ -10,6 +11,8 @@ public enum FeedMode: Equatable, Hashable {
         switch self {
         case .following:
             return "Following"
+        case .network:
+            return "Network"
         case .relay:
             return "Relay"
         case .pack(let pack):
@@ -58,7 +61,7 @@ extension FeedMode: Codable {
     }
 
     private enum FeedType: String, Codable {
-        case following, relay, pack, hashtag
+        case following, network, relay, pack, hashtag
     }
 
     public init(from decoder: Decoder) throws {
@@ -68,6 +71,8 @@ extension FeedMode: Codable {
         switch type {
         case .following:
             self = .following
+        case .network:
+            self = .network
         case .relay:
             let url = try container.decode(String.self, forKey: .relayURL)
             self = .relay(url: url)
@@ -86,6 +91,8 @@ extension FeedMode: Codable {
         switch self {
         case .following:
             try container.encode(FeedType.following, forKey: .type)
+        case .network:
+            try container.encode(FeedType.network, forKey: .type)
         case .relay(let url):
             try container.encode(FeedType.relay, forKey: .type)
             try container.encode(url, forKey: .relayURL)

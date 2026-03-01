@@ -41,7 +41,21 @@ public final class FeedViewModel {
 
         switch feedMode {
         case .following:
-            let filter = NDKFilter(kinds: feedKinds, limit: 50)
+            guard let sessionData = ndk.sessionData,
+                  sessionData.contactListState.isAvailable else {
+                // Contact list still loading — keep isLoading true, will be triggered by onChange
+                return
+            }
+            let followList = sessionData.followList
+            guard !followList.isEmpty else {
+                isLoading = false
+                return
+            }
+            var authors = Array(followList)
+            if !authors.contains(sessionData.pubkey) {
+                authors.append(sessionData.pubkey)
+            }
+            let filter = NDKFilter(authors: authors, kinds: feedKinds, limit: 50)
             subscription = ndk.subscribe(
                 filter: filter,
                 cachePolicy: .cacheWithNetwork
@@ -58,6 +72,18 @@ public final class FeedViewModel {
 
         case let .pack(pack):
             let filter = NDKFilter(authors: pack.pubkeys, kinds: feedKinds, limit: 100)
+            subscription = ndk.subscribe(
+                filter: filter,
+                cachePolicy: .cacheWithNetwork
+            )
+
+        case .network:
+            guard let sessionData = ndk.sessionData,
+                  sessionData.wotState.isAvailable else {
+                // WoT still loading — keep isLoading true, will be triggered by onChange
+                return
+            }
+            let filter = NDKFilter(kinds: feedKinds, limit: 50)
             subscription = ndk.subscribe(
                 filter: filter,
                 cachePolicy: .cacheWithNetwork
@@ -100,6 +126,13 @@ public final class FeedViewModel {
 
                     // Filter muted pubkeys
                     guard !muteListManager.mutedPubkeys.contains(event.pubkey) else {
+                        continue
+                    }
+
+                    // Filter by WoT for network mode
+                    if case .network = self.feedMode,
+                       let sessionData = ndk.sessionData,
+                       !sessionData.isInWebOfTrust(event.pubkey) {
                         continue
                     }
 
