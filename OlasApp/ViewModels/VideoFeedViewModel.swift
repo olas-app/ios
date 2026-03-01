@@ -23,10 +23,14 @@ public final class VideoFeedViewModel {
         self.ndk = ndk
     }
 
-    public func startSubscription(muteListManager: MuteListManager) {
-        isLoading = true
+    public func startSubscription(muteListManager: MuteListManager, keepExistingVideos: Bool = false) {
         error = nil
-        videos = []
+        if keepExistingVideos {
+            isLoading = videos.isEmpty
+        } else {
+            isLoading = true
+            videos = []
+        }
 
         switch feedMode {
         case .following:
@@ -67,10 +71,6 @@ public final class VideoFeedViewModel {
             )
 
         case .network:
-            guard let sessionData = ndk.sessionData,
-                  sessionData.wotState.isAvailable else {
-                return
-            }
             let filter = NDKFilter(kinds: videoKinds, limit: 50)
             subscription = ndk.subscribe(
                 filter: filter,
@@ -89,7 +89,7 @@ public final class VideoFeedViewModel {
         guard let subscription = subscription else { return }
 
         subscriptionTask = Task { [weak self] in
-            var seenEvents: Set<String> = []
+            var seenEvents = Set(self?.videos.map(\.id) ?? [])
 
             for await events in subscription.events {
                 guard let self = self else { break }
@@ -105,11 +105,16 @@ public final class VideoFeedViewModel {
 
                     if case .network = self.feedMode,
                        let sessionData = ndk.sessionData,
+                       sessionData.wotState.isAvailable,
                        !sessionData.isInWebOfTrust(event.pubkey) {
                         continue
                     }
 
-                    let insertIndex = videos.insertionIndex(for: event) { $0.createdAt > $1.createdAt }
+                    let insertIndex = videos.diversifiedInsertionIndex(
+                        for: event,
+                        sortedBy: { $0.createdAt > $1.createdAt },
+                        groupKey: \.pubkey
+                    )
                     videos.insert(event, at: insertIndex)
                 }
 
@@ -128,10 +133,21 @@ public final class VideoFeedViewModel {
         videos.removeAll { mutedPubkeys.contains($0.pubkey) }
     }
 
+    public func filterByWoT(_ sessionData: NDKSessionData) {
+        guard sessionData.wotState.isAvailable else { return }
+        videos.removeAll { !sessionData.isInWebOfTrust($0.pubkey) }
+    }
+
     public func switchMode(to mode: FeedMode, muteListManager: MuteListManager) {
         guard mode != feedMode else { return }
+        let previousMode = feedMode
         stopSubscription()
         feedMode = mode
-        startSubscription(muteListManager: muteListManager)
+
+        if previousMode == .following && mode == .network {
+            startSubscription(muteListManager: muteListManager, keepExistingVideos: true)
+        } else {
+            startSubscription(muteListManager: muteListManager)
+        }
     }
 }

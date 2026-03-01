@@ -167,10 +167,10 @@ public struct FeedView: View {
             viewModel.startSubscription(muteListManager: muteListManager)
         }
         .onChange(of: coordinator.sessionData?.wotState.isAvailable) { _, isAvailable in
-            guard viewModel.feedMode == .network else { return }
-            guard isAvailable == true else { return }
-            viewModel.stopSubscription()
-            viewModel.startSubscription(muteListManager: muteListManager)
+            guard viewModel.feedMode == .network, isAvailable == true else { return }
+            if let sessionData = coordinator.sessionData {
+                viewModel.filterByWoT(sessionData)
+            }
         }
         .overlay {
             if viewModel.isLoading && viewModel.posts.isEmpty {

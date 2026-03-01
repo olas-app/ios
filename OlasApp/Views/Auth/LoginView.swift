@@ -20,6 +20,7 @@ public struct LoginView: View {
     @State private var showError = false
     @State private var errorMessage = ""
     @State private var detectedSigner: KnownSigner?
+    @State private var showQRCode = false
 
     private var isReconnecting: Bool { reconnectSession != nil }
 
@@ -62,27 +63,31 @@ public struct LoginView: View {
 
     public var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Reconnect banner
-                if let session = reconnectSession {
-                    reconnectBanner(session: session)
-                }
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Reconnect banner
+                    if let session = reconnectSession {
+                        reconnectBanner(session: session)
+                    }
 
-                // QR Code - hero element
-                qrCodeSection
-                    .frame(maxHeight: .infinity)
+                    // Header
+                    headerSection
 
-                // Bottom section
-                VStack(spacing: 16) {
-                    // Signer app button (only if detected)
-                    if let signer = detectedSigner, let url = nostrConnectURL {
-                        signerButton(signer: signer, connectURL: url)
+                    // Signer hero button (when detected and not reconnecting)
+                    if !isReconnecting, let signer = detectedSigner, let url = nostrConnectURL {
+                        signerHeroButton(signer: signer, connectURL: url)
+
+                        dividerRow
                     }
 
                     // Input field
                     inputSection
+
+                    // QR Code toggle
+                    qrCodeToggle
                 }
                 .padding(.horizontal, 24)
+                .padding(.top, 8)
                 .padding(.bottom, 32)
             }
             .background(Color(.systemBackground))
@@ -110,30 +115,45 @@ public struct LoginView: View {
         }
     }
 
+    // MARK: - Header
+
+    private var headerSection: some View {
+        VStack(spacing: 12) {
+            Image("OlasLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 72, height: 72)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+
+            Text(isReconnecting ? "Reconnect Signer" : "Welcome to Olas")
+                .font(.title2.weight(.bold))
+
+            Text(isReconnecting ? "Re-authorize your signer to continue" : "Sign in with your Nostr identity")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.top, 16)
+        .padding(.bottom, 8)
+    }
+
     // MARK: - Reconnect Banner
 
     private func reconnectBanner(session: NDKSession) -> some View {
         HStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.title2)
+                .font(.title3)
                 .foregroundStyle(.orange)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Reconnect Signer")
-                    .font(.subheadline.weight(.semibold))
-
-                Text(formatPubkey(session.pubkey))
-                    .font(.caption.monospaced())
-                    .foregroundStyle(.secondary)
-            }
+            Text(formatPubkey(session.pubkey))
+                .font(.caption.monospaced())
+                .foregroundStyle(.secondary)
 
             Spacer()
         }
-        .padding(16)
-        .background(.ultraThinMaterial)
+        .padding(14)
+        .background(.orange.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .padding(.horizontal, 24)
-        .padding(.top, 8)
     }
 
     private func formatPubkey(_ pubkey: String) -> String {
@@ -143,88 +163,55 @@ public struct LoginView: View {
         return "\(pubkey.prefix(12))...\(pubkey.suffix(8))"
     }
 
-    // MARK: - QR Code Section
+    // MARK: - Signer Hero Button
 
-    private var qrCodeSection: some View {
-        VStack(spacing: 20) {
-            Spacer()
-
-            if let qrCode = qrCodeImage {
-                Image(uiImage: qrCode)
-                    .resizable()
-                    .interpolation(.none)
-                    .scaledToFit()
-                    .padding(24)
-                    .background(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .padding(.horizontal, 32)
-                    .onTapGesture {
-                        if let urlString = nostrConnectURL, let url = URL(string: urlString) {
-                            openURL(url)
-                        }
-                    }
-            } else {
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(Color(.secondarySystemBackground))
-                    .aspectRatio(1, contentMode: .fit)
-                    .padding(.horizontal, 32)
-                    .overlay {
-                        ProgressView()
-                    }
-            }
-
-            VStack(spacing: 4) {
-                Text(isReconnecting ? "Scan to reconnect your signer" : "Scan with your Nostr signer")
-                    .font(.subheadline.weight(.medium))
-
-                if isWaitingForConnection {
-                    HStack(spacing: 6) {
-                        ProgressView()
-                            .scaleEffect(0.7)
-                        Text("Waiting for connection...")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+    private func signerHeroButton(signer: KnownSigner, connectURL: String) -> some View {
+        Button {
+            openSignerApp(connectURL: connectURL)
+        } label: {
+            HStack(spacing: 14) {
+                if signer == .primal {
+                    Image("PrimalLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 28, height: 28)
+                } else {
+                    Image(systemName: signer.icon)
+                        .font(.title2)
                 }
-            }
 
-            Spacer()
+                Text("Continue with \(signer.name)")
+                    .font(.headline)
+
+                Spacer()
+
+                Image(systemName: "arrow.up.forward")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 18)
+            .background(OlasTheme.Colors.accent)
+            .foregroundStyle(.white)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
         }
     }
 
-    // MARK: - Signer Button
+    // MARK: - Divider
 
-    private func signerButton(signer: KnownSigner, connectURL: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Button {
-                openSignerApp(connectURL: connectURL)
-            } label: {
-                HStack(spacing: 12) {
-                    if signer == .primal {
-                        Image("PrimalLogo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 24, height: 24)
-                    } else {
-                        Image(systemName: signer.icon)
-                            .font(.title3)
-                    }
+    private var dividerRow: some View {
+        HStack(spacing: 16) {
+            Rectangle()
+                .fill(Color(.separator))
+                .frame(height: 1)
 
-                    Text("Open in \(signer.name)")
-                        .font(.subheadline.weight(.semibold))
+            Text("or")
+                .font(.subheadline)
+                .foregroundStyle(.tertiary)
 
-                    Spacer()
-
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.7))
-                }
-                .padding(16)
-                .background(OlasTheme.Colors.accent)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-            }
-
+            Rectangle()
+                .fill(Color(.separator))
+                .frame(height: 1)
         }
     }
 
@@ -232,7 +219,7 @@ public struct LoginView: View {
 
     private var inputSection: some View {
         VStack(spacing: 12) {
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 TextField(isReconnecting ? "bunker://" : "nsec or bunker://", text: $inputText)
                     .font(.system(.subheadline, design: .monospaced))
                     .textInputAutocapitalization(.never)
@@ -260,22 +247,90 @@ public struct LoginView: View {
                 Button {
                     Task { await connectWithInput() }
                 } label: {
-                    if isLoading {
-                        ProgressView()
-                            .tint(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                    } else {
-                        Text("Connect")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
+                    Group {
+                        if isLoading {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Text("Connect")
+                                .font(.headline)
+                        }
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
                 }
                 .background(OlasTheme.Colors.accent)
                 .foregroundStyle(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .disabled(isLoading)
+            }
+        }
+    }
+
+    // MARK: - QR Code Toggle
+
+    private var qrCodeToggle: some View {
+        VStack(spacing: 16) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    showQRCode.toggle()
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "qrcode")
+                        .font(.subheadline)
+                    Text(showQRCode ? "Hide QR Code" : "Show QR Code")
+                        .font(.subheadline)
+                }
+                .foregroundStyle(.secondary)
+            }
+
+            if showQRCode {
+                qrCodeSection
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
+    // MARK: - QR Code Section
+
+    private var qrCodeSection: some View {
+        VStack(spacing: 16) {
+            if let qrCode = qrCodeImage {
+                Image(uiImage: qrCode)
+                    .resizable()
+                    .interpolation(.none)
+                    .scaledToFit()
+                    .frame(maxWidth: 200)
+                    .padding(20)
+                    .background(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .onTapGesture {
+                        if let urlString = nostrConnectURL, let url = URL(string: urlString) {
+                            openURL(url)
+                        }
+                    }
+            } else {
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color(.secondarySystemBackground))
+                    .frame(width: 200, height: 200)
+                    .overlay { ProgressView() }
+            }
+
+            VStack(spacing: 4) {
+                Text(isReconnecting ? "Scan to reconnect your signer" : "Scan with your Nostr signer")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if isWaitingForConnection {
+                    HStack(spacing: 6) {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                        Text("Waiting for connection...")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
         }
     }

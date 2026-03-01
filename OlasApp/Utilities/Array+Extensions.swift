@@ -3,10 +3,6 @@ import Foundation
 
 extension Array {
     /// Finds the insertion index for an element using binary search
-    /// - Parameters:
-    ///   - element: The element to insert
-    ///   - comparator: A closure that returns true if the first element should come before the second
-    /// - Returns: The index where the element should be inserted to maintain sorted order
     func insertionIndex(
         for element: Element,
         using comparator: (Element, Element) -> Bool
@@ -24,5 +20,34 @@ extension Array {
         }
 
         return low
+    }
+
+    /// Finds insertion index with diversity enforcement.
+    /// After `maxConsecutive` posts from the same group key appear in a row,
+    /// subsequent posts get pushed down exponentially (2, 4, 8, 16...).
+    func diversifiedInsertionIndex(
+        for element: Element,
+        sortedBy comparator: (Element, Element) -> Bool,
+        groupKey: KeyPath<Element, String>,
+        maxConsecutive: Int = 3
+    ) -> Int {
+        let natural = insertionIndex(for: element, using: comparator)
+        let key = element[keyPath: groupKey]
+
+        // Count consecutive same-key elements immediately above insertion point
+        var consecutive = 0
+        for i in stride(from: natural - 1, through: 0, by: -1) {
+            if self[i][keyPath: groupKey] == key {
+                consecutive += 1
+            } else {
+                break
+            }
+        }
+
+        guard consecutive >= maxConsecutive else { return natural }
+
+        // Push down exponentially: 2, 4, 8, 16...
+        let offset = 1 << (consecutive - maxConsecutive + 1)
+        return Swift.min(natural + offset, count)
     }
 }

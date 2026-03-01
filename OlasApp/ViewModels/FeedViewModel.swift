@@ -32,12 +32,16 @@ public final class FeedViewModel {
         self.settings = settings
     }
 
-    public func startSubscription(muteListManager: MuteListManager) {
+    public func startSubscription(muteListManager: MuteListManager, keepExistingPosts: Bool = false) {
         stopSubscription()
         let token = UUID()
         loadToken = token
-        isLoading = true
-        posts = []
+        if keepExistingPosts {
+            isLoading = posts.isEmpty
+        } else {
+            isLoading = true
+            posts = []
+        }
 
         switch feedMode {
         case .following:
@@ -78,11 +82,6 @@ public final class FeedViewModel {
             )
 
         case .network:
-            guard let sessionData = ndk.sessionData,
-                  sessionData.wotState.isAvailable else {
-                // WoT still loading — keep isLoading true, will be triggered by onChange
-                return
-            }
             let filter = NDKFilter(kinds: feedKinds, limit: 50)
             subscription = ndk.subscribe(
                 filter: filter,
@@ -111,7 +110,7 @@ public final class FeedViewModel {
         }
 
         subscriptionTask = Task { [weak self] in
-            var seenEvents: Set<String> = []
+            var seenEvents = Set(self?.posts.map(\.id) ?? [])
 
             for await events in subscription.events {
                 guard let self = self, !Task.isCancelled, self.loadToken == token else { return }
@@ -129,15 +128,19 @@ public final class FeedViewModel {
                         continue
                     }
 
-                    // Filter by WoT for network mode
+                    // Filter by WoT for network mode (only when WoT is loaded)
                     if case .network = self.feedMode,
                        let sessionData = ndk.sessionData,
+                       sessionData.wotState.isAvailable,
                        !sessionData.isInWebOfTrust(event.pubkey) {
                         continue
                     }
 
-                    // Insert in sorted position using binary search
-                    let insertIndex = posts.insertionIndex(for: event) { $0.createdAt > $1.createdAt }
+                    let insertIndex = posts.diversifiedInsertionIndex(
+                        for: event,
+                        sortedBy: { $0.createdAt > $1.createdAt },
+                        groupKey: \.pubkey
+                    )
                     posts.insert(event, at: insertIndex)
                 }
 
@@ -157,14 +160,25 @@ public final class FeedViewModel {
     }
 
     public func updateForMuteList(_ mutedPubkeys: Set<String>) {
-        // Remove muted posts without re-sorting
         posts.removeAll { mutedPubkeys.contains($0.pubkey) }
+    }
+
+    public func filterByWoT(_ sessionData: NDKSessionData) {
+        guard sessionData.wotState.isAvailable else { return }
+        posts.removeAll { !sessionData.isInWebOfTrust($0.pubkey) }
     }
 
     public func switchMode(to mode: FeedMode, muteListManager: MuteListManager) {
         guard mode != feedMode else { return }
+        let previousMode = feedMode
         stopSubscription()
         feedMode = mode
-        startSubscription(muteListManager: muteListManager)
+
+        // Following→Network: keep existing posts (they're a subset of network)
+        if previousMode == .following && mode == .network {
+            startSubscription(muteListManager: muteListManager, keepExistingPosts: true)
+        } else {
+            startSubscription(muteListManager: muteListManager)
+        }
     }
 }
