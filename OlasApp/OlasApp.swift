@@ -94,6 +94,8 @@ struct OlasApp: App {
                         authManager.clearValidationFailure()
                         invalidSession = nil
                     }
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
                 }
             }
         }

@@ -316,6 +316,9 @@ private struct WalletIconButton: View {
     let onTap: () async -> Void
 
     @State private var isPressed = false
+    private var isPrimalWallet: Bool { wallet.id == "primal" }
+    private var iconSize: CGFloat { isPrimalWallet ? 74 : 64 }
+    private var iconCornerRadius: CGFloat { isPrimalWallet ? 18 : 14 }
 
     var body: some View {
         Button {
@@ -329,23 +332,43 @@ private struct WalletIconButton: View {
                         Image(wallet.iconName)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: 64, height: 64)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .frame(width: iconSize, height: iconSize)
+                            .clipShape(RoundedRectangle(cornerRadius: iconCornerRadius, style: .continuous))
+                            .overlay {
+                                if isPrimalWallet {
+                                    RoundedRectangle(cornerRadius: iconCornerRadius, style: .continuous)
+                                        .stroke(.white.opacity(0.2), lineWidth: 1)
+                                }
+                            }
+                            .overlay(alignment: .topLeading) {
+                                if isPrimalWallet {
+                                    RoundedRectangle(cornerRadius: iconCornerRadius, style: .continuous)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [.white.opacity(0.28), .white.opacity(0)],
+                                                startPoint: .topLeading,
+                                                endPoint: .center
+                                            )
+                                        )
+                                        .allowsHitTesting(false)
+                                }
+                            }
+                            .shadow(color: isPrimalWallet ? .cyan.opacity(0.28) : .clear, radius: 10, x: 0, y: 3)
                     } else {
-                        RoundedRectangle(cornerRadius: 14)
+                        RoundedRectangle(cornerRadius: iconCornerRadius)
                             .fill(OlasTheme.Colors.accent.opacity(0.1))
-                            .frame(width: 64, height: 64)
+                            .frame(width: iconSize, height: iconSize)
                             .overlay {
                                 Image(systemName: wallet.iconName)
-                                    .font(.system(size: 28))
+                                    .font(.system(size: isPrimalWallet ? 30 : 28))
                                     .foregroundStyle(OlasTheme.Colors.accent)
                             }
                     }
 
                     if isConnecting {
-                        RoundedRectangle(cornerRadius: 14)
+                        RoundedRectangle(cornerRadius: iconCornerRadius)
                             .fill(.ultraThinMaterial)
-                            .frame(width: 64, height: 64)
+                            .frame(width: iconSize, height: iconSize)
                             .overlay {
                                 ProgressView()
                             }

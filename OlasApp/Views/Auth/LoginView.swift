@@ -21,6 +21,7 @@ public struct LoginView: View {
     @State private var errorMessage = ""
     @State private var detectedSigner: KnownSigner?
     @State private var showQRCode = false
+    @State private var showInputScanner = false
 
     private var isReconnecting: Bool { reconnectSession != nil }
 
@@ -76,12 +77,7 @@ public struct LoginView: View {
                     // Signer hero button (when detected and not reconnecting)
                     if !isReconnecting, let signer = detectedSigner, let url = nostrConnectURL {
                         signerHeroButton(signer: signer, connectURL: url)
-
-                        dividerRow
                     }
-
-                    // Input field
-                    inputSection
 
                     // QR Code toggle
                     qrCodeToggle
@@ -90,7 +86,7 @@ public struct LoginView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 32)
             }
-            .background(Color(.systemBackground))
+            .background(.clear)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -113,28 +109,31 @@ public struct LoginView: View {
             detectSignerApps()
             await generateNostrConnectQR()
         }
+        .sheet(isPresented: $showInputScanner) {
+            NavigationStack {
+                QRScannerView(onScan: { result in
+                    Task {
+                        await connectWithRawInput(result)
+                    }
+                    showInputScanner = false
+                })
+                .navigationTitle("Scan Signer QR")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            showInputScanner = false
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Header
 
     private var headerSection: some View {
-        VStack(spacing: 12) {
-            Image("OlasLogo")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 72, height: 72)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-
-            Text(isReconnecting ? "Reconnect Signer" : "Welcome to Olas")
-                .font(.title2.weight(.bold))
-
-            Text(isReconnecting ? "Re-authorize your signer to continue" : "Sign in with your Nostr identity")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .padding(.top, 16)
-        .padding(.bottom, 8)
+        EmptyView()
     }
 
     // MARK: - Reconnect Banner
@@ -166,128 +165,172 @@ public struct LoginView: View {
     // MARK: - Signer Hero Button
 
     private func signerHeroButton(signer: KnownSigner, connectURL: String) -> some View {
-        Button {
-            openSignerApp(connectURL: connectURL)
-        } label: {
-            HStack(spacing: 14) {
-                if signer == .primal {
-                    Image("PrimalLogo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 28, height: 28)
-                } else {
-                    Image(systemName: signer.icon)
-                        .font(.title2)
-                }
+        Group {
+            if signer == .primal {
+                VStack(spacing: 10) {
+                    Button {
+                        openSignerApp(connectURL: connectURL)
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image("PrimalLogo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 62, height: 62)
+                                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .stroke(.white.opacity(0.24), lineWidth: 1)
+                                }
+                                .shadow(color: .cyan.opacity(0.35), radius: 9, x: 0, y: 2)
 
-                Text("Continue with \(signer.name)")
-                    .font(.headline)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Primal")
+                                    .font(.headline)
+                                    .foregroundStyle(.white)
+                                Text("Login with your Primal app")
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.88))
+                            }
 
-                Spacer()
+                            Spacer()
 
-                Image(systemName: "arrow.up.forward")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.7))
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 18)
-            .background(OlasTheme.Colors.accent)
-            .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-        }
-    }
-
-    // MARK: - Divider
-
-    private var dividerRow: some View {
-        HStack(spacing: 16) {
-            Rectangle()
-                .fill(Color(.separator))
-                .frame(height: 1)
-
-            Text("or")
-                .font(.subheadline)
-                .foregroundStyle(.tertiary)
-
-            Rectangle()
-                .fill(Color(.separator))
-                .frame(height: 1)
-        }
-    }
-
-    // MARK: - Input Section
-
-    private var inputSection: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 10) {
-                TextField(isReconnecting ? "bunker://" : "nsec or bunker://", text: $inputText)
-                    .font(.system(.subheadline, design: .monospaced))
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(Color(.secondarySystemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                Button {
-                    if let clipboard = UIPasteboard.general.string {
-                        inputText = clipboard
-                    }
-                } label: {
-                    Image(systemName: "doc.on.clipboard")
-                        .font(.body)
-                        .foregroundStyle(.primary)
-                        .frame(width: 48, height: 48)
-                        .background(Color(.secondarySystemBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-            }
-
-            if !inputText.isEmpty {
-                Button {
-                    Task { await connectWithInput() }
-                } label: {
-                    Group {
-                        if isLoading {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Text("Connect")
-                                .font(.headline)
+                            Image(systemName: "arrow.up.forward")
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(.white.opacity(0.75))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(.white.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(.white.opacity(0.2), lineWidth: 1)
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
+                    .buttonStyle(.plain)
+                    .disabled(isLoading)
+
+                    HStack(spacing: 10) {
+                        primalQuickActionTile(title: "Scan QR Code", systemIcon: "qrcode.viewfinder") {
+                            showInputScanner = true
+                        }
+
+                        primalQuickActionTile(title: "Paste", systemIcon: "doc.on.clipboard") {
+                            if let clipboard = UIPasteboard.general.string {
+                                Task {
+                                    await connectWithRawInput(clipboard)
+                                }
+                            }
+                        }
+
+                        primalQuickActionTile(title: "Nostr Connect", systemIcon: "qrcode") {
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                showQRCode.toggle()
+                            }
+                        }
+                    }
+                    .disabled(isLoading)
+                    .opacity(isLoading ? 0.7 : 1.0)
                 }
-                .background(OlasTheme.Colors.accent)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .disabled(isLoading)
+            } else {
+                Button {
+                    openSignerApp(connectURL: connectURL)
+                } label: {
+                    HStack(spacing: 14) {
+                        Image(systemName: signer.icon)
+                            .font(.title)
+
+                        Text("Continue with \(signer.name)")
+                            .font(.headline)
+
+                        Spacer()
+
+                        Image(systemName: "arrow.up.forward")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 18)
+                }
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.roundedRectangle(radius: 16))
+                .controlSize(.large)
+                .tint(OlasTheme.Colors.accent)
             }
         }
+    }
+
+    private func primalQuickActionTile(title: String, systemIcon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: systemIcon)
+                    .font(.system(size: 40, weight: .semibold))
+                    .frame(width: 40, height: 40)
+                    .foregroundStyle(.white)
+
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+            }
+            .frame(maxWidth: .infinity, minHeight: 102)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 8)
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(.white.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(.white.opacity(0.2), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - QR Code Toggle
 
     private var qrCodeToggle: some View {
         VStack(spacing: 16) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    showQRCode.toggle()
+            if detectedSigner == .primal, !isReconnecting {
+                if showQRCode {
+                    qrCodeSection
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                 }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "qrcode")
-                        .font(.subheadline)
-                    Text(showQRCode ? "Hide QR Code" : "Show QR Code")
-                        .font(.subheadline)
+            } else {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        showQRCode.toggle()
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "qrcode")
+                            .font(.subheadline)
+                        Text(showQRCode ? "Hide QR Code" : "Show QR Code")
+                            .font(.subheadline.weight(.medium))
+                        Spacer(minLength: 0)
+                        Image(systemName: showQRCode ? "chevron.up" : "chevron.down")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .foregroundStyle(showQRCode ? OlasTheme.Colors.accent : .secondary)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .background(showQRCode ? OlasTheme.Colors.accent.opacity(0.1) : Color(.secondarySystemBackground))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(
+                                showQRCode ? OlasTheme.Colors.accent.opacity(0.25) : Color(.separator).opacity(0.45),
+                                lineWidth: 0.8
+                            )
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
-                .foregroundStyle(.secondary)
-            }
-
-            if showQRCode {
-                qrCodeSection
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                if showQRCode {
+                    qrCodeSection
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
             }
         }
     }
@@ -368,6 +411,19 @@ public struct LoginView: View {
             urlWithCallback += "&callback=\(encodedCallback)"
         }
         return urlWithCallback
+    }
+
+    private func normalizeInput(_ raw: String) -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.lowercased().hasPrefix("nostr:") {
+            return String(trimmed.dropFirst("nostr:".count))
+        }
+        return trimmed
+    }
+
+    private func connectWithRawInput(_ raw: String) async {
+        inputText = normalizeInput(raw)
+        await connectWithInput()
     }
 
     private func generateNostrConnectQR() async {
@@ -469,6 +525,7 @@ public struct LoginView: View {
     }
 
     private func connectWithInput() async {
+        guard !isLoading else { return }
         let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
 
         isLoading = true

@@ -91,6 +91,8 @@ public struct OnboardingView: View {
         }
         .sheet(isPresented: $showLogin) {
             LoginView(authManager: authManager, ndk: ndk)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
         .alert("Error", isPresented: $showError) {
             Button("OK") {}
@@ -260,4 +262,3 @@ private struct OlasWaveLogo: View {
         }
     }
 }
-
