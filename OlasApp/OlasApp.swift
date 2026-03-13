@@ -108,7 +108,13 @@ struct OlasApp: App {
         Group {
             if let authManager = authManager, let ndk = ndk {
                 if !authManager.isAuthenticated {
-                    OnboardingView(authManager: authManager, ndk: ndk, settings: settings)
+                    OnboardingView(authManager: authManager, ndk: ndk, settings: settings) { uri in
+                        if let manager = nwcWalletManager {
+                            Task { await connectWithNWC(manager: manager, uri: uri) }
+                        } else {
+                            pendingNWCURI = uri
+                        }
+                    }
                 } else if let sparkWalletManager = sparkWalletManager, let nwcWalletManager = nwcWalletManager {
                     if settings.isNewAccount && !settings.hasCompletedOnboarding {
                         OnboardingFlowView(ndk: ndk) {

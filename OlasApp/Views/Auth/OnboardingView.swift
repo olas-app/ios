@@ -5,16 +5,18 @@ public struct OnboardingView: View {
     var authManager: NDKAuthManager
     var ndk: NDK
     var settings: SettingsManager
+    var onNWCURI: ((String) -> Void)?
     @State private var showLogin = false
     @State private var animateBlobs = false
     @State private var logoGlow = false
     @State private var showError = false
     @State private var errorMessage = ""
 
-    public init(authManager: NDKAuthManager, ndk: NDK, settings: SettingsManager) {
+    public init(authManager: NDKAuthManager, ndk: NDK, settings: SettingsManager, onNWCURI: ((String) -> Void)? = nil) {
         self.authManager = authManager
         self.ndk = ndk
         self.settings = settings
+        self.onNWCURI = onNWCURI
     }
 
     public var body: some View {
@@ -90,7 +92,7 @@ public struct OnboardingView: View {
             logoGlow = true
         }
         .sheet(isPresented: $showLogin) {
-            LoginView(authManager: authManager, ndk: ndk)
+            LoginView(authManager: authManager, ndk: ndk, onNWCURI: onNWCURI)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }

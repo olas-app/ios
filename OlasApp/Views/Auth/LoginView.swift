@@ -7,6 +7,7 @@ public struct LoginView: View {
     var ndk: NDK
     var reconnectSession: NDKSession?
     var onReconnected: (() -> Void)?
+    var onNWCURI: ((String) -> Void)?
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
@@ -55,11 +56,12 @@ public struct LoginView: View {
         }
     }
 
-    public init(authManager: NDKAuthManager, ndk: NDK, reconnectSession: NDKSession? = nil, onReconnected: (() -> Void)? = nil) {
+    public init(authManager: NDKAuthManager, ndk: NDK, reconnectSession: NDKSession? = nil, onReconnected: (() -> Void)? = nil, onNWCURI: ((String) -> Void)? = nil) {
         self.authManager = authManager
         self.ndk = ndk
         self.reconnectSession = reconnectSession
         self.onReconnected = onReconnected
+        self.onNWCURI = onNWCURI
     }
 
     public var body: some View {
@@ -435,7 +437,8 @@ public struct LoginView: View {
                 name: "Olas",
                 url: "https://olas.app",
                 image: "https://olas.app/icon.png",
-                perms: "sign_event:1,sign_event:7,sign_event:20,sign_event:22,sign_event:1111,sign_event:24242,nip04_encrypt,nip04_decrypt,nip44_encrypt,nip44_decrypt"
+                perms: "sign_event:1,sign_event:7,sign_event:20,sign_event:22,sign_event:1111,sign_event:24242,nip04_encrypt,nip04_decrypt,nip44_encrypt,nip44_decrypt",
+                includeNWC: !isReconnecting
             )
 
             let signer = try await NDKBunkerSigner.nostrConnect(
@@ -510,8 +513,12 @@ public struct LoginView: View {
             } else {
                 // Login mode: add new session
                 _ = try await authManager.addSession(signer)
+                let nwcURI = await signer.receivedNWCURI
                 await MainActor.run {
                     isWaitingForConnection = false
+                    if let nwcURI {
+                        onNWCURI?(nwcURI)
+                    }
                     dismiss()
                 }
             }
