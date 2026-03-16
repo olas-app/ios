@@ -283,36 +283,89 @@ public enum FilterProcessor {
         return result
     }
 
-    /// Applies crop based on aspect ratio
-    public static func applyCrop(to image: CIImage, aspectRatio: ImageAspectRatio) -> CIImage {
-        guard let targetRatio = aspectRatio.ratio else {
+    /// Computes the crop rect for the given aspect ratio, zoom, and center.
+    /// - Parameters:
+    ///   - extent: Source image extent.
+    ///   - aspectRatio: Target aspect ratio (or `.free`).
+    ///   - zoomScale: 1.0 means maximum visible area for the chosen aspect ratio.
+    ///   - center: Optional crop center in source-image coordinates.
+    public static func cropRect(
+        for extent: CGRect,
+        aspectRatio: ImageAspectRatio,
+        zoomScale: CGFloat = 1.0,
+        center: CGPoint? = nil
+    ) -> CGRect {
+        let safeWidth = max(extent.width, 1)
+        let safeHeight = max(extent.height, 1)
+        let targetRatio = aspectRatio.ratio ?? (safeWidth / safeHeight)
+        let currentRatio = safeWidth / safeHeight
+
+        var baseRect = extent
+        if currentRatio > targetRatio {
+            // Image is wider than target, reduce width.
+            let newWidth = safeHeight * targetRatio
+            baseRect = CGRect(
+                x: extent.origin.x + (safeWidth - newWidth) / 2,
+                y: extent.origin.y,
+                width: newWidth,
+                height: safeHeight
+            )
+        } else if currentRatio < targetRatio {
+            // Image is taller than target, reduce height.
+            let newHeight = safeWidth / targetRatio
+            baseRect = CGRect(
+                x: extent.origin.x,
+                y: extent.origin.y + (safeHeight - newHeight) / 2,
+                width: safeWidth,
+                height: newHeight
+            )
+        }
+
+        let clampedScale = min(max(zoomScale, 1.0), 6.0)
+        let cropWidth = baseRect.width / clampedScale
+        let cropHeight = baseRect.height / clampedScale
+
+        let defaultCenter = CGPoint(x: baseRect.midX, y: baseRect.midY)
+        let desiredCenter = center ?? defaultCenter
+
+        let minCenterX = extent.minX + cropWidth / 2
+        let maxCenterX = extent.maxX - cropWidth / 2
+        let minCenterY = extent.minY + cropHeight / 2
+        let maxCenterY = extent.maxY - cropHeight / 2
+
+        let clampedCenterX = min(max(desiredCenter.x, minCenterX), maxCenterX)
+        let clampedCenterY = min(max(desiredCenter.y, minCenterY), maxCenterY)
+
+        return CGRect(
+            x: clampedCenterX - cropWidth / 2,
+            y: clampedCenterY - cropHeight / 2,
+            width: cropWidth,
+            height: cropHeight
+        )
+    }
+
+    /// Applies crop based on aspect ratio and optional interactive zoom/pan.
+    public static func applyCrop(
+        to image: CIImage,
+        aspectRatio: ImageAspectRatio,
+        zoomScale: CGFloat = 1.0,
+        center: CGPoint? = nil
+    ) -> CIImage {
+        let extent = image.extent
+        let cropRect = cropRect(
+            for: extent,
+            aspectRatio: aspectRatio,
+            zoomScale: zoomScale,
+            center: center
+        )
+
+        if cropRect == extent {
             return image
         }
 
-        let extent = image.extent
-        let currentRatio = extent.width / extent.height
-
-        var cropRect = extent
-
-        if currentRatio > targetRatio {
-            // Image is wider than target, crop width
-            let newWidth = extent.height * targetRatio
-            let xOffset = (extent.width - newWidth) / 2
-            cropRect = CGRect(x: extent.origin.x + xOffset, y: extent.origin.y, width: newWidth, height: extent.height)
-        } else if currentRatio < targetRatio {
-            // Image is taller than target, crop height
-            let newHeight = extent.width / targetRatio
-            let yOffset = (extent.height - newHeight) / 2
-            cropRect = CGRect(x: extent.origin.x, y: extent.origin.y + yOffset, width: extent.width, height: newHeight)
-        }
-
-        if cropRect != extent {
-            var cropped = image.cropped(to: cropRect)
-            cropped = cropped.transformed(by: CGAffineTransform(translationX: -cropRect.origin.x, y: -cropRect.origin.y))
-            return cropped
-        }
-
-        return image
+        var cropped = image.cropped(to: cropRect)
+        cropped = cropped.transformed(by: CGAffineTransform(translationX: -cropRect.origin.x, y: -cropRect.origin.y))
+        return cropped
     }
 
     /// Applies rotation and flip transforms
