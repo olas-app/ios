@@ -259,9 +259,19 @@ private func handleIncomingURL(_ url: URL) {
             )
         } catch {}
 
-        // Create cache, then pass to NDK
-        let cache = try! await NDKNostrDBCache(path: cachePath)
+        // Create cache first, then pass to NDK
+        var cache: NDKNostrDBCache?
+        do {
+            cache = try await NDKNostrDBCache(path: cachePath)
+            logInfo("NostrDB cache initialized", category: "Cache", metadata: ["path": cachePath])
+        } catch {
+            logError("Failed to initialize NostrDB cache: \(error.localizedDescription)", category: "Cache", metadata: ["path": cachePath])
+        }
 
+        guard let cache else {
+            logError("Cannot initialize NDK without cache", category: "NDK")
+            return
+        }
         let newNDK = NDK(relayURLs: relayUrls, cache: cache)
 
         // Create auth manager with NDK
